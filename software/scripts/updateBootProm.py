@@ -57,6 +57,7 @@ if __name__ == "__main__":
         ip       = args.ip,
         pollEn   = False,
         initRead = True,
+        promProg = True,
     ) as root:
 
         # Create useful pointers

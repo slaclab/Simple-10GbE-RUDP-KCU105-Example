@@ -22,6 +22,7 @@ class Root(pr.Root):
             ip       = '192.168.2.10',
             pollEn   = True,  # Enable automatic polling registers
             initRead = True,  # Read all registers at start of the system
+            promProg = False, # Flag to disable all devices not related to PROM programming
             **kwargs):
 
         #################################################################
@@ -46,10 +47,10 @@ class Root(pr.Root):
             self._initRead = initRead
 
             # Add RUDP Software clients
-            self.rudp = [None for i in range(2)]
+            numStream = 1 if promProg else 2
+            self.rudp = [None for i in range(numStream)]
 
-            # for i in range(1):
-            for i in range(2):
+            for i in range(numStream):
                 # Create the ETH interface @ IP Address = ip
                 self.rudp[i] = pr.protocols.UdpRssiPack(
                     name    = f'SwRudpClient[{i}]',
@@ -61,14 +62,15 @@ class Root(pr.Root):
                     )
                 self.add(self.rudp[i])
 
-            # Map the RDUP streams
-            self.RudpReg = self.rudp[0].application(0)
-            self.stream  = self.rudp[1].application(0)
 
             # bidirectional connection between RudpReg and SRPv3
+            self.RudpReg = self.rudp[0].application(0)
             self.srp = rogue.protocols.srp.SrpV3()
             self.srp == self.RudpReg
 
+            if not promProg:
+                # Map the RDUP streams
+                self.stream  = self.rudp[1].application(0)
         else:
 
             # Start up flags are FALSE for simulation mode
@@ -86,15 +88,17 @@ class Root(pr.Root):
             offset   = 0x0000_0000,
             memBase  = self.srp,
             sim      = self.sim,
+            promProg = promProg,
             expand   = True,
         ))
 
-        self.add(devBoard.App(
-            offset   = 0x8000_0000,
-            memBase  = self.srp,
-            sim      = self.sim,
-            expand   = True,
-        ))
+        if not promProg:
+            self.add(devBoard.App(
+                offset   = 0x8000_0000,
+                memBase  = self.srp,
+                sim      = self.sim,
+                expand   = True,
+            ))
 
         #################################################################
 

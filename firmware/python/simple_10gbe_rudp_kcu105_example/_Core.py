@@ -19,17 +19,15 @@ import surf.protocols.rssi       as rssi
 import surf.xilinx               as xil
 
 class Core(pr.Device):
-    def __init__( self,sim=False,**kwargs):
+    def __init__( self,
+            sim      = False,
+            promProg = False,
+        **kwargs):
         super().__init__(**kwargs)
 
         self.add(axi.AxiVersion(
             offset = 0x0000_0000,
             expand = True,
-        ))
-
-        self.add(xil.AxiSysMonUltraScale(
-            offset  = 0x0001_0000,
-            enabled = not sim,
         ))
 
         for i in range(2):
@@ -40,39 +38,45 @@ class Core(pr.Device):
                 enabled      = not sim,
             ))
 
-        self.add(mac.TenGigEthReg(
-            offset  = 0x0010_0000,
-            enabled = not sim,
-        ))
-
-        self.add(udp.UdpEngine(
-            offset  = 0x0011_0000,
-            numSrv  = 2,
-            enabled = not sim,
-        ))
-
-        for i in range(2):
-            self.add(rssi.RssiCore(
-                name    = f'FwRudpServer[{i}]',
-                offset  = 0x0012_0000 + (i * 0x0001_0000),
+        if not promProg:
+            self.add(xil.AxiSysMonUltraScale(
+                offset  = 0x0001_0000,
                 enabled = not sim,
             ))
 
-        self.add(axi.AxiStreamMonAxiL(
-            name        = 'AxisMon',
-            offset      = 0x0014_0000,
-            numberLanes = 2,
-            expand      = True,
-            enabled     = not sim,
-        ))
+            self.add(mac.TenGigEthReg(
+                offset  = 0x0010_0000,
+                enabled = not sim,
+            ))
 
-        # Don't example the FW RX AXI stream monitor
-        self.AxisMon.Ch[0]._expand = True
+            self.add(udp.UdpEngine(
+                offset  = 0x0011_0000,
+                numSrv  = 2,
+                enabled = not sim,
+            ))
 
-        # Don't example the FW RX AXI stream monitor
-        self.AxisMon.Ch[1]._expand = False
+            for i in range(2):
+                self.add(rssi.RssiCore(
+                    name    = f'FwRudpServer[{i}]',
+                    offset  = 0x0012_0000 + (i * 0x0001_0000),
+                    enabled = not sim,
+                ))
 
-        self.add(xceiver.Sfp(
-            offset      = 0x0020_2000,
-            enabled     = not sim,
-        ))
+            self.add(axi.AxiStreamMonAxiL(
+                name        = 'AxisMon',
+                offset      = 0x0014_0000,
+                numberLanes = 2,
+                expand      = True,
+                enabled     = not sim,
+            ))
+
+            # Don't example the FW RX AXI stream monitor
+            self.AxisMon.Ch[0]._expand = True
+
+            # Don't example the FW RX AXI stream monitor
+            self.AxisMon.Ch[1]._expand = False
+
+            self.add(xceiver.Sfp(
+                offset      = 0x0020_2000,
+                enabled     = not sim,
+            ))
