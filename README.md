@@ -130,7 +130,8 @@ $ python scripts/devGui.py --ip sim
 # How to reprogram your KCU105 board's QSPI Boot Prom
 
 Make sure you have the SW15 switch setup for QSPI booting:
-<img src="docs/images/SW15.png" width="200">
+
+<img src="docs/images/SW15.png" width="400">
 
 ```bash
 # Go to software directory
