@@ -79,7 +79,7 @@ $ make gui
 
 ```bash
 # Go to software directory
-$ cd dev-board-examples/software
+$ cd Simple-10GbE-RUDP-KCU105-Example/software
 
 # Setup conda environment
 $ source /path/to/my/anaconda3/etc/profile.d/conda.sh
@@ -90,7 +90,6 @@ $ conda activate rogue_v5.8.0
 # Launch the GUI in RUDP mode
 $ python scripts/devGui.py
 ```
-#<img src="docs/images/devGui.png" width="800">
 
 <!--- ########################################################################################### -->
 
@@ -98,15 +97,15 @@ $ python scripts/devGui.py
 
 1) Start up two terminal
 
-2) In the 1st terminal, launch the VCS simulation
+2) In the 1st terminal, launch the VCS simulation (assuming on SLAC AFS network)
 ```bash
-$ source timetool-spatial/firmware/setup_env_slac.sh
-$ cd timetool-spatial/firmware/targets/TimetoolSpatialMemTester/
+$ source Simple-10GbE-RUDP-KCU105-Example/firmware/setup_env_slac.sh
+$ cd Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example
 $ make vcs
-$ cd ../../build/TimetoolSpatialMemTester/TimetoolSpatialMemTester_project.sim/sim_1/behav/
+$ cd ../../build/Simple10GbeRudpKcu105Example/Simple10GbeRudpKcu105Example_project.sim/sim_1/behav/
 $ source setup_env.sh
 $ ./sim_vcs_mx.sh
-$ ./simv -gui &
+$ ./simv -gui=dve & (or $ ./simv -gui=verdi -verdi_opts -sx &)
 ```
 
 3) When the VCS GUI pops up, start the simulation run
@@ -114,7 +113,7 @@ $ ./simv -gui &
 4) In the 2nd terminal, launch the GUI in simulation mode
 ```bash
 # Go to software directory
-$ cd dev-board-examples/software
+$ cd Simple-10GbE-RUDP-KCU105-Example/software
 
 # Setup conda environment
 $ source /path/to/my/anaconda3/etc/profile.d/conda.sh
@@ -126,18 +125,16 @@ $ conda activate rogue_v5.8.0
 $ python scripts/devGui.py --ip sim
 ```
 
-#<img src="docs/images/devGuiSim.png" width="800">
-
 <!--- ########################################################################################### -->
 
 # How to reprogram your KCU105 board's QSPI Boot Prom
 
 Make sure you have the SW15 switch setup for QSPI booting:
-<img src="docs/images/SW15.png" width="800">
+<img src="docs/images/SW15.png" width="200">
 
 ```bash
 # Go to software directory
-$ cd dev-board-examples/software
+$ cd Simple-10GbE-RUDP-KCU105-Example/software
 
 # Setup conda environment
 $ source /path/to/my/anaconda3/etc/profile.d/conda.sh
@@ -148,7 +145,5 @@ $ conda activate rogue_v5.8.0
 # Run the reprogramming script
 $ python scripts/updateBootProm.py --path ../firmware/targets/Simple10GbeRudpKcu105Example/images/
 ```
-#<img src="docs/images/updateBootProm.png" width="800">
-
 
 <!--- ########################################################################################### -->
