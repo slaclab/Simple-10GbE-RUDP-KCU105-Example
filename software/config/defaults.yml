@@ -1,0 +1,5 @@
+MyRoot:
+  Fpga:
+    AxiVersion:
+      enable: True
+      ScratchPad: 0x000000

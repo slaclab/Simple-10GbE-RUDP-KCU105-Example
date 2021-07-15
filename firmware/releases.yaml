@@ -1,0 +1,30 @@
+
+GitBase: ..
+
+TopRoguePackage: simple_10gbe_rudp_kcu105_example
+
+RoguePackages:
+  - submodules/surf/python
+  - python
+
+RogueConfig:
+  - ../software/config
+
+RogueScripts:
+  - ../software/scripts/devGui
+
+Targets:
+  Simple10GbeRudpKcu105Example:
+    ImageDir: targets/Simple10GbeRudpKcu105Example/images
+    Extensions:
+      - bit
+      - mcs
+      - ltx
+
+Releases:
+  all:
+    Primary: True
+    Targets:
+      - Simple10GbeRudpKcu105Example
+    Types:
+      - Rogue
