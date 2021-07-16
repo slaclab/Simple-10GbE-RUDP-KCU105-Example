@@ -42,11 +42,6 @@ class Root(pr.Root):
 
         #################################################################
 
-        # Create application stream receiver
-        if self.enSwRx:
-            self.swRx = devBoard.SwRx(expand=True)
-            self.add(self.swRx)
-
         # Check if not VCS simulation
         if (not self.sim):
 
@@ -75,12 +70,9 @@ class Root(pr.Root):
 
             # Connect SRPv3 to RDUP[0]
             self.srp == self.rudp[0].application(0)
-
-            # Check if not programming PROM
-            if self.enSwRx:
-
-                # Connect stream to swRx
-                self.rudp[1].application(0) >> self.swRx
+            
+            # Map the streaming interface
+            self.stream = self.rudp[1].application(0)
 
         else:
 
@@ -91,12 +83,26 @@ class Root(pr.Root):
             # Map the simulation memory and stream interfaces
             self.srp    = rogue.interfaces.memory.TcpClient('localhost',10000)
             self.stream = rogue.interfaces.stream.TcpClient('localhost',10002)
-
-            # Check if not programming PROM
-            if self.enSwRx:
-                # Connect stream to swRx
-                self.stream >> self.swRx
-
+            
+        #################################################################
+        
+        # Check for streaming enabled
+        if self.enSwRx:        
+        
+            # File writer
+            self.dataWriter = pr.utilities.fileio.StreamWriter()
+            self.add(self.dataWriter)
+        
+            # Create application stream receiver
+            self.swRx = devBoard.SwRx(expand=True)
+            self.add(self.swRx)        
+        
+            # Connect stream to swRx
+            self.stream >> self.swRx
+            
+            # Also connect stream to data writer
+            self.stream >> self.dataWriter.getChannel(0)
+        
         #################################################################
 
 
