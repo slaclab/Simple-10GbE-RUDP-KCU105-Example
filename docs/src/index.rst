@@ -12,10 +12,11 @@ branch of Simple-10GbE-RUDP-KCU105-Example.
 New documentation is being added incrementally over time.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents:
 
    Requirements/index
+   HowTo/index
 
 Please email ruckman@slac.stanford.edu if you see any errors or have any
 questions about anything in the current documentation. We are still adding

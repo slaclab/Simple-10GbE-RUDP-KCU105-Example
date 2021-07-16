@@ -1,4 +1,4 @@
-.. _custom_git_cloning:
+.. _requirements_git_cloning:
 
 ===================================
 Before you clone the GIT repository

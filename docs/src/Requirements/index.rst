@@ -1,4 +1,4 @@
-.. _custom_module:
+.. _requirements:
 
 ============
 Requirements
@@ -11,3 +11,7 @@ This section describes hardware/firmware/software requirements
    :caption: Requirements:
 
    cloning
+   hardware_setup
+   network_setup
+   vivado_setup
+   rogue_setup
