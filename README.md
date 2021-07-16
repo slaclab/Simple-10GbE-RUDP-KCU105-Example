@@ -105,12 +105,23 @@ $ python scripts/devGui.py
 
 2) In the 1st terminal, launch the VCS simulation (assuming on SLAC AFS network)
 ```bash
+# Source the firmware/setup_env_slac.sh, which includes both Vivado and VCS
 $ source Simple-10GbE-RUDP-KCU105-Example/firmware/setup_env_slac.sh
+
+# Go to the target directory and execute the `vcs` build
 $ cd Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example
 $ make vcs
+
+# Go to the VCS build output
 $ cd ../../build/Simple10GbeRudpKcu105Example/Simple10GbeRudpKcu105Example_project.sim/sim_1/behav/
+
+# Source the VCS + VHPI environment setup
 $ source setup_env.sh
+
+# Compile firmware with VCS 
 $ ./sim_vcs_mx.sh
+
+# Launch the VCS GUI (either DVE or VERDI)
 $ ./simv -gui=dve & (or $ ./simv -gui=verdi -verdi_opts -sx &)
 ```
 
@@ -134,6 +145,9 @@ $ python scripts/devGui.py --ip sim
 <!--- ########################################################################################### -->
 
 # How to reprogram your KCU105 board's QSPI Boot Prom
+
+> Note: The Board `MUST` be loaded with the Simple10GbeRudpKcu105Example firmware 
+> before you can use this remote PROM reprogramming script.
 
 Make sure you have the SW15 switch setup for QSPI booting:
 
