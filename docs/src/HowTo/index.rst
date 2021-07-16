@@ -15,3 +15,4 @@ This section describes "HowTos"
    remote_program
    software_gui
    simulation
+   hardware_debug
