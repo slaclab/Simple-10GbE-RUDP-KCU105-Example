@@ -67,7 +67,7 @@ $ make
 $ make gui
 ```
 
-<img src="docs/images/VivadoGui.png" width="400">
+<img src="docs/images/VivadoGui.png" width="800">
 
 <!--- ########################################################################################### -->
 
