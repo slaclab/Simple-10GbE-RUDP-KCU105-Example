@@ -78,6 +78,10 @@ $ make gui
 # How to run the Software Development GUI with KCU105 Hardware
 
 ```bash
+# Make sure that you have jumbo frames enabled on your network interface:
+# Example for network interface being eth2
+$ sudo ifconfig eth2 mtu 9000
+
 # Go to software directory
 $ cd Simple-10GbE-RUDP-KCU105-Example/software
 
