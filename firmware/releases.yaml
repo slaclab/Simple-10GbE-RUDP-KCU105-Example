@@ -11,7 +11,7 @@ RogueConfig:
   - ../software/config
 
 RogueScripts:
-  - ../software/scripts/devGui
+  - ../software/scripts/devGui.py
 
 Targets:
   Simple10GbeRudpKcu105Example:
