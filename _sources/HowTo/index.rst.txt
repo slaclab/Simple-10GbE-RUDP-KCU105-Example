@@ -12,6 +12,6 @@ This section describes "HowTos"
 
    clone
    firmware
+   remote_program
    software_gui
    simulation
-   remote_program
