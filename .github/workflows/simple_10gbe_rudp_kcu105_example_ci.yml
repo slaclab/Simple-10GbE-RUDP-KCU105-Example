@@ -1,0 +1,50 @@
+# ----------------------------------------------------------------------------
+# This file is part of the `Simple-10GbE-RUDP-KCU105-Example`. It is subject to
+# the license terms in the LICENSE.txt file found in the top-level directory
+# of this distribution and at:
+#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
+# No part of the `Simple-10GbE-RUDP-KCU105-Example`, including this file, may be
+# copied, modified, propagated, or distributed except according to the terms
+# contained in the LICENSE.txt file.
+# ----------------------------------------------------------------------------
+# The following environment variables are required for this process:
+# secrets.GH_TOKEN
+
+name: Simple-10GbE-RUDP-KCU105-Example Integration
+on: [push]
+
+jobs:
+
+  test_and_document:
+    name: Test And Generate Documentation
+    runs-on: ubuntu-20.04
+    steps:
+
+      # This step checks out a copy of your repository.
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install doxygen doxygen-doc doxygen-latex doxygen-gui graphviz
+          python -m pip install --upgrade pip
+          
+      # Generate Documentation
+      - name: Generate Documentation
+        if: github.ref == 'refs/heads/documentation'
+        run: |
+          cd docs
+          make html
+
+      - name: Deploy Documentation
+        if: github.ref == 'refs/heads/documentation'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          publish_dir: docs/build/html
