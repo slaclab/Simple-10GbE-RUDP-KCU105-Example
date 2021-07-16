@@ -68,7 +68,7 @@ if __name__ == "__main__":
         pyrogue.pydm.runPyDM(
             root  = root,
             sizeX = 800,
-            sizeY = 1000,
+            sizeY = 800,
         )
 
     #################################################################

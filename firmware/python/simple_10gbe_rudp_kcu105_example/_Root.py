@@ -23,11 +23,13 @@ class Root(pr.Root):
             pollEn   = True,  # Enable automatic polling registers
             initRead = True,  # Read all registers at start of the system
             promProg = False, # Flag to disable all devices not related to PROM programming
+            enSwRx   = True, # Flag to enable the software stream receiver
             **kwargs):
 
         #################################################################
 
-        self.sim = (ip == 'sim')
+        self.enSwRx = not promProg and enSwRx
+        self.sim    = (ip == 'sim')
         if (self.sim):
             # Set the timeout
             kwargs['timeout'] = 100000000 # firmware simulation slow and timeout base on real time (not simulation time)
@@ -40,6 +42,12 @@ class Root(pr.Root):
 
         #################################################################
 
+        # Create application stream receiver
+        if self.enSwRx:
+            self.swRx = devBoard.SwRx(expand=True)
+            self.add(self.swRx)
+
+        # Check if not VCS simulation
         if (not self.sim):
 
             # Start up flags
@@ -47,10 +55,9 @@ class Root(pr.Root):
             self._initRead = initRead
 
             # Add RUDP Software clients
-            numStream = 1 if promProg else 2
-            self.rudp = [None for i in range(numStream)]
+            self.rudp = [None for i in range(2)]
 
-            for i in range(numStream):
+            for i in range(2):
                 # Create the ETH interface @ IP Address = ip
                 self.rudp[i] = pr.protocols.UdpRssiPack(
                     name    = f'SwRudpClient[{i}]',
@@ -63,14 +70,18 @@ class Root(pr.Root):
                 self.add(self.rudp[i])
 
 
-            # bidirectional connection between RudpReg and SRPv3
-            self.RudpReg = self.rudp[0].application(0)
+            # Create SRPv3
             self.srp = rogue.protocols.srp.SrpV3()
-            self.srp == self.RudpReg
 
-            if not promProg:
-                # Map the RDUP streams
-                self.stream  = self.rudp[1].application(0)
+            # Connect SRPv3 to RDUP[0]
+            self.srp == self.rudp[0].application(0)
+
+            # Check if not programming PROM
+            if self.enSwRx:
+
+                # Connect stream to swRx
+                self.rudp[1].application(0) >> self.swRx
+
         else:
 
             # Start up flags are FALSE for simulation mode
@@ -81,7 +92,13 @@ class Root(pr.Root):
             self.srp    = rogue.interfaces.memory.TcpClient('localhost',10000)
             self.stream = rogue.interfaces.stream.TcpClient('localhost',10002)
 
+            # Check if not programming PROM
+            if self.enSwRx:
+                # Connect stream to swRx
+                self.stream >> self.swRx
+
         #################################################################
+
 
         # Add Devices
         self.add(devBoard.Core(
@@ -102,3 +119,10 @@ class Root(pr.Root):
 
         #################################################################
 
+    def start(self, **kwargs):
+        super().start(**kwargs)
+        appTx = self.find(typ=devBoard.AppTx)
+        # Turn off the Continuous Mode
+        for devPtr in appTx:
+            devPtr.ContinuousMode.set(False)
+        self.CountReset()

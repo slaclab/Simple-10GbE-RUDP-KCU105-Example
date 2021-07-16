@@ -49,7 +49,7 @@ class AppTx(pr.Device):
         ))
 
         self.add(pr.RemoteVariable(
-            name         = 'ContinousMode',
+            name         = 'ContinuousMode',
             description  = 'Bursting Continuously Flag',
             offset       = 0x010,
             bitSize      = 1,
