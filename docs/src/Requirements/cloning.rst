@@ -4,37 +4,36 @@
 Before you clone the GIT repository
 ===================================
 
-1) Create a github account:
+#. Create a github account:
 
-https://github.com/
+   https://github.com/
 
-2) On the Linux machine that you will clone the github from, generate a SSH key (if not already done)
+#. On the Linux machine that you will clone the github from, generate a SSH key (if not already done)
 
-https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
+   https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/
 
-3) Add a new SSH key to your GitHub account
+#. Add a new SSH key to your GitHub account
 
-https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/
+   https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/
 
-4) Setup for large filesystems on github
+#. Verify that you have git version 2.13.0 (or later) installed
 
-.. code-block:: bash
+   .. code-block:: bash
 
-  $ git lfs install
-
-
-5) Verify that you have git version 2.13.0 (or later) installed 
+     $ git version
+     git version 2.13.0
 
 
-.. code-block:: bash
+#. Verify that you have git-lfs version 2.1.1 (or later) installed
 
-  $ git version
-  git version 2.13.0
+   .. code-block:: bash
+
+     $ git-lfs version
+     git-lfs/2.1.1
 
 
-6) Verify that you have git-lfs version 2.1.1 (or later) installed 
+#. Setup for large filesystems on github (one-time step)
 
-.. code-block:: bash
+   .. code-block:: bash
 
-  $ git-lfs version
-  git-lfs/2.1.1
+     $ git lfs install

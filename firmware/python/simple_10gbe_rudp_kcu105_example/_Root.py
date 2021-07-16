@@ -10,12 +10,14 @@
 
 import pyrogue  as pr
 import pyrogue.protocols
-
-import simple_10gbe_rudp_kcu105_example as devBoard
+import pyrogue.utilities.fileio
 
 import rogue
 import rogue.hardware.axi
 import rogue.interfaces.stream
+import rogue.utilities.fileio
+
+import simple_10gbe_rudp_kcu105_example as devBoard
 
 class Root(pr.Root):
     def __init__(   self,
@@ -70,7 +72,7 @@ class Root(pr.Root):
 
             # Connect SRPv3 to RDUP[0]
             self.srp == self.rudp[0].application(0)
-            
+
             # Map the streaming interface
             self.stream = self.rudp[1].application(0)
 
@@ -83,26 +85,26 @@ class Root(pr.Root):
             # Map the simulation memory and stream interfaces
             self.srp    = rogue.interfaces.memory.TcpClient('localhost',10000)
             self.stream = rogue.interfaces.stream.TcpClient('localhost',10002)
-            
+
         #################################################################
-        
+
         # Check for streaming enabled
-        if self.enSwRx:        
-        
+        if self.enSwRx:
+
             # File writer
             self.dataWriter = pr.utilities.fileio.StreamWriter()
             self.add(self.dataWriter)
-        
+
             # Create application stream receiver
             self.swRx = devBoard.SwRx(expand=True)
-            self.add(self.swRx)        
-        
+            self.add(self.swRx)
+
             # Connect stream to swRx
             self.stream >> self.swRx
-            
+
             # Also connect stream to data writer
             self.stream >> self.dataWriter.getChannel(0)
-        
+
         #################################################################
 
 
@@ -127,8 +129,10 @@ class Root(pr.Root):
 
     def start(self, **kwargs):
         super().start(**kwargs)
-        appTx = self.find(typ=devBoard.AppTx)
-        # Turn off the Continuous Mode
-        for devPtr in appTx:
-            devPtr.ContinuousMode.set(False)
-        self.CountReset()
+        # Check if not simulation
+        if not self.sim:
+            appTx = self.find(typ=devBoard.AppTx)
+            # Turn off the Continuous Mode
+            for devPtr in appTx:
+                devPtr.ContinuousMode.set(False)
+            self.CountReset()
