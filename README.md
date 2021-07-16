@@ -67,6 +67,8 @@ $ make
 $ make gui
 ```
 
+<img src="docs/images/VivadoGui.png" width="400">
+
 <!--- ########################################################################################### -->
 
 # How to install the Rogue With Anaconda
