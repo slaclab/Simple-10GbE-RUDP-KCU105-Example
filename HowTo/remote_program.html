@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>How to reprogram your KCU105 board’s QSPI Boot Prom &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.1-1-g8ba24fc documentation</title>
+  <title>How to reprogram your KCU105 board’s QSPI Boot Prom &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.2-2-ga75a5f5 documentation</title>
   
 
   
@@ -89,14 +89,15 @@
             
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../Requirements/index.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">How to run the Software Development GUI with VCS firmware simulator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA/Chipscope in Vivado with ruckus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA in Vivado with ruckus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="remote_debug.html">How to use Xilinx Virtual Cable (XVC) with ILA</a></li>
 </ul>
 </li>
 </ul>
@@ -172,9 +173,9 @@
 <span id="how-to-remote-program"></span><h1>How to reprogram your KCU105 board’s QSPI Boot Prom<a class="headerlink" href="#how-to-reprogram-your-kcu105-board-s-qspi-boot-prom" title="Permalink to this headline">¶</a></h1>
 <ol class="arabic">
 <li><p>The KCU105 <strong>MUST</strong> have a version of the Simple10GbeRudpKcu105Example firmware loaded. If first time to program KCU105 with Simple10GbeRudpKcu105Example, then use the JTAG and load the .bit file into the FPGA.</p></li>
-<li><p>Make sure SW15 is setup for QSPI booting (refer to <a class="reference internal" href="../Requirements/hardware_setup.html#requirements-hardware-setup"><span class="std std-ref">Hardware Setup</span></a>)</p></li>
+<li><p>Make sure SW15 is setup for QSPI booting (refer to <a class="reference internal" href="../Setup/hardware_setup.html#setup-hardware-setup"><span class="std std-ref">Hardware Setup</span></a>)</p></li>
 <li><p>Build the firmware (refer to <a class="reference internal" href="firmware.html#how-to-build-firmware"><span class="std std-ref">How to build the firmware</span></a>) to that there is .MCS files in the “targets/Simple10GbeRudpKcu105Example/images” directory.</p></li>
-<li><p>Setup rogue software (refer to <a class="reference internal" href="../Requirements/rogue_setup.html#requirements-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
+<li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
 <li><p>Run the reprogramming script</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python scripts/updateBootProm.py --path &lt;PATH_TO_IMAGE_DIR&gt;*)
 </pre></div>

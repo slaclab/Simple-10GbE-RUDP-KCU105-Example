@@ -8,7 +8,7 @@ This section describes "HowTos"
 
 .. toctree::
    :maxdepth: 1
-   :caption: Requirements:
+   :caption: HowTos:
 
    clone
    firmware
@@ -16,3 +16,4 @@ This section describes "HowTos"
    software_gui
    simulation
    hardware_debug
+   remote_debug

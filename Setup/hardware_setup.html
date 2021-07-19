@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>Vivado and VCS Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.1-1-g8ba24fc documentation</title>
+  <title>Hardware Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.2-2-ga75a5f5 documentation</title>
   
 
   
@@ -41,8 +41,8 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Rogue Software Setup" href="rogue_setup.html" />
-    <link rel="prev" title="Network Setup" href="network_setup.html" /> 
+    <link rel="next" title="Network Setup" href="network_setup.html" />
+    <link rel="prev" title="Before you clone the GIT repository" href="cloning.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -89,15 +89,11 @@
             
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">Requirements</a><ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Setup</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="cloning.html">Before you clone the GIT repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hardware_setup.html">Hardware Setup</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Hardware Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="network_setup.html">Network Setup</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Vivado and VCS Setup</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#if-you-are-on-the-slac-afs-network">If you are on the SLAC AFS network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#if-you-are-not-on-the-slac-afs-network">If you are NOT on the SLAC AFS network</a></li>
-</ul>
-</li>
+<li class="toctree-l2"><a class="reference internal" href="vivado_setup.html">Vivado and VCS Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rogue_setup.html">Rogue Software Setup</a></li>
 </ul>
 </li>
@@ -150,15 +146,15 @@
     
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
         
-          <li><a href="index.html">Requirements</a> &raquo;</li>
+          <li><a href="index.html">Setup</a> &raquo;</li>
         
-      <li>Vivado and VCS Setup</li>
+      <li>Hardware Setup</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
           
-            <a href="../_sources/Requirements/vivado_setup.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/Setup/hardware_setup.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -171,24 +167,26 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="vivado-and-vcs-setup">
-<span id="requirements-vivado-setup"></span><h1>Vivado and VCS Setup<a class="headerlink" href="#vivado-and-vcs-setup" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="if-you-are-on-the-slac-afs-network">
-<h2>If you are on the SLAC AFS network<a class="headerlink" href="#if-you-are-on-the-slac-afs-network" title="Permalink to this headline">¶</a></h2>
-<p>Here’s how to setup the Xilinx tools and licensing</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">source</span> Simple-10GbE-RUDP-KCU105-Example/firmware/setup_env_slac.sh
-</pre></div>
-</div>
-<p>This <strong>setup_env_slac.sh</strong> also includes the setup for VCS as well</p>
-</div>
-<div class="section" id="if-you-are-not-on-the-slac-afs-network">
-<h2>If you are NOT on the SLAC AFS network<a class="headerlink" href="#if-you-are-not-on-the-slac-afs-network" title="Permalink to this headline">¶</a></h2>
-<p>You will need to install Vivado and install the Xilinx Licensing</p>
+  <div class="section" id="hardware-setup">
+<span id="setup-hardware-setup"></span><h1>Hardware Setup<a class="headerlink" href="#hardware-setup" title="Permalink to this headline">¶</a></h1>
+<p>You will need one Xilinx KCU105 development board:</p>
 <blockquote>
-<div><p><a class="reference external" href="https://www.xilinx.com/support/download.html">https://www.xilinx.com/support/download.html</a></p>
-<p><a class="reference external" href="https://www.xilinx.com/support/licensing_solution_center.html">https://www.xilinx.com/support/licensing_solution_center.html</a></p>
+<div><p><a class="reference external" href="https://www.xilinx.com/products/boards-and-kits/kcu105.html">https://www.xilinx.com/products/boards-and-kits/kcu105.html</a></p>
 </div></blockquote>
-</div>
+<p>You will need a 10GbE SFP+ transceiver for the KCU105 and
+fiber optic cable.  Here’s an example of a SFP+ transceiver:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.fs.com/products/74668.html">https://www.fs.com/products/74668.html</a></p>
+</div></blockquote>
+<p>You will also need a fiber optic cable as well.
+Here’s an example of a optical cable:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.fs.com/products/40180.html">https://www.fs.com/products/40180.html</a></p>
+</div></blockquote>
+<a class="reference internal image-reference" href="../_images/kcu105_hw.png"><img alt="Alternative text" src="../_images/kcu105_hw.png" style="width: 800px;" /></a>
+<p>For booting up the KCU105 via the QSPI PROM, you will need to setup the SW15 switch
+with position#1 in the arrow direction:</p>
+<a class="reference internal image-reference" href="../_images/SW15.png"><img alt="Alternative text" src="../_images/SW15.png" style="width: 800px;" /></a>
 </div>
 
 
@@ -197,8 +195,8 @@
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="rogue_setup.html" class="btn btn-neutral float-right" title="Rogue Software Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="network_setup.html" class="btn btn-neutral float-left" title="Network Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="network_setup.html" class="btn btn-neutral float-right" title="Network Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="cloning.html" class="btn btn-neutral float-left" title="Before you clone the GIT repository" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

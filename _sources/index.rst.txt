@@ -7,15 +7,14 @@
 Welcome to Simple-10GbE-RUDP-KCU105-Example's documentation!
 ============================================================
 
-This is currently a work in progress and updated from the doc_updates
-branch of Simple-10GbE-RUDP-KCU105-Example.
+This is currently a work in progress.
 New documentation is being added incrementally over time.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   Requirements/index
+   Setup/index
    HowTo/index
 
 Please email ruckman@slac.stanford.edu if you see any errors or have any

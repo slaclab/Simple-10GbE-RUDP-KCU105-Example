@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>How to run the Software Development GUI with KCU105 Hardware &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.1-1-g8ba24fc documentation</title>
+  <title>How to run the Software Development GUI with KCU105 Hardware &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.2-2-ga75a5f5 documentation</title>
   
 
   
@@ -89,14 +89,15 @@
             
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../Requirements/index.html">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">How to run the Software Development GUI with KCU105 Hardware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">How to run the Software Development GUI with VCS firmware simulator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA/Chipscope in Vivado with ruckus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA in Vivado with ruckus</a></li>
+<li class="toctree-l2"><a class="reference internal" href="remote_debug.html">How to use Xilinx Virtual Cable (XVC) with ILA</a></li>
 </ul>
 </li>
 </ul>
@@ -171,7 +172,7 @@
   <div class="section" id="how-to-run-the-software-development-gui-with-kcu105-hardware">
 <span id="how-to-software-gui"></span><h1>How to run the Software Development GUI with KCU105 Hardware<a class="headerlink" href="#how-to-run-the-software-development-gui-with-kcu105-hardware" title="Permalink to this headline">¶</a></h1>
 <ol class="arabic">
-<li><p>Setup rogue software (refer to <a class="reference internal" href="../Requirements/rogue_setup.html#requirements-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
+<li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
 <li><p>run the Development GUI python script</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> Simple-10GbE-RUDP-KCU105-Example/software
 $ python scripts/devGui.py

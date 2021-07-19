@@ -6,11 +6,11 @@ How to reprogram your KCU105 board's QSPI Boot Prom
 
 #. The KCU105 **MUST** have a version of the Simple10GbeRudpKcu105Example firmware loaded. If first time to program KCU105 with Simple10GbeRudpKcu105Example, then use the JTAG and load the .bit file into the FPGA.
 
-#. Make sure SW15 is setup for QSPI booting (refer to :ref:`requirements_hardware_setup`)
+#. Make sure SW15 is setup for QSPI booting (refer to :ref:`setup_hardware_setup`)
 
 #. Build the firmware (refer to :ref:`how_to_build_firmware`) to that there is .MCS files in the "targets/Simple10GbeRudpKcu105Example/images" directory.
 
-#. Setup rogue software (refer to :ref:`requirements_rogue_setup`)
+#. Setup rogue software (refer to :ref:`setup_rogue_setup`)
 
 #. Run the reprogramming script
 

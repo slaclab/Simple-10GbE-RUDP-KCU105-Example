@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>How to use Xilinx Virtual Cable (XVC) with ILA &mdash; Simple-10GbE-RUDP-KCU105-Example v1.0.2-2-ga75a5f5 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="How to implement ILA in Vivado with ruckus" href="hardware_debug.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> Simple-10GbE-RUDP-KCU105-Example
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
+<li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="simulation.html">How to run the Software Development GUI with VCS firmware simulator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA in Vivado with ruckus</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">How to use Xilinx Virtual Cable (XVC) with ILA</a></li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Simple-10GbE-RUDP-KCU105-Example</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">HowTos</a> &raquo;</li>
+        
+      <li>How to use Xilinx Virtual Cable (XVC) with ILA</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/HowTo/remote_debug.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="how-to-use-xilinx-virtual-cable-xvc-with-ila">
+<span id="how-to-remote-debug"></span><h1>How to use Xilinx Virtual Cable (XVC) with ILA<a class="headerlink" href="#how-to-use-xilinx-virtual-cable-xvc-with-ila" title="Permalink to this headline">¶</a></h1>
+<p>The Xilinx Virtual Cable (XVC) lets you remotely access the ILA
+(A.K.A. <code class="docutils literal notranslate"><span class="pre">Chipscope</span></code>) via the KCU105 Ethernet (instead of using JTAG).
+The XVC will let you view and interact with ILA remotely via
+the same Ethernet link that you use for register access
+and data streaming.</p>
+<p>However, XVC does <strong>NOT</strong> support non-ILA debugging operations:</p>
+<ul class="simple">
+<li><p>JTAG programming</p></li>
+<li><p>IBERT debugging</p></li>
+<li><p>MIG calibration results</p></li>
+</ul>
+<p>For more information about XVC, refer to the Xilinx XVC homepage:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.xilinx.com/products/intellectual-property/xvc.html">https://www.xilinx.com/products/intellectual-property/xvc.html</a></p>
+</div></blockquote>
+<p>Note: To setup the XVC in ruckus, you will need to define
+and set <code class="docutils literal notranslate"><span class="pre">USE_XVC_DEBUG</span> <span class="pre">=</span> <span class="pre">1</span></code> in your target’s makefile:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using XVC Debug bridge</span>
+<span class="nb">export</span> <span class="nv">USE_XVC_DEBUG</span> <span class="o">=</span> <span class="m">1</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>In the firmware, you will to map  UDP server port=2542 to
+the <code class="docutils literal notranslate"><span class="pre">surf.UdpDebugBridgeWrapper</span></code>:</p>
+<blockquote>
+<div><div class="highlight-vhdl notranslate"><div class="highlight"><pre><span></span><span class="n">U_XVC</span> <span class="o">:</span> <span class="k">entity</span> <span class="nc">surf</span><span class="p">.</span><span class="n">UdpDebugBridgeWrapper</span>
+   <span class="k">generic</span> <span class="k">map</span> <span class="p">(</span>
+      <span class="n">TPD_G</span> <span class="o">=&gt;</span> <span class="n">TPD_G</span><span class="p">)</span>
+   <span class="k">port</span> <span class="k">map</span> <span class="p">(</span>
+      <span class="c1">-- Clock and Reset</span>
+      <span class="n">clk</span>            <span class="o">=&gt;</span> <span class="n">ethClk</span><span class="p">,</span>
+      <span class="n">rst</span>            <span class="o">=&gt;</span> <span class="n">ethRst</span><span class="p">,</span>
+      <span class="c1">-- UDP XVC Interface</span>
+      <span class="n">obServerMaster</span> <span class="o">=&gt;</span> <span class="n">obServerMasters</span><span class="p">(</span><span class="n">UDP_SRV_XVC_IDX_C</span><span class="p">),</span>
+      <span class="n">obServerSlave</span>  <span class="o">=&gt;</span> <span class="n">obServerSlaves</span><span class="p">(</span><span class="n">UDP_SRV_XVC_IDX_C</span><span class="p">),</span>
+      <span class="n">ibServerMaster</span> <span class="o">=&gt;</span> <span class="n">ibServerMasters</span><span class="p">(</span><span class="n">UDP_SRV_XVC_IDX_C</span><span class="p">),</span>
+      <span class="n">ibServerSlave</span>  <span class="o">=&gt;</span> <span class="n">ibServerSlaves</span><span class="p">(</span><span class="n">UDP_SRV_XVC_IDX_C</span><span class="p">));</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p>Next you will build the XVC source:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> Simple-10GbE-RUDP-KCU105-Example/software/xvcSrv/src
+$ make
+</pre></div>
+</div>
+</div></blockquote>
+<p>Next you will connect execute the <code class="docutils literal notranslate"><span class="pre">./xvcSrv</span> <span class="pre">-t</span> <span class="pre">&lt;fw_ip_address&gt;:&lt;udp_server_port&gt;</span></code> command:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ./xvcSrv -t <span class="m">192</span>.168.2.10:2542
+</pre></div>
+</div>
+</div></blockquote>
+<p>The XVC server is now running and ready to accept a XVC client connection.
+Next you will open <code class="docutils literal notranslate"><span class="pre">Vivado</span> <span class="pre">Hardware</span> <span class="pre">Manager</span></code> and <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">new</span> <span class="pre">target</span></code>:</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_0.png"><img alt="Alternative text" src="../_images/xcv_0.png" style="width: 400px;" /></a>
+</div></blockquote>
+<p>Select that you are connecting to a remote server and enter the <code class="docutils literal notranslate"><span class="pre">host</span></code> name.
+If locally ran, then use <code class="docutils literal notranslate"><span class="pre">localhost</span></code>.
+If running remotely for different computer, you can use IP address or PC’s hostname on your network.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_1.png"><img alt="Alternative text" src="../_images/xcv_1.png" style="width: 400px;" /></a>
+</div></blockquote>
+<p>Click on <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">Xilinx</span> <span class="pre">Virtual</span> <span class="pre">Cable</span> <span class="pre">(XVC)</span></code>:</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_2.png"><img alt="Alternative text" src="../_images/xcv_2.png" style="width: 400px;" /></a>
+</div></blockquote>
+<p>If locally ran, then use <code class="docutils literal notranslate"><span class="pre">localhost</span></code> for “Host Name”.
+If running remotely for different computer, you can use IP address or PC’s hostname on your network.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_3.png"><img alt="Alternative text" src="../_images/xcv_3.png" style="width: 400px;" /></a>
+</div></blockquote>
+<p>Next you will click on <code class="docutils literal notranslate"><span class="pre">NEXT</span></code> then click on <code class="docutils literal notranslate"><span class="pre">Finished</span></code> on the window after that</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_4.png"><img alt="Alternative text" src="../_images/xcv_4.png" style="width: 400px;" /></a>
+</div></blockquote>
+<p>Click on “debug_bridge_0”, go to the “General Tab” and click on the <code class="docutils literal notranslate"><span class="pre">...</span></code> next to “Probes File”:</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_5.png"><img alt="Alternative text" src="../_images/xcv_5.png" style="width: 400px;" /></a>
+</div></blockquote>
+<p>Navigate to the <code class="docutils literal notranslate"><span class="pre">.ltx</span></code> file that generated from your <code class="docutils literal notranslate"><span class="pre">post_synthesis.tcl</span></code> TCL script (refer to <a class="reference internal" href="hardware_debug.html#how-to-hardware-debug"><span class="std std-ref">How to implement ILA in Vivado with ruckus</span></a>).
+Once the .ltx file is loaded, the ILA can now be access remotely via the Ethernet link.</p>
+<blockquote>
+<div><a class="reference internal image-reference" href="../_images/xcv_6.png"><img alt="Alternative text" src="../_images/xcv_6.png" style="width: 400px;" /></a>
+</div></blockquote>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="hardware_debug.html" class="btn btn-neutral float-left" title="How to implement ILA in Vivado with ruckus" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, SLAC National Accelerator Laboratory.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
