@@ -83,8 +83,14 @@ architecture mapping of Rudp is
    constant CLK_FREQUENCY_C : real := 156.25E+6;  -- In units of Hz
 
    -- UDP constants
-   constant SERVER_SIZE_C  : positive                                := 2;
-   constant SERVER_PORTS_C : PositiveArray(SERVER_SIZE_C-1 downto 0) := (0 => 8192, 1 => 8193);
+   constant UDP_SRV_SRP_IDX_C  : natural  := 0;
+   constant UDP_SRV_DATA_IDX_C : natural  := 1;
+   constant UDP_SRV_XVC_IDX_C  : natural  := 2;
+   constant SERVER_SIZE_C      : positive := 3;
+   constant SERVER_PORTS_C : PositiveArray(SERVER_SIZE_C-1 downto 0) := (
+      UDP_SRV_SRP_IDX_C  => 8192,       -- SRPv3
+      UDP_SRV_DATA_IDX_C => 8193,       -- Streaming data
+      UDP_SRV_XVC_IDX_C  => 2542);      -- Xilinx XVC
 
    -- RSSI constants
    constant RSSI_SIZE_C : positive := 1;  -- Implementing only 1 VC per RSSI link
@@ -235,8 +241,25 @@ begin
          clk             => ethClk,
          rst             => ethRst);
 
+   -----------------------------------------------------------------
+   -- Xilinx Virtual Cable (XVC)
+   -- https://www.xilinx.com/products/intellectual-property/xvc.html
+   -----------------------------------------------------------------
+   U_XVC : entity surf.UdpDebugBridgeWrapper
+      generic map (
+         TPD_G => TPD_G)
+      port map (
+         -- Clock and Reset
+         clk            => ethClk,
+         rst            => ethRst,
+         -- UDP XVC Interface
+         obServerMaster => obServerMasters(UDP_SRV_XVC_IDX_C),
+         obServerSlave  => obServerSlaves(UDP_SRV_XVC_IDX_C),
+         ibServerMaster => ibServerMasters(UDP_SRV_XVC_IDX_C),
+         ibServerSlave  => ibServerSlaves(UDP_SRV_XVC_IDX_C));
+
    GEN_VEC :
-   for i in 0 to SERVER_SIZE_C-1 generate
+   for i in 0 to 1 generate
 
       ------------------------------------------
       -- Software's RSSI Server Interface @ 8192

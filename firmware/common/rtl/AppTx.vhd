@@ -135,7 +135,11 @@ begin
                else
 
                   -- Latch the sendFrame (in cause software changes it during streaming)
-                  v.frameMax := r.sendFrame;
+                  if r.sendFrame /= 0 then
+                     v.frameMax := r.sendFrame-1;
+                  else
+                     v.frameMax := r.sendFrame;
+                  end if;
 
                   -- Reset the command value
                   v.sendFrame := (others => '0');
