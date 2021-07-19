@@ -1,4 +1,4 @@
-.. _requirements_vivado_setup:
+.. _setup_vivado_setup:
 
 ====================
 Vivado and VCS Setup

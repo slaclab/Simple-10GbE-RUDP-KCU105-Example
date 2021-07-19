@@ -1,4 +1,4 @@
-.. _requirements_network_setup:
+.. _setup_network_setup:
 
 =============
 Network Setup

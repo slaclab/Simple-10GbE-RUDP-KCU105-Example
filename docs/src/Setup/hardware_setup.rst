@@ -1,4 +1,4 @@
-.. _requirements_hardware_setup:
+.. _setup_hardware_setup:
 
 ==============
 Hardware Setup

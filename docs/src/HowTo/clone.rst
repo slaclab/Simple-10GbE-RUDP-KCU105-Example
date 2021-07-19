@@ -4,7 +4,7 @@
 How to Clone the GIT repository
 ===================================
 
-Make sure you have completed the ":ref:`requirements_git_cloning`" before continuing
+Make sure you have completed the ":ref:`setup_git_cloning`" before continuing
 
 .. code-block:: bash
 

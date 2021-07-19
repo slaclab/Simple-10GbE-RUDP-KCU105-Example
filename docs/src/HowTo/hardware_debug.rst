@@ -1,12 +1,12 @@
 .. _how_to_hardware_debug:
 
-====================================================
-How to implement ILA/Chipscope in Vivado with ruckus
-====================================================
+==========================================
+How to implement ILA in Vivado with ruckus
+==========================================
 
 * Add a "post_synthesis.tcl" to your target's vivado directory.  Here's an example
 
-   *firmware/targets/Simple10GbeRudpKcu105Example/vivado/post_synthesis.tcl*
+   https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/post_synthesis.tcl
 
 
 * Here the basic format of the TCL script
@@ -14,7 +14,7 @@ How to implement ILA/Chipscope in Vivado with ruckus
    * Add the ruckus helper functions
 
    .. code-block::
-   
+
       ##############################
       # Get variables and procedures
       ##############################
@@ -77,7 +77,7 @@ How to implement ILA/Chipscope in Vivado with ruckus
    * Define the probes' netname
 
    .. code-block::
-   
+
       #######################
       ## Set the debug Probes
       #######################
@@ -92,10 +92,10 @@ How to implement ILA/Chipscope in Vivado with ruckus
    * Write the debug probes into the synth_1 design before impl_1
 
    .. code-block::
-   
+
       ##########################
       ## Write the port map file
       ##########################
-      WriteDebugProbes ${ilaName}   
+      WriteDebugProbes ${ilaName}
 
    * Ruckus will automatically copy the ILA file (.ltx) to the target's image directory at the end of the build if it exists.

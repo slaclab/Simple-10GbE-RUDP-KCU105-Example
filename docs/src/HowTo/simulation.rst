@@ -9,7 +9,7 @@ How to run the Software Development GUI with VCS firmware simulator
 In the first terminal
 =====================
 
-#. Setup Vivado and VCS (refer to :ref:`requirements_vivado_setup`)
+#. Setup Vivado and VCS (refer to :ref:`setup_vivado_setup`)
 
 #. Go to the target directory and execute the `vcs` build
 
@@ -51,7 +51,7 @@ In the first terminal
 In the Second terminal
 ======================
 
-#. Setup rogue software (refer to :ref:`requirements_rogue_setup`)
+#. Setup rogue software (refer to :ref:`setup_rogue_setup`)
 
 #. run the Development GUI python script with **--ip sim** argument
 

@@ -1,4 +1,4 @@
-.. _requirements_rogue_setup:
+.. _setup_rogue_setup:
 
 ====================
 Rogue Software Setup

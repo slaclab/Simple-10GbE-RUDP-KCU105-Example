@@ -4,7 +4,7 @@
 How to build the firmware
 =========================
 
-#. Setup Xilinx licensing (Refer to :ref:`requirements_vivado_setup`)
+#. Setup Xilinx licensing (refer to :ref:`setup_vivado_setup`)
 
 
 #. Go to the target directory and build the firmware via `make`:
