@@ -10,6 +10,10 @@ Welcome to Simple-10GbE-RUDP-KCU105-Example's documentation!
 This is currently a work in progress.
 New documentation is being added incrementally over time.
 
+   .. image:: ../images/fw_top.png
+     :width: 800
+     :alt: Alternative text
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
