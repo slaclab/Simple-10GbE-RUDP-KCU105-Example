@@ -6,7 +6,7 @@ How to run the Software Development GUI with KCU105 Hardware
 
 #. Setup rogue software (refer to :ref:`setup_rogue_setup`)
 
-#. run the Development GUI python script
+#. Run the Development GUI python script
 
    .. code-block:: bash
 

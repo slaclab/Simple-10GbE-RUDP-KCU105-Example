@@ -11,6 +11,7 @@
 import setupLibPaths
 
 import sys
+import time
 import argparse
 
 import pyrogue as pr
@@ -53,22 +54,58 @@ if __name__ == "__main__":
         help     = "Enable read all variables at start",
     )
 
+    parser.add_argument(
+        "--guiType",
+        type     = str,
+        required = False,
+        default  = 'PyDM',
+        help     = "Sets the GUI type (PyDM or None)",
+    )
+
+    parser.add_argument(
+        "--serverPort",
+        type     = int,
+        required = False,
+        default  = 9099,
+        help     = "Zeromq server port",
+    )
+
     # Get the arguments
     args = parser.parse_args()
 
     #################################################################
 
     with devBoard.Root(
-        ip       = args.ip,
-        pollEn   = args.pollEn,
-        initRead = args.initRead,
+        ip         = args.ip,
+        pollEn     = args.pollEn,
+        initRead   = args.initRead,
+        serverPort = args.serverPort,
     ) as root:
 
-        # Launch the GUI
-        pyrogue.pydm.runPyDM(
-            root  = root,
-            sizeX = 800,
-            sizeY = 800,
-        )
+        ######################
+        # Development PyDM GUI
+        ######################
+        if (args.guiType == 'PyDM'):
+            pyrogue.pydm.runPyDM(
+                root  = root,
+                sizeX = 800,
+                sizeY = 800,
+            )
+
+        #################
+        # No GUI
+        #################
+        elif (args.guiType == 'None'):
+
+            # Wait to be killed via Ctrl-C
+            print('Running root server.  Hit Ctrl-C to exit')
+            while (root._running):
+                time.sleep(1)
+
+        ####################
+        # Undefined GUI type
+        ####################
+        else:
+            raise ValueError("Invalid GUI type (%s)" % (args.guiType) )
 
     #################################################################
