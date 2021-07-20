@@ -18,3 +18,4 @@ This section describes "HowTos"
    simulation
    hardware_debug
    remote_debug
+   fileio
