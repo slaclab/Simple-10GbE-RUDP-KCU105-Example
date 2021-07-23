@@ -18,6 +18,7 @@ New documentation is being added incrementally over time.
    :maxdepth: 2
    :caption: Contents:
 
+   introduction
    Setup/index
    HowTo/index
 

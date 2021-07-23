@@ -19,4 +19,3 @@ This section describes "HowTos"
    hardware_debug
    remote_debug
    fileio
-   fileio_fw_infrastructure
