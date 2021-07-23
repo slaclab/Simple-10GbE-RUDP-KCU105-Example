@@ -8,7 +8,7 @@ Rogue includes a general purpose file write and file reader
 to quickly write data to disk and analysis offline.
 
 
-#. Start up the PyDM gui ((refer to :ref:`how_to_software_gui`)
+#. Start up the PyDM gui (refer to :ref:`how_to_software_gui`)
 
 #. Go to the ``System`` tab (A), click on ``Auto Name`` (B), then click on ``Open`` (C)
 
