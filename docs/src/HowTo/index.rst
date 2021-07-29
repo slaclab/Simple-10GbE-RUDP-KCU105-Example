@@ -19,3 +19,4 @@ This section describes "HowTos"
    hardware_debug
    remote_debug
    fileio
+   tag_release
