@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
-  <title>How to build the firmware &mdash; Simple-10GbE-RUDP-KCU105-Example v1.1.3-4-g8b8d071 documentation</title>
+  <title>How to run the Software in Interactive Mode &mdash; Simple-10GbE-RUDP-KCU105-Example v1.1.3-4-g8b8d071 documentation</title>
   
 
   
@@ -41,8 +41,8 @@
     
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="How to reprogram your KCU105 board’s QSPI Boot Prom" href="remote_program.html" />
-    <link rel="prev" title="How to Clone the GIT repository" href="clone.html" /> 
+    <link rel="next" title="How to run multiple GUI clients on the same KCU105 server" href="zmq_multi_client.html" />
+    <link rel="prev" title="How to run the Software Development GUI with KCU105 Hardware" href="software_gui.html" /> 
 </head>
 
 <body class="wy-body-for-nav">
@@ -93,10 +93,10 @@
 <li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">How to build the firmware</a></li>
+<li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interactive_mode.html">How to run the Software in Interactive Mode</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">How to run the Software in Interactive Mode</a></li>
 <li class="toctree-l2"><a class="reference internal" href="zmq_multi_client.html">How to run multiple GUI clients on the same KCU105 server</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">How to run the Software Development GUI with VCS firmware simulator</a></li>
 <li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA in Vivado with ruckus</a></li>
@@ -155,13 +155,13 @@
         
           <li><a href="index.html">HowTos</a> &raquo;</li>
         
-      <li>How to build the firmware</li>
+      <li>How to run the Software in Interactive Mode</li>
     
     
       <li class="wy-breadcrumbs-aside">
         
           
-            <a href="../_sources/HowTo/firmware.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/HowTo/interactive_mode.rst.txt" rel="nofollow"> View page source</a>
           
         
       </li>
@@ -174,21 +174,51 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="how-to-build-the-firmware">
-<span id="how-to-build-firmware"></span><h1>How to build the firmware<a class="headerlink" href="#how-to-build-the-firmware" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="how-to-run-the-software-in-interactive-mode">
+<h1>How to run the Software in Interactive Mode<a class="headerlink" href="#how-to-run-the-software-in-interactive-mode" title="Permalink to this headline">¶</a></h1>
 <ol class="arabic">
-<li><p>Setup Xilinx licensing (refer to <a class="reference internal" href="../Setup/vivado_setup.html#setup-vivado-setup"><span class="std std-ref">Vivado and VCS Setup</span></a>)</p></li>
-<li><p>Go to the target directory and build the firmware via <cite>make</cite>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example
-$ make
+<li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
+<li><p>Run the interactive python script with the <strong>-i</strong> argument</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> Simple-10GbE-RUDP-KCU105-Example/software
+$ ipython -i -- scripts/interactive.py
+Python <span class="m">3</span>.7.10 <span class="p">|</span> packaged by conda-forge <span class="p">|</span> <span class="o">(</span>default, Feb <span class="m">19</span> <span class="m">2021</span>, <span class="m">16</span>:07:37<span class="o">)</span>
+Type <span class="s1">&#39;copyright&#39;</span>, <span class="s1">&#39;credits&#39;</span> or <span class="s1">&#39;license&#39;</span> <span class="k">for</span> more information
+IPython <span class="m">7</span>.23.1 -- An enhanced Interactive Python. Type <span class="s1">&#39;?&#39;</span> <span class="k">for</span> help.
+Rogue/pyrogue version v5.8.0. https://github.com/slaclab/rogue
+Start: Started zmqServer on ports <span class="m">9099</span>-9101
+Root.Core.AxiVersion count reset called
+<span class="c1">###################################################</span>
+<span class="c1">#             Firmware Version                    #</span>
+<span class="c1">###################################################</span>
+<span class="nv">Path</span>         <span class="o">=</span> Root.Core.AxiVersion
+<span class="nv">FwVersion</span>    <span class="o">=</span> 0x1010000
+<span class="nv">UpTime</span>       <span class="o">=</span> <span class="m">8</span> days, <span class="m">22</span>:45:50
+<span class="nv">GitHash</span>      <span class="o">=</span> 0xa75a5f55b0ea87cb5b66f1ea1bff12272ae1bc73
+<span class="nv">XilinxDnaId</span>  <span class="o">=</span> 0x4002000100fa6901008125c1
+<span class="nv">FwTarget</span>     <span class="o">=</span> Simple10GbeRudpKcu105Example
+<span class="nv">BuildEnv</span>     <span class="o">=</span> Vivado v2021.1
+<span class="nv">BuildServer</span>  <span class="o">=</span> rdsrv303 <span class="o">(</span>Ubuntu <span class="m">20</span>.04.2 LTS<span class="o">)</span>
+<span class="nv">BuildDate</span>    <span class="o">=</span> Mon <span class="m">19</span> Jul <span class="m">2021</span> <span class="m">08</span>:42:18 AM PDT
+<span class="nv">Builder</span>      <span class="o">=</span> ruckman
+<span class="c1">###################################################</span>
+AxiVersion.ScratchPad.get<span class="o">()</span>     <span class="o">=</span> <span class="m">3735928559</span>
+AxiVersion.ScratchPad.getDisp<span class="o">()</span> <span class="o">=</span> 0xdeadbeef
+
+In <span class="o">[</span><span class="m">1</span><span class="o">]</span>:
 </pre></div>
 </div>
 </li>
-<li><p>Optional: Review the results in GUI mode</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ make gui
+<li><p>You now have an interactive command terminal to the rogue software.</p></li>
+<li><p>As an example, let’s change the ScratchPad from 0xdeadbeef to 0x12345678</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>In <span class="o">[</span><span class="m">1</span><span class="o">]</span>: root.Core.AxiVersion.ScratchPad.getDisp<span class="o">()</span>
+Out<span class="o">[</span><span class="m">1</span><span class="o">]</span>: <span class="s1">&#39;0xdeadbeef&#39;</span>
+
+In <span class="o">[</span><span class="m">2</span><span class="o">]</span>: root.Core.AxiVersion.ScratchPad.setDisp<span class="o">(</span>0x12345678<span class="o">)</span>
+
+In <span class="o">[</span><span class="m">3</span><span class="o">]</span>: root.Core.AxiVersion.ScratchPad.getDisp<span class="o">()</span>
+Out<span class="o">[</span><span class="m">3</span><span class="o">]</span>: <span class="s1">&#39;0x12345678&#39;</span>
 </pre></div>
 </div>
-<a class="reference internal image-reference" href="../_images/VivadoGui.png"><img alt="Alternative text" src="../_images/VivadoGui.png" style="width: 800px;" /></a>
 </li>
 </ol>
 </div>
@@ -199,8 +229,8 @@ $ make
           </div>
           <footer>
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-        <a href="remote_program.html" class="btn btn-neutral float-right" title="How to reprogram your KCU105 board’s QSPI Boot Prom" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
-        <a href="clone.html" class="btn btn-neutral float-left" title="How to Clone the GIT repository" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="zmq_multi_client.html" class="btn btn-neutral float-right" title="How to run multiple GUI clients on the same KCU105 server" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="software_gui.html" class="btn btn-neutral float-left" title="How to run the Software Development GUI with KCU105 Hardware" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
