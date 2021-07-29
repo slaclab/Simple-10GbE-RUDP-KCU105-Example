@@ -14,6 +14,7 @@ This section describes "HowTos"
    firmware
    remote_program
    software_gui
+   interactive_mode
    zmq_multi_client
    simulation
    hardware_debug

@@ -57,5 +57,5 @@ if __name__ == "__main__":
     # Close file once everything processed
     dataReader.closeWait()
     root.stop()
-    
+
     #################################################################
