@@ -37,7 +37,7 @@ def ParseFrame(frame):
     # Next we read the frame data into the byte array, from offset 0
     frame.read(fullData,0)
 
-    # Calculate the number of pixel words
+    # Calculate the number of 64-bit words
     num64bWords = (size>>3)
 
     # Create the event
