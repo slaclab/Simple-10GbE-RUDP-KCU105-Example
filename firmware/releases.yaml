@@ -22,7 +22,7 @@ Targets:
       - ltx
 
 Releases:
-  all:
+  simple_10gbe_rudp_kcu105_example:
     Primary: True
     Targets:
       - Simple10GbeRudpKcu105Example
