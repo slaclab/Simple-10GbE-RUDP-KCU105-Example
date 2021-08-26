@@ -14,7 +14,7 @@ export TOP_DIR = $(abspath $(PWD)/../..)
 export USE_XVC_DEBUG = 1
 
 # Setup for releases.yaml
-export RELEASE = all
+export RELEASE = simple_10gbe_rudp_kcu105_example
 
 # Use top level makefile
 include ../../submodules/ruckus/system_vivado.mk
