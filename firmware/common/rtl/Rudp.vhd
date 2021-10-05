@@ -117,8 +117,9 @@ architecture mapping of Rudp is
    signal localMac : slv(47 downto 0);
    signal localIp  : slv(31 downto 0);
 
-   signal ethClk : sl;
-   signal ethRst : sl;
+   signal ethClk   : sl;
+   signal ethRst   : sl;
+   signal extReset : sl;
 
 begin
 
@@ -161,6 +162,18 @@ begin
    -----------------------------------------------
    localIp <= IP_ADDR_G;
 
+   -----------------
+   -- Power Up Reset
+   -----------------
+   U_PwrUpRst : entity surf.PwrUpRst
+      generic map (
+         TPD_G      => TPD_G,
+         DURATION_G => (2**30)-1)
+      port map (
+         arst   => extRst,
+         clk    => ethClk,
+         rstOut => extReset);
+
    ----------------------------------
    -- 10 GigE PHY/MAC Ethernet Layers
    ----------------------------------
@@ -188,7 +201,7 @@ begin
          axiLiteWriteMasters(0) => axilWriteMasters(PHY_INDEX_C),
          axiLiteWriteSlaves(0)  => axilWriteSlaves(PHY_INDEX_C),
          -- Misc. Signals
-         extRst                 => extRst,
+         extRst                 => extReset,
          coreClk                => ethClk,
          coreRst                => ethRst,
          phyReady(0)            => phyReady,
