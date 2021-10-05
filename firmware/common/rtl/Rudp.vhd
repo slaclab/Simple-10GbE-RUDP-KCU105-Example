@@ -168,7 +168,7 @@ begin
    U_PwrUpRst : entity surf.PwrUpRst
       generic map (
          TPD_G      => TPD_G,
-         DURATION_G => (2**30)-1)
+         DURATION_G => 156250000)
       port map (
          arst   => extRst,
          clk    => ethClk,
