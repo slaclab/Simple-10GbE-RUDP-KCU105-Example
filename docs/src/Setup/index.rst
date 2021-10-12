@@ -10,6 +10,7 @@ This section describes hardware/firmware/software setup requirements and procedu
    :maxdepth: 1
    :caption: Setup:
 
+   supported_os
    hardware_setup
    network_setup
    cloning
