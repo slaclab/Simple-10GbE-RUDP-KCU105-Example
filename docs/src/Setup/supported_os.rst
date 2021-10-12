@@ -4,7 +4,7 @@
 Supported Operating Systems
 ==============
 
-Make sure you are running in an OS that can run Vivavo:
+Make sure you are using an OS that can run Vivado:
 
 .. image:: ../../images/SupportedOSs.png
   :width: 800
