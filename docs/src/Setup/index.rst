@@ -10,8 +10,9 @@ This section describes hardware/firmware/software setup requirements and procedu
    :maxdepth: 1
    :caption: Setup:
 
-   cloning
    hardware_setup
    network_setup
+   cloning
+   clone
    vivado_setup
    rogue_setup
