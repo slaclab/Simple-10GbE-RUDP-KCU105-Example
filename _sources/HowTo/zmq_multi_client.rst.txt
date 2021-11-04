@@ -4,16 +4,14 @@
 How to run multiple GUI clients on the same KCU105 server
 =========================================================
 
-The SURF's RUDP connection only support 1 client connection per server.
+The SURF's RUDP connection only support 1 "physical" client/server connection.  If you need more than 1 software client to access the hardware server, then you can use ZeroMQ for multiple “virtual” connections to the hardware.
 This means that you can run multiple ``devGui.py`` scripts
-at the same time (refer to :ref:`how_to_software_gui`).
-However, the PyDM GUI does NOT access the hardware directly.
-Instead the PyDM GUI uses a ZeroMQ to manage asynchronous I/O from
+at the same time (refer to :ref:`how_to_software_gui`) because the PyDM GUI does NOT access the hardware directly, but uses a ZeroMQ to manage asynchronous I/O from
 multiple clients and manage the hardware access.
 
 
-How to get access with another client if PyDM GUI already open
-==============================================================
+How to get access with another client if PyDM GUI is already opened
+===================================================================
 
 #. Setup rogue software (refer to :ref:`setup_rogue_setup`)
 

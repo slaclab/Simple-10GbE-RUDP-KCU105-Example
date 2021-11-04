@@ -21,7 +21,7 @@ For more information about XVC, refer to the Xilinx XVC homepage:
    https://www.xilinx.com/products/intellectual-property/xvc.html
 
 Note: To setup the XVC in ruckus, you will need to define
-and set ``USE_XVC_DEBUG = 1`` in your target's makefile:
+and set ``USE_XVC_DEBUG = 1`` in your target's makefile (Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example/Makefile):
 
    .. code-block:: bash
 
@@ -29,9 +29,21 @@ and set ``USE_XVC_DEBUG = 1`` in your target's makefile:
       export USE_XVC_DEBUG = 1
 
 In the firmware, you will to map  UDP server port=2542 to
-the ``surf.UdpDebugBridgeWrapper``:
+the ``surf.UdpDebugBridgeWrapper`` in Simple-10GbE-RUDP-KCU105-Example-git/firmware/common/rtl/Rudp.vhd:
 
    .. code-block:: vhdl
+
+      -- UDP constants
+      constant UDP_SRV_SRP_IDX_C  : natural  := 0;
+      constant UDP_SRV_DATA_IDX_C : natural  := 1;
+      constant UDP_SRV_XVC_IDX_C  : natural  := 2;
+      constant SERVER_SIZE_C      : positive := 3;
+      constant SERVER_PORTS_C : PositiveArray(SERVER_SIZE_C-1 downto 0) := (
+        UDP_SRV_SRP_IDX_C  => 8192,       -- SRPv3
+        UDP_SRV_DATA_IDX_C => 8193,       -- Streaming data
+        UDP_SRV_XVC_IDX_C  => 2542);      -- Xilinx XVC
+
+      (...)
 
       U_XVC : entity surf.UdpDebugBridgeWrapper
          generic map (
@@ -60,7 +72,7 @@ Next you will connect execute the ``./xvcSrv -t <fw_ip_address>:<udp_server_port
       $ ./xvcSrv -t 192.168.2.10:2542
 
 The XVC server is now running and ready to accept a XVC client connection.
-Next you will open ``Vivado Hardware Manager`` and ``open new target``:
+Next, from Vivado main screen, you will open ``Vivado Hardware Manager`` and ``open new target``:
 
    .. image:: ../../images/xcv_0.png
      :width: 400

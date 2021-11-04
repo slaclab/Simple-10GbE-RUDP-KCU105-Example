@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to use Xilinx Virtual Cable (XVC) with ILA &mdash; Simple-10GbE-RUDP-KCU105-Example v1.2.0-7-ga4abfe5 documentation</title>
+  <title>How to use Xilinx Virtual Cable (XVC) with ILA &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -42,7 +42,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
@@ -100,7 +99,7 @@ and data streaming.</p>
 <div><p><a class="reference external" href="https://www.xilinx.com/products/intellectual-property/xvc.html">https://www.xilinx.com/products/intellectual-property/xvc.html</a></p>
 </div></blockquote>
 <p>Note: To setup the XVC in ruckus, you will need to define
-and set <code class="docutils literal notranslate"><span class="pre">USE_XVC_DEBUG</span> <span class="pre">=</span> <span class="pre">1</span></code> in your target’s makefile:</p>
+and set <code class="docutils literal notranslate"><span class="pre">USE_XVC_DEBUG</span> <span class="pre">=</span> <span class="pre">1</span></code> in your target’s makefile (Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example/Makefile):</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using XVC Debug bridge</span>
 <span class="nb">export</span> <span class="nv">USE_XVC_DEBUG</span> <span class="o">=</span> <span class="m">1</span>
@@ -108,9 +107,21 @@ and set <code class="docutils literal notranslate"><span class="pre">USE_XVC_DEB
 </div>
 </div></blockquote>
 <p>In the firmware, you will to map  UDP server port=2542 to
-the <code class="docutils literal notranslate"><span class="pre">surf.UdpDebugBridgeWrapper</span></code>:</p>
+the <code class="docutils literal notranslate"><span class="pre">surf.UdpDebugBridgeWrapper</span></code> in Simple-10GbE-RUDP-KCU105-Example-git/firmware/common/rtl/Rudp.vhd:</p>
 <blockquote>
-<div><div class="highlight-vhdl notranslate"><div class="highlight"><pre><span></span><span class="n">U_XVC</span> <span class="o">:</span> <span class="k">entity</span> <span class="nc">surf</span><span class="p">.</span><span class="n">UdpDebugBridgeWrapper</span>
+<div><div class="highlight-vhdl notranslate"><div class="highlight"><pre><span></span><span class="c1">-- UDP constants</span>
+<span class="k">constant</span> <span class="n">UDP_SRV_SRP_IDX_C</span>  <span class="o">:</span> <span class="kt">natural</span>  <span class="o">:=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="k">constant</span> <span class="n">UDP_SRV_DATA_IDX_C</span> <span class="o">:</span> <span class="kt">natural</span>  <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="k">constant</span> <span class="n">UDP_SRV_XVC_IDX_C</span>  <span class="o">:</span> <span class="kt">natural</span>  <span class="o">:=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="k">constant</span> <span class="n">SERVER_SIZE_C</span>      <span class="o">:</span> <span class="kt">positive</span> <span class="o">:=</span> <span class="mi">3</span><span class="p">;</span>
+<span class="k">constant</span> <span class="n">SERVER_PORTS_C</span> <span class="o">:</span> <span class="n">PositiveArray</span><span class="p">(</span><span class="n">SERVER_SIZE_C</span><span class="o">-</span><span class="mi">1</span> <span class="k">downto</span> <span class="mi">0</span><span class="p">)</span> <span class="o">:=</span> <span class="p">(</span>
+  <span class="n">UDP_SRV_SRP_IDX_C</span>  <span class="o">=&gt;</span> <span class="mi">8192</span><span class="p">,</span>       <span class="c1">-- SRPv3</span>
+  <span class="n">UDP_SRV_DATA_IDX_C</span> <span class="o">=&gt;</span> <span class="mi">8193</span><span class="p">,</span>       <span class="c1">-- Streaming data</span>
+  <span class="n">UDP_SRV_XVC_IDX_C</span>  <span class="o">=&gt;</span> <span class="mi">2542</span><span class="p">);</span>      <span class="c1">-- Xilinx XVC</span>
+
+<span class="p">(...)</span>
+
+<span class="n">U_XVC</span> <span class="o">:</span> <span class="k">entity</span> <span class="nc">surf</span><span class="p">.</span><span class="n">UdpDebugBridgeWrapper</span>
    <span class="k">generic</span> <span class="k">map</span> <span class="p">(</span>
       <span class="n">TPD_G</span> <span class="o">=&gt;</span> <span class="n">TPD_G</span><span class="p">)</span>
    <span class="k">port</span> <span class="k">map</span> <span class="p">(</span>
@@ -139,7 +150,7 @@ $ make
 </div>
 </div></blockquote>
 <p>The XVC server is now running and ready to accept a XVC client connection.
-Next you will open <code class="docutils literal notranslate"><span class="pre">Vivado</span> <span class="pre">Hardware</span> <span class="pre">Manager</span></code> and <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">new</span> <span class="pre">target</span></code>:</p>
+Next, from Vivado main screen, you will open <code class="docutils literal notranslate"><span class="pre">Vivado</span> <span class="pre">Hardware</span> <span class="pre">Manager</span></code> and <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">new</span> <span class="pre">target</span></code>:</p>
 <blockquote>
 <div><a class="reference internal image-reference" href="../_images/xcv_0.png"><img alt="Alternative text" src="../_images/xcv_0.png" style="width: 400px;" /></a>
 </div></blockquote>

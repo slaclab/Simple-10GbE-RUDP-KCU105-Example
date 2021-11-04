@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Before you clone the GIT repository &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
+  <title>How to Clone the GIT repository &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="How to Clone the GIT repository" href="clone.html" />
-    <link rel="prev" title="Network Setup" href="network_setup.html" /> 
+    <link rel="next" title="Vivado and VCS Setup" href="vivado_setup.html" />
+    <link rel="prev" title="Before you clone the GIT repository" href="cloning.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -44,8 +44,8 @@
 <li class="toctree-l2"><a class="reference internal" href="supported_os.html">Supported Operating Systems</a></li>
 <li class="toctree-l2"><a class="reference internal" href="hardware_setup.html">Hardware Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="network_setup.html">Network Setup</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Before you clone the GIT repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cloning.html">Before you clone the GIT repository</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vivado_setup.html">Vivado and VCS Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rogue_setup.html">Rogue Software Setup</a></li>
 </ul>
@@ -68,9 +68,9 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
           <li><a href="index.html">Setup</a> &raquo;</li>
-      <li>Before you clone the GIT repository</li>
+      <li>How to Clone the GIT repository</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/Setup/cloning.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/Setup/clone.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -78,44 +78,20 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="before-you-clone-the-git-repository">
-<span id="setup-git-cloning"></span><h1>Before you clone the GIT repository<a class="headerlink" href="#before-you-clone-the-git-repository" title="Permalink to this headline"></a></h1>
-<ol class="arabic">
-<li><p>Create a github account:</p>
-<p><a class="reference external" href="https://github.com/">https://github.com/</a></p>
-</li>
-<li><p>On the Linux machine that you will clone the github from, generate a SSH key (if not already done)</p>
-<p><a class="reference external" href="https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/">https://help.github.com/articles/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent/</a></p>
-</li>
-<li><p>Add a new SSH key to your GitHub account</p>
-<p><a class="reference external" href="https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/">https://help.github.com/articles/adding-a-new-ssh-key-to-your-github-account/</a></p>
-</li>
-<li><p>Verify that you have git version 2.13.0 (or later) installed</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git version
-git version <span class="m">2</span>.13.0
+  <section id="how-to-clone-the-git-repository">
+<span id="how-to-git-clone"></span><h1>How to Clone the GIT repository<a class="headerlink" href="#how-to-clone-the-git-repository" title="Permalink to this headline"></a></h1>
+<p>Make sure you have completed the “<a class="reference internal" href="cloning.html#setup-git-cloning"><span class="std std-ref">Before you clone the GIT repository</span></a>” before continuing</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone --recursive git@github.com:slaclab/Simple-10GbE-RUDP-KCU105-Example
 </pre></div>
 </div>
-</li>
-<li><p>Verify that you have git-lfs version 2.1.1 (or later) installed</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git-lfs version
-git-lfs/2.1.1
-</pre></div>
-</div>
-</li>
-<li><p>Setup for large filesystems on github (one-time step). The –skip-repo is a workaround due to a bug in LFS that shows a warning message that could be interpreted as an error message.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git lfs install --skip-repo
-</pre></div>
-</div>
-</li>
-</ol>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="network_setup.html" class="btn btn-neutral float-left" title="Network Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="clone.html" class="btn btn-neutral float-right" title="How to Clone the GIT repository" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="cloning.html" class="btn btn-neutral float-left" title="Before you clone the GIT repository" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="vivado_setup.html" class="btn btn-neutral float-right" title="Vivado and VCS Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

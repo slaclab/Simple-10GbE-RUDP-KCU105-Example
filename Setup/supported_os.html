@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to Clone the GIT repository &mdash; Simple-10GbE-RUDP-KCU105-Example v1.2.0-7-ga4abfe5 documentation</title>
+  <title>Supported Operating Systems &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -18,8 +18,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="How to build the firmware" href="firmware.html" />
-    <link rel="prev" title="HowTos" href="index.html" /> 
+    <link rel="next" title="Hardware Setup" href="hardware_setup.html" />
+    <link rel="prev" title="Setup" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -40,21 +40,17 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
-<li class="toctree-l2 current"><a class="current reference internal" href="#">How to Clone the GIT repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
-<li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
-<li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
-<li class="toctree-l2"><a class="reference internal" href="interactive_mode.html">How to run the Software in Interactive Mode</a></li>
-<li class="toctree-l2"><a class="reference internal" href="zmq_multi_client.html">How to run multiple GUI clients on the same KCU105 server</a></li>
-<li class="toctree-l2"><a class="reference internal" href="simulation.html">How to run the Software Development GUI with VCS firmware simulator</a></li>
-<li class="toctree-l2"><a class="reference internal" href="hardware_debug.html">How to implement ILA in Vivado with ruckus</a></li>
-<li class="toctree-l2"><a class="reference internal" href="remote_debug.html">How to use Xilinx Virtual Cable (XVC) with ILA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fileio.html">How to the Rogue FileWriter and FileReader</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tag_release.html">How to ruckus’s Tag Release Script</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Setup</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Supported Operating Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="hardware_setup.html">Hardware Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="network_setup.html">Network Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cloning.html">Before you clone the GIT repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
+<li class="toctree-l2"><a class="reference internal" href="vivado_setup.html">Vivado and VCS Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rogue_setup.html">Rogue Software Setup</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="../HowTo/index.html">HowTos</a></li>
 </ul>
 
         </div>
@@ -71,10 +67,10 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">HowTos</a> &raquo;</li>
-      <li>How to Clone the GIT repository</li>
+          <li><a href="index.html">Setup</a> &raquo;</li>
+      <li>Supported Operating Systems</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/HowTo/clone.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/Setup/supported_os.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -82,20 +78,20 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="how-to-clone-the-git-repository">
-<span id="how-to-git-clone"></span><h1>How to Clone the GIT repository<a class="headerlink" href="#how-to-clone-the-git-repository" title="Permalink to this headline"></a></h1>
-<p>Make sure you have completed the “<a class="reference internal" href="../Setup/cloning.html#setup-git-cloning"><span class="std std-ref">Before you clone the GIT repository</span></a>” before continuing</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ git clone --recursive git@github.com:slaclab/Simple-10GbE-RUDP-KCU105-Example
-</pre></div>
-</div>
+  <section id="supported-operating-systems">
+<span id="setup-supported-os"></span><h1>Supported Operating Systems<a class="headerlink" href="#supported-operating-systems" title="Permalink to this headline"></a></h1>
+<p>Make sure you are using an OS that can run Vivado:</p>
+<a class="reference internal image-reference" href="../_images/SupportedOSs.png"><img alt="List of supported operating systems" src="../_images/SupportedOSs.png" style="width: 800px;" /></a>
+<p>Optional: if you want more details about Vivado installation requirements:</p>
+<p><a class="reference external" href="https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug973-vivado-release-notes-install-license.pdf">https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug973-vivado-release-notes-install-license.pdf</a></p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="HowTos" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="firmware.html" class="btn btn-neutral float-right" title="How to build the firmware" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Setup" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="hardware_setup.html" class="btn btn-neutral float-right" title="Hardware Setup" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

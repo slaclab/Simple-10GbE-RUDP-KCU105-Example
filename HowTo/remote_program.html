@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to reprogram your KCU105 board’s QSPI Boot Prom &mdash; Simple-10GbE-RUDP-KCU105-Example v1.2.0-7-ga4abfe5 documentation</title>
+  <title>How to reprogram your KCU105 board’s QSPI Boot Prom &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -42,7 +42,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
@@ -85,16 +84,39 @@
   <section id="how-to-reprogram-your-kcu105-board-s-qspi-boot-prom">
 <span id="how-to-remote-program"></span><h1>How to reprogram your KCU105 board’s QSPI Boot Prom<a class="headerlink" href="#how-to-reprogram-your-kcu105-board-s-qspi-boot-prom" title="Permalink to this headline"></a></h1>
 <ol class="arabic">
-<li><p>The KCU105 <strong>MUST</strong> have a version of the Simple10GbeRudpKcu105Example firmware loaded. If first time to program KCU105 with Simple10GbeRudpKcu105Example, then use the JTAG and load the .bit file into the FPGA.</p></li>
+<li><p>The KCU105 <strong>MUST</strong> have a version of the Simple10GbeRudpKcu105Example firmware loaded. If first time to program KCU105 with Simple10GbeRudpKcu105Example, then use the JTAG and load the .bit file into the FPGA. Follow these steps only if this is the first time that you are loading the firmware:</p>
+<ol class="arabic">
+<li><p>Disconnect the USB from the JTAG.</p></li>
+<li><p>If you are at SLAC, go to the cable driver directory:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /afs/slac.stanford.edu/g/reseng/vol34/xilinx/2021.1/Vivado/2021.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Execute the “install drivers” scripts as “sudo”:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ sudo ./install_drivers
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Follow the steps in the tutorial below for lab#5 and step#1~9 on page 47 ~ 53:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug936-vivado-tutorial-programming-debugging.pdf">https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug936-vivado-tutorial-programming-debugging.pdf</a></p>
+</div></blockquote>
+</li>
+</ol>
+</li>
 <li><p>Make sure SW15 is setup for QSPI booting (refer to <a class="reference internal" href="../Setup/hardware_setup.html#setup-hardware-setup"><span class="std std-ref">Hardware Setup</span></a>)</p></li>
-<li><p>Build the firmware (refer to <a class="reference internal" href="firmware.html#how-to-build-firmware"><span class="std std-ref">How to build the firmware</span></a>) to that there is .MCS files in the “targets/Simple10GbeRudpKcu105Example/images” directory.</p></li>
+<li><p>Build the firmware (refer to <a class="reference internal" href="firmware.html#how-to-build-firmware"><span class="std std-ref">How to build the firmware</span></a>) so that there are .MCS files in the “Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example/images” directory.</p></li>
 <li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
 <li><p>Run the reprogramming script</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python scripts/updateBootProm.py --path &lt;PATH_TO_IMAGE_DIR&gt;*)
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python software/scripts/updateBootProm.py --path &lt;PATH_TO_IMAGE_DIR&gt;*)
 </pre></div>
 </div>
 <p>Example of the script output:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python scripts/updateBootProm.py --path ../firmware/targets/Simple10GbeRudpKcu105Example/images/
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python software/scripts/updateBootProm.py --path firmware/targets/Simple10GbeRudpKcu105Example/images/
 Rogue/pyrogue version v5.8.0. https://github.com/slaclab/rogue
 Start: Started zmqServer on ports 9107-9109
 Root.Core.AxiVersion count reset called
@@ -111,10 +133,10 @@ BuildEnv     = Vivado v2021.1
 BuildServer  = rdsrv307 (Ubuntu 20.04.2 LTS)
 BuildDate    = Thu 15 Jul 2021 01:44:36 PM PDT
 Builder      = ruckman
-0 : ../firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210715134436-ruckman-dirty
-1 : ../firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210716121151-ruckman-50550dd
+0 : firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210715134436-ruckman-dirty
+1 : firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210716121151-ruckman-50550dd
 Enter image to program into the PCIe card&#39;s PROM: 1
-Root.Core.AxiMicronN25Q[0].LoadMcsFile: ../firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210716121151-ruckman-50550dd_primary.mcs.gz
+Root.Core.AxiMicronN25Q[0].LoadMcsFile: firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210716121151-ruckman-50550dd_primary.mcs.gz
 PROM Manufacturer ID Code  = 0x20
 PROM Manufacturer Type     = 0xbb
 PROM Manufacturer Capacity = 0x19
@@ -136,7 +158,7 @@ LoadMcsFile() took 0:00:50 to program the PROM
             ***************************************************
 
 
-Root.Core.AxiMicronN25Q[1].LoadMcsFile: ../firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210716121151-ruckman-50550dd_secondary.mcs.gz
+Root.Core.AxiMicronN25Q[1].LoadMcsFile: firmware/targets/Simple10GbeRudpKcu105Example/images/Simple10GbeRudpKcu105Example-0x01000000-20210716121151-ruckman-50550dd_secondary.mcs.gz
 PROM Manufacturer ID Code  = 0x20
 PROM Manufacturer Type     = 0xbb
 PROM Manufacturer Capacity = 0x19

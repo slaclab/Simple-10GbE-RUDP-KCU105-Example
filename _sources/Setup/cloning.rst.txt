@@ -32,8 +32,8 @@ Before you clone the GIT repository
      git-lfs/2.1.1
 
 
-#. Setup for large filesystems on github (one-time step)
+#. Setup for large filesystems on github (one-time step). The --skip-repo is a workaround due to a bug in LFS that shows a warning message that could be interpreted as an error message.   
 
    .. code-block:: bash
 
-     $ git lfs install
+     $ git lfs install --skip-repo

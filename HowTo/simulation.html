@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to run the Software Development GUI with VCS firmware simulator &mdash; Simple-10GbE-RUDP-KCU105-Example v1.2.0-7-ga4abfe5 documentation</title>
+  <title>How to run the Software Development GUI with VCS firmware simulator &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -42,7 +42,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
@@ -95,6 +94,7 @@
 <h2>In the first terminal<a class="headerlink" href="#in-the-first-terminal" title="Permalink to this headline"></a></h2>
 <ol class="arabic">
 <li><p>Setup Vivado and VCS (refer to <a class="reference internal" href="../Setup/vivado_setup.html#setup-vivado-setup"><span class="std std-ref">Vivado and VCS Setup</span></a>)</p></li>
+<li><p><strong>[Ubuntu only]</strong> If you are running in Ubuntu, you will have an error saying that ‘-h’ is and invalid parameter for ‘sh’ during the next step. There is an workaround, but make sure that you know what you are doing because this can have unexpected consequences. If you follow the workaround, I recommend to undo it right after you compile VCS. This link explains what to do: <a class="reference external" href="http://embeddedbuzz.blogspot.com/2012/01/binsh-illegal-option-h.html">http://embeddedbuzz.blogspot.com/2012/01/binsh-illegal-option-h.html</a>.</p></li>
 <li><p>Go to the target directory and execute the <cite>vcs</cite> build</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> Simple-10GbE-RUDP-KCU105-Example/firmware/targets/Simple10GbeRudpKcu105Example
 $ make vcs
