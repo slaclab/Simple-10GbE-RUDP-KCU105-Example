@@ -29,3 +29,4 @@ with position#1 in the arrow direction:
   :width: 800
   :alt: Alternative text
 
+You will also need a micro USB cable to load the firmware for the first time, using the JTAG-to-USB connector on the board. (instructions on how to make this first loading will come afterwards).

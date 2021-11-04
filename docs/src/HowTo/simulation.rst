@@ -11,6 +11,8 @@ In the first terminal
 
 #. Setup Vivado and VCS (refer to :ref:`setup_vivado_setup`)
 
+#. **[Ubuntu only]** If you are running in Ubuntu, you will have an error saying that '-h' is and invalid parameter for 'sh' during the next step. There is an workaround, but make sure that you know what you are doing because this can have unexpected consequences. If you follow the workaround, I recommend to undo it right after you compile VCS. This link explains what to do: http://embeddedbuzz.blogspot.com/2012/01/binsh-illegal-option-h.html.
+
 #. Go to the target directory and execute the `vcs` build
 
    .. code-block:: bash
