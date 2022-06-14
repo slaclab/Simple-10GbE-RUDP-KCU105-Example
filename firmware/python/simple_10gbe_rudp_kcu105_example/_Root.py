@@ -19,6 +19,8 @@ import rogue.utilities.fileio
 
 import simple_10gbe_rudp_kcu105_example as devBoard
 
+rogue.Version.minVersion('5.14.0')
+
 class Root(pr.Root):
     def __init__(   self,
             ip       = '192.168.2.10',
@@ -114,7 +116,6 @@ class Root(pr.Root):
             self.stream >> self.dataWriter.getChannel(0)
 
         #################################################################
-
 
         # Add Devices
         self.add(devBoard.Core(
