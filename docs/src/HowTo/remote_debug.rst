@@ -29,7 +29,7 @@ and set ``USE_XVC_DEBUG = 1`` in your target's makefile (Simple-10GbE-RUDP-KCU10
       export USE_XVC_DEBUG = 1
 
 In the firmware, you will to map  UDP server port=2542 to
-the ``surf.UdpDebugBridgeWrapper`` in Simple-10GbE-RUDP-KCU105-Example-git/firmware/common/rtl/Rudp.vhd:
+the ``surf.UdpDebugBridgeWrapper`` in ``firmware/common/rtl/Rudp.vhd``:
 
    .. code-block:: vhdl
 
@@ -58,20 +58,23 @@ the ``surf.UdpDebugBridgeWrapper`` in Simple-10GbE-RUDP-KCU105-Example-git/firmw
             ibServerMaster => ibServerMasters(UDP_SRV_XVC_IDX_C),
             ibServerSlave  => ibServerSlaves(UDP_SRV_XVC_IDX_C));
 
-Next you will build the XVC source:
 
-   .. code-block:: bash
+In the software (``firmware/python/simple_10gbe_rudp_kcu105_example/_Root.py``), 
+you will to connect the UDP client to port=2542, create a XVC server in rogue, 
+then connect the UDP client to the XVC server:
 
-      $ cd Simple-10GbE-RUDP-KCU105-Example/software/xvcSrv/src
-      $ make
+   .. code-block:: python
 
-Next you will connect execute the ``./xvcSrv -t <fw_ip_address>:<udp_server_port>`` command:
 
-   .. code-block:: bash
+            # Create XVC server and UDP client
+            self.udpClient = rogue.protocols.udp.Client( ip, 2542, False ) # Client(host, port, jumbo)
+            self.xvc = rogue.protocols.xilinx.Xvc ( 2542 ) # Server(port)
+            self.addProtocol( self.xvc )
 
-      $ ./xvcSrv -t 192.168.2.10:2542
+            # Connect the UDP Client to the XVC
+            self.udpClient == self.xvc
 
-The XVC server is now running and ready to accept a XVC client connection.
+You will need to first start the rogue software (either GUI mode or interactive mode) to start the XVC server.
 Next, from Vivado main screen, you will open ``Vivado Hardware Manager`` and ``open new target``:
 
    .. image:: ../../images/xcv_0.png

@@ -16,7 +16,7 @@ to quickly write data to disk and analysis offline.
      :width: 800
      :alt: Alternative text
 
-# Go to the ``Variable`` tab and nagivate to ``Root.App.AppTx`` and execute 0x100 for ``SendFrame``
+# Go to the ``Debug Tree`` tab and nagivate to ``Root.App.AppTx`` and execute 0x100 for ``SendFrame``
 
    .. image:: ../../images/fileio_1.png
      :width: 800
@@ -34,9 +34,11 @@ to quickly write data to disk and analysis offline.
 
    .. code-block:: bash
 
-      $ python scripts/fileReader.py --dataFile data_20210719_194217.dat
-      Rogue/pyrogue version v5.8.0. https://github.com/slaclab/rogue
+      $ python scripts/fileReader.py --dataFile data_20220614_092954.dat
+      Rogue/pyrogue version v5.14.0. https://github.com/slaclab/rogue
       Start: Started zmqServer on ports 9099-9101
+          To start a gui: python -m pyrogue gui --server='localhost:9099'
+          To use a virtual client: client = pyrogue.interfaces.VirtualClient(addr='localhost', port=9099)
       eventFrame.header = 0
       eventFrame.header = 1
       eventFrame.header = 2
