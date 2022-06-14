@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to the Rogue FileWriter and FileReader &mdash; Simple-10GbE-RUDP-KCU105-Example v1.3.0-12-g8d1ffda documentation</title>
+  <title>How to the Rogue FileWriter and FileReader &mdash; Simple-10GbE-RUDP-KCU105-Example v1.4.0-9-ga8504af documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -91,7 +91,7 @@ to quickly write data to disk and analysis offline.</p>
 <a class="reference internal image-reference" href="../_images/fileio_0.png"><img alt="Alternative text" src="../_images/fileio_0.png" style="width: 800px;" /></a>
 </li>
 </ol>
-<p># Go to the <code class="docutils literal notranslate"><span class="pre">Variable</span></code> tab and nagivate to <code class="docutils literal notranslate"><span class="pre">Root.App.AppTx</span></code> and execute 0x100 for <code class="docutils literal notranslate"><span class="pre">SendFrame</span></code></p>
+<p># Go to the <code class="docutils literal notranslate"><span class="pre">Debug</span> <span class="pre">Tree</span></code> tab and nagivate to <code class="docutils literal notranslate"><span class="pre">Root.App.AppTx</span></code> and execute 0x100 for <code class="docutils literal notranslate"><span class="pre">SendFrame</span></code></p>
 <blockquote>
 <div><a class="reference internal image-reference" href="../_images/fileio_1.png"><img alt="Alternative text" src="../_images/fileio_1.png" style="width: 800px;" /></a>
 </div></blockquote>
@@ -101,9 +101,11 @@ to quickly write data to disk and analysis offline.</p>
 </li>
 <li><p>Close the PyDM GUI</p></li>
 <li><p>Run the fileReader python script</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python scripts/fileReader.py --dataFile data_20210719_194217.dat
-Rogue/pyrogue version v5.8.0. https://github.com/slaclab/rogue
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python scripts/fileReader.py --dataFile data_20220614_092954.dat
+Rogue/pyrogue version v5.14.0. https://github.com/slaclab/rogue
 Start: Started zmqServer on ports <span class="m">9099</span>-9101
+    To start a gui: python -m pyrogue gui --server<span class="o">=</span><span class="s1">&#39;localhost:9099&#39;</span>
+    To use a virtual client: <span class="nv">client</span> <span class="o">=</span> pyrogue.interfaces.VirtualClient<span class="o">(</span><span class="nv">addr</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span>, <span class="nv">port</span><span class="o">=</span><span class="m">9099</span><span class="o">)</span>
 eventFrame.header <span class="o">=</span> <span class="m">0</span>
 eventFrame.header <span class="o">=</span> <span class="m">1</span>
 eventFrame.header <span class="o">=</span> <span class="m">2</span>
