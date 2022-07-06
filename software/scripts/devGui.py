@@ -90,6 +90,7 @@ if __name__ == "__main__":
                 root  = root,
                 sizeX = 800,
                 sizeY = 800,
+                ui = '../../firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
             )
 
         #################
