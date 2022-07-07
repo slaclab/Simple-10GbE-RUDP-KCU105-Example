@@ -154,6 +154,11 @@ class DefaultTop(Display):
 
 
         self.plots = pwt.PyDMTimePlot(parent=None, background = '#f6f6f6', plot_by_timestamps = True)
+        # self.plots._show_x_grid = None
+        self.plots.setShowXGrid(True)
+        # self.plots._show_y_grid = None
+        self.plots.setShowYGrid(True)
+
         self.plots.setTitle('Plots')
         self.plots.setTimeSpan(100)
 
