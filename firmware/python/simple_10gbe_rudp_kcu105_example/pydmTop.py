@@ -11,6 +11,8 @@
 #-----------------------------------------------------------------------------
 
 import os
+import pyrogue as pr
+import pyrogue.pydm
 from pydm import Display
 
 from qtpy.QtWidgets import (QVBoxLayout, QHBoxLayout, QGroupBox,
@@ -42,6 +44,15 @@ from selectiontree import SelectionTree, ToggleButton
 
 Channel = 'rogue://0/root'
 
+def runGui(root):
+    print('wrapper function called')
+    pyrogue.pydm.runPyDM(
+            root  = root,
+            sizeX = 800,
+            sizeY = 800,
+            #ui = '../../firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
+            #ui = '~nichollh/Desktop/Simple-10GbE-RUDP-KCU105-Example/firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
+            ui = 'os.path.abspath(__file__)')
 
 class DefaultTop(Display):
     def __init__(self, parent=None, args=[], macros=None):
