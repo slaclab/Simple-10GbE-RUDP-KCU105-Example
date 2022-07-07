@@ -55,9 +55,6 @@ class DefaultTop(Display):
     def __init__(self, parent=None, args=[], macros=None):
         super(DefaultTop, self).__init__(parent=parent, args=args, macros=None)
 
-        #self.setStyleSheet("*[dirty='true']\
-        #                   {background-color: orange;}")
-
         self.sizeX  = None
         self.sizeY  = None
         self.title  = None
@@ -111,14 +108,6 @@ class DefaultTop(Display):
         buttons_box = QGroupBox(parent=self)
         buttons_box.setLayout(buttons_layout)
 
-        # add_btn = QPushButton()
-        # add_btn.setText("Add")
-        # add_btn.clicked.connect(self.do_add)
-
-        # rm_btn = QPushButton()
-        # rm_btn.setText("Remove")
-        # rm_btn.clicked.connect(self.do_remove)
-
         self.width_edit = QLineEdit()
         apply_btn = QPushButton()
         apply_btn.setText("Set width")
@@ -169,7 +158,6 @@ class DefaultTop(Display):
         self.plots.setTimeSpan(100)
 
 
-        # plots_layout.addWidget(SelectionTree(main=self,parent=None,init_channel=Channel))
         plots_layout.addWidget(self.plots)
         plots_layout.addWidget(buttons_box)
 
@@ -191,11 +179,6 @@ class DefaultTop(Display):
         graphs_box = QGroupBox()
         graphs_box.setLayout(graphs_layout)
 
-        # graphs_splitter = QSplitter(Qt.Vertical)
-        # graphs_splitter.addWidget(self.plots)
-        # graphs_splitter.addWidget(buttons_box)
-
-        #splitter testing
         main_splitter = QSplitter(Qt.Horizontal)
 
         main_splitter.addWidget(selection_splitter)
@@ -251,27 +234,6 @@ class LegendRow(Display):
     def __init__(self, parent=None, args=[], macros=None,path=None,main=None):
         super(LegendRow, self).__init__(parent=parent, args=args, macros=None)
 
-
-
-        # self.sizeX  = None
-        # self.sizeY  = None
-        # self.title  = None
-
-
-        # for a in args:
-        #     if 'sizeX=' in a:
-        #         self.sizeX = int(a.split('=')[1])
-        #     if 'sizeY=' in a:
-        #         self.sizeY = int(a.split('=')[1])
-        #     if 'title=' in a:
-        #         self.title = a.split('=')[1]
-
-
-        # if self.sizeX is None:
-        #     self.sizeX = 5
-        # if self.sizeY is None:
-        #     self.sizeY = 5
-
         self._path = path
         self.sizeX = 40
         self.sizeY = 40
@@ -307,11 +269,6 @@ class LegendRow(Display):
 
         button.clicked.connect(legendbuttonfuncgen(self._path))
         main_layout.addWidget(button)
-
-
-
-        #size and setup
-        # self.resize(self.sizeX, self.szeY)
 
         self.setLayout(main_layout)
 
