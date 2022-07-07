@@ -52,7 +52,7 @@ def runGui(root):
             sizeY = 800,
             #ui = '../../firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
             #ui = '~nichollh/Desktop/Simple-10GbE-RUDP-KCU105-Example/firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
-            ui = 'os.path.abspath(__file__)')
+            ui = os.path.abspath(__file__))
 
 class DefaultTop(Display):
     def __init__(self, parent=None, args=[], macros=None):
