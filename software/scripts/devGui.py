@@ -10,7 +10,7 @@
 #-----------------------------------------------------------------------------
 import setupLibPaths
 
-import sys
+import sys,os
 import time
 import argparse
 
@@ -18,6 +18,11 @@ import pyrogue as pr
 import pyrogue.pydm
 
 import simple_10gbe_rudp_kcu105_example as devBoard
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..','firmware','python','simple_10gbe_rudp_kcu105_example'))
+import pydmTop 
+
+#from ...firmware.python.simple_10gbe_rudp_kcu105_example import pydmTop 
 
 #################################################################
 
@@ -86,12 +91,16 @@ if __name__ == "__main__":
         # Development PyDM GUI
         ######################
         if (args.guiType == 'PyDM'):
-            pyrogue.pydm.runPyDM(
-                root  = root,
-                sizeX = 800,
-                sizeY = 800,
-                ui = '../../firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
-            )
+            pydmTop.runGui(root)
+
+            #pyrogue.pydm.runPyDM(
+            #    root  = root,
+            #    sizeX = 800,
+            #    sizeY = 800,
+            #    #ui = '../../firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
+            #    ui = '~nichollh/Desktop/Simple-10GbE-RUDP-KCU105-Example/firmware/python/simple_10gbe_rudp_kcu105_example/pydmTop.py'
+
+            #)
 
         #################
         # No GUI
