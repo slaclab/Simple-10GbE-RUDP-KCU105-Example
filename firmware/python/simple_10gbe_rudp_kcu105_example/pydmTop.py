@@ -226,7 +226,7 @@ class DefaultTop(Display):
         except:
             pass
 
-        self.plots._auto_range_y.set(True)
+        self.plots.setAutoRangeY(True)
 
     def minimumSizeHint(self):
 
