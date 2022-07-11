@@ -192,6 +192,7 @@ class DebugHolder(QTreeWidgetItem):
         self._top._tree.setItemWidget(self,0,w)
         self.setToolTip(0,self._var.description)
         self.setText(2,str(self._var.pollInterval))
+        self.setText(3,str(self._var.units))
         self.setToolTip(0,self._var.description)
 
 
@@ -311,8 +312,8 @@ class SelectionTree(PyDMFrame):
         #self._tree.setColumnCount(5)
         #self._tree.setHeaderLabels(['Node','Mode','Type','Variable','Command','Units'])
 
-        self._tree.setColumnCount(3)
-        self._tree.setHeaderLabels(['Node','Action','pollInterval'])
+        self._tree.setColumnCount(4)
+        self._tree.setHeaderLabels(['Node','Units','Action','pollInterval'])
 
 
         self._tree.itemExpanded.connect(self._expandCb)
