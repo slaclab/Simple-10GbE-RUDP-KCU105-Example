@@ -222,10 +222,11 @@ class DefaultTop(Display):
 
         try:
             val = float(text)
-            print(val)
             self.plots.setTimeSpan(val)
         except:
             pass
+
+        self.plots._auto_range_y = True
 
     def minimumSizeHint(self):
 
