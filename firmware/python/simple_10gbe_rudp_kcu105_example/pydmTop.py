@@ -113,6 +113,10 @@ class DefaultTop(Display):
         apply_btn.setText("Set width")
         apply_btn.clicked.connect(self.do_setwidth)
 
+        auto_axis_btn = QPushButton()
+        auto_axis_btn.setText("Auto height")
+        auto_axis_btn.clicked.connect(self.do_autoheight)
+
 
 
 
@@ -140,10 +144,10 @@ class DefaultTop(Display):
 
 
         # buttons_layout.addWidget(self.scroll_area)
-        buttons_layout.addWidget(QLabel('Test'))
+
         buttons_layout.addWidget(self.width_edit)
         buttons_layout.addWidget(apply_btn)
-
+        buttons_layout.addWidget(auto_axis_btn)
 
 
 
