@@ -270,7 +270,7 @@ class DebugHolder(QTreeWidgetItem):
         #         self._top._colWidths[1] = width
 
         if not self._var.isCommand:
-            self._top._tree.setItemWidget(self,1,w)
+            self._top._tree.setItemWidget(self,2,w)
             width = fm.width('0xAAAAAAAA    ')
 
             if width > self._top._colWidths[1]:
