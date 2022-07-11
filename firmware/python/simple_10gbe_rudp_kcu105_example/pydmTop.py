@@ -205,7 +205,7 @@ class DefaultTop(Display):
         self.plots.addYChannel(y_channel=path,
                 color = self._colorSelector.take_color(path),
                 lineWidth = 5)
-        
+
         # disp = QLabel(path)
         disp = LegendRow(parent = self,path=path,main = self)
         self.legend_layout.addWidget(disp)
@@ -249,7 +249,7 @@ class LegendRow(Display):
         self._path = path
         self.sizeX = 40
         self.sizeY = 40
-        self.setMaximumHeight(50)
+        self.setMaximumHeight(30)
         self._main = main
 
         self.setup_ui()
