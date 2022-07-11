@@ -136,7 +136,7 @@ class DefaultTop(Display):
         self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setAlignment(QtCore.Qt.AlignTop)
+        self.scroll_area.setAlignment(QtCore.Qt.AlignLeft)
 
 
         # Add the Frame to the scroll area
