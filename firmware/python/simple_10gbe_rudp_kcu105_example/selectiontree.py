@@ -191,7 +191,7 @@ class DebugHolder(QTreeWidgetItem):
 
         self._top._tree.setItemWidget(self,0,w)
         self.setToolTip(0,self._var.description)
-        self.setText(1,str(self._var.units))
+        self.setText(1,str(self._var.units) if self._var.units is not None else '')
         self.setText(3,str(self._var.pollInterval))
 
 
