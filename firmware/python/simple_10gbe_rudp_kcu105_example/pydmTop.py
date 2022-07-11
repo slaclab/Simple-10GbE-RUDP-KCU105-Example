@@ -139,7 +139,8 @@ class DefaultTop(Display):
 
 
 
-        buttons_layout.addWidget(self.scroll_area)
+        # buttons_layout.addWidget(self.scroll_area)
+        buttons_layout.addWidget(QLabel('Test'))
         buttons_layout.addWidget(self.width_edit)
         buttons_layout.addWidget(apply_btn)
 
@@ -226,6 +227,7 @@ class DefaultTop(Display):
         except:
             pass
 
+    def do_autoheight(self):
         self.plots.setAutoRangeY(True)
 
     def minimumSizeHint(self):
