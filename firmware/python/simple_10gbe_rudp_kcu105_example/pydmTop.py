@@ -250,9 +250,9 @@ class LegendRow(Display):
         self._path = path
         self.sizeX = 40
         self.sizeY = 40
-        self.setMaximumHeight(50)
         self._main = main
 
+        self.setMaximumHeight(50)
         self.setup_ui()
 
 

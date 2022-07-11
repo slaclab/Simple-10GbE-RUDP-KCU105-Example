@@ -193,6 +193,7 @@ class DebugHolder(QTreeWidgetItem):
         self.setToolTip(0,self._var.description)
         self.setText(1,str(self._var.units) if self._var.units is not None else '')
         self.setText(3,str(self._var.pollInterval))
+        self.setText(4,str(self._var.value))
 
 
         def funcgen(str):
@@ -290,7 +291,7 @@ class SelectionTree(PyDMFrame):
         self._excGroups = excGroups
         self._tree      = None
 
-        self._colWidths = [250,50,150,50]
+        self._colWidths = [250,50,150,50,50]
 
     def connection_changed(self, connected):
         build = (self._node is None) and (self._connected != connected and connected is True)
@@ -312,7 +313,7 @@ class SelectionTree(PyDMFrame):
         #self._tree.setHeaderLabels(['Node','Mode','Type','Variable','Command','Units'])
 
         self._tree.setColumnCount(4)
-        self._tree.setHeaderLabels(['Node','Units','Plot','Poll Interval'])
+        self._tree.setHeaderLabels(['Node','Units','Plot','Poll Interval','Value'])
 
 
         self._tree.itemExpanded.connect(self._expandCb)
@@ -345,6 +346,7 @@ class SelectionTree(PyDMFrame):
         # self._tree.resizeColumnToContents(2)
         self._tree.setColumnWidth(2,self._colWidths[2])
         self._tree.setColumnWidth(3,self._colWidths[3])
+        self._tree.setColumnWidth(4,self._colWidths[4])
         # self._tree.setColumnWidth(4,self._colWidths[4])
         # self._tree.resizeColumnToContents(5)
 
