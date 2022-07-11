@@ -134,8 +134,9 @@ class DefaultTop(Display):
         # many entries
         self.scroll_area = QScrollArea(parent=self)
         self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOn)
-        self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysON)
         self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setAlignment(QtCore.Qt.AlignTop)
 
 
         # Add the Frame to the scroll area
@@ -249,7 +250,7 @@ class LegendRow(Display):
         self._path = path
         self.sizeX = 40
         self.sizeY = 40
-        self.setMaximumHeight(30)
+        self.setMaximumHeight(50)
         self._main = main
 
         self.setup_ui()
