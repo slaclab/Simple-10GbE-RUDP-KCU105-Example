@@ -204,7 +204,7 @@ class DefaultTop(Display):
     def do_add(self,path):
         self.plots.addYChannel(y_channel=path,
                 color = self._colorSelector.take_color(path),
-                lineWidth = 5,y_axis_name = 'hello')
+                lineWidth = 5,yAxisName = 'hello')
 
         # disp = QLabel(path)
         disp = LegendRow(parent = self,path=path,main = self)
