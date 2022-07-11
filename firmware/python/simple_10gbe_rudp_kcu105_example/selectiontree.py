@@ -313,7 +313,7 @@ class SelectionTree(PyDMFrame):
         #self._tree.setHeaderLabels(['Node','Mode','Type','Variable','Command','Units'])
 
         self._tree.setColumnCount(4)
-        self._tree.setHeaderLabels(['Node','Units','Plot','Poll Interval','Value'])
+        self._tree.setHeaderLabels(['Node','Units','Plot','Poll Interval'])#,'Value'])
 
 
         self._tree.itemExpanded.connect(self._expandCb)
