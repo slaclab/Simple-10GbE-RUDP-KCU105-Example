@@ -345,8 +345,8 @@ class SelectionTree(PyDMFrame):
         # self._tree.resizeColumnToContents(2)
         self._tree.setColumnWidth(2,self._colWidths[2])
         self._tree.setColumnWidth(3,self._colWidths[3])
-        self._tree.setColumnWidth(4,self._colWidths[4])
-        self._tree.resizeColumnToContents(5)
+        # self._tree.setColumnWidth(4,self._colWidths[4])
+        # self._tree.resizeColumnToContents(5)
 
         self.setUpdatesEnabled(True)
 
