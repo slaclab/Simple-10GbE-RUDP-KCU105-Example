@@ -193,7 +193,7 @@ class DebugHolder(QTreeWidgetItem):
         self.setToolTip(0,self._var.description)
         self.setText(1,str(self._var.units) if self._var.units is not None else '')
         self.setText(3,str(self._var.pollInterval))
-        self.setText(4,str(self._var._value))
+        # self.setText(4,str(self._var._value))
 
 
         def funcgen(str):
