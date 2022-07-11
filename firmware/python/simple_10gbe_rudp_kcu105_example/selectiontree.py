@@ -290,7 +290,7 @@ class SelectionTree(PyDMFrame):
         self._excGroups = excGroups
         self._tree      = None
 
-        self._colWidths = [250,50,200,50]
+        self._colWidths = [250,500,200,500]
 
     def connection_changed(self, connected):
         build = (self._node is None) and (self._connected != connected and connected is True)
