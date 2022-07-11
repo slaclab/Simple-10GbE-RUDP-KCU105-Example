@@ -290,7 +290,7 @@ class SelectionTree(PyDMFrame):
         self._excGroups = excGroups
         self._tree      = None
 
-        self._colWidths = [250,50,75,200,200,50]
+        self._colWidths = [250,50,200,50]
 
     def connection_changed(self, connected):
         build = (self._node is None) and (self._connected != connected and connected is True)
@@ -312,7 +312,7 @@ class SelectionTree(PyDMFrame):
         #self._tree.setHeaderLabels(['Node','Mode','Type','Variable','Command','Units'])
 
         self._tree.setColumnCount(4)
-        self._tree.setHeaderLabels(['Node','Units','Action','pollInterval'])
+        self._tree.setHeaderLabels(['Node','Units','Plot','Poll Interval'])
 
 
         self._tree.itemExpanded.connect(self._expandCb)
