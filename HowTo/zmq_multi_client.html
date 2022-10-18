@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to run multiple GUI clients on the same KCU105 server &mdash; Simple-10GbE-RUDP-KCU105-Example v1.4.0-9-ga8504af documentation</title>
+  <title>How to run multiple GUI clients on the same KCU105 server &mdash; Simple-10GbE-RUDP-KCU105-Example v2.0.0-3-g241e392 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -14,7 +14,9 @@
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/jquery.js"></script>
         <script src="../_static/underscore.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -86,13 +88,13 @@
            <div itemprop="articleBody">
              
   <section id="how-to-run-multiple-gui-clients-on-the-same-kcu105-server">
-<span id="how-to-run-multiple-zmq-clients"></span><h1>How to run multiple GUI clients on the same KCU105 server<a class="headerlink" href="#how-to-run-multiple-gui-clients-on-the-same-kcu105-server" title="Permalink to this headline"></a></h1>
+<span id="how-to-run-multiple-zmq-clients"></span><h1>How to run multiple GUI clients on the same KCU105 server<a class="headerlink" href="#how-to-run-multiple-gui-clients-on-the-same-kcu105-server" title="Permalink to this heading"></a></h1>
 <p>The SURF’s RUDP connection only support 1 “physical” client/server connection.  If you need more than 1 software client to access the hardware server, then you can use ZeroMQ for multiple “virtual” connections to the hardware.
 This means that you can run multiple <code class="docutils literal notranslate"><span class="pre">devGui.py</span></code> scripts
 at the same time (refer to <a class="reference internal" href="software_gui.html#how-to-software-gui"><span class="std std-ref">How to run the Software Development GUI with KCU105 Hardware</span></a>) because the PyDM GUI does NOT access the hardware directly, but uses a ZeroMQ to manage asynchronous I/O from
 multiple clients and manage the hardware access.</p>
 <section id="how-to-get-access-with-another-client-if-pydm-gui-is-already-opened">
-<h2>How to get access with another client if PyDM GUI is already opened<a class="headerlink" href="#how-to-get-access-with-another-client-if-pydm-gui-is-already-opened" title="Permalink to this headline"></a></h2>
+<h2>How to get access with another client if PyDM GUI is already opened<a class="headerlink" href="#how-to-get-access-with-another-client-if-pydm-gui-is-already-opened" title="Permalink to this heading"></a></h2>
 <ol class="arabic">
 <li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
 <li><p>Run the ZmqClientGui python script to get access to the devGui’s script ZMQ server</p>
@@ -105,7 +107,7 @@ $ python scripts/zmqClientGui.py
 </ol>
 </section>
 <section id="how-to-create-a-zmq-server-without-pydm-gui-in-one-terminal-and-zmq-client-with-pydm-in-another-terminal">
-<h2>How to create a ZMQ server without PyDM GUI in one terminal and ZMQ client with PyDM in another terminal<a class="headerlink" href="#how-to-create-a-zmq-server-without-pydm-gui-in-one-terminal-and-zmq-client-with-pydm-in-another-terminal" title="Permalink to this headline"></a></h2>
+<h2>How to create a ZMQ server without PyDM GUI in one terminal and ZMQ client with PyDM in another terminal<a class="headerlink" href="#how-to-create-a-zmq-server-without-pydm-gui-in-one-terminal-and-zmq-client-with-pydm-in-another-terminal" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>For the first terminal:</p></li>
 </ul>
