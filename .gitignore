@@ -44,3 +44,4 @@ bin*
 *.pdi
 *.bif
 *.elf
+.ipynb_checkpoints*
