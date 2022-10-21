@@ -22,9 +22,9 @@ to quickly write data to disk and analysis offline.
      :width: 800
      :alt: Alternative text
 
-#. Go to the ``System`` tab and click on ``Close``
+#. Go to the ``System`` tab wait for the frame count to reach 256 (A), and click on ``Close`` (B)
 
-   .. image:: ../../images/fileio_2.png
+   .. image:: ../../images/fileio_3.png
      :width: 800
      :alt: Alternative text
 
