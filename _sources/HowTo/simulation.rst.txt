@@ -42,7 +42,7 @@ In the first terminal
 
    .. code-block:: bash
 
-      $ ./simv -gui=dve & (or $ ./simv -gui=verdi -verdi_opts -sx &)
+      $ ./simv -verdi &
 
 #. When the VCS GUI pops up, start the simulation run
 

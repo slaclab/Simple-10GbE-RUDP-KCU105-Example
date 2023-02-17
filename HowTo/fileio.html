@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to the Rogue FileWriter and FileReader &mdash; Simple-10GbE-RUDP-KCU105-Example v2.0.0-3-g241e392 documentation</title>
+  <title>How to the Rogue FileWriter and FileReader &mdash; Simple-10GbE-RUDP-KCU105-Example v2.1.0-21-ga0728cb documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -29,11 +29,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> Simple-10GbE-RUDP-KCU105-Example
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Simple-10GbE-RUDP-KCU105-Example
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -44,6 +48,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../Setup/index.html">Setup</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">HowTos</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="firmware.html">How to build the firmware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="remote_program.html">How to reprogram your KCU105 board’s QSPI Boot Prom</a></li>
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
@@ -71,9 +76,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">HowTos</a> &raquo;</li>
-      <li>How to the Rogue FileWriter and FileReader</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">HowTos</a></li>
+      <li class="breadcrumb-item active">How to the Rogue FileWriter and FileReader</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/HowTo/fileio.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -98,25 +103,25 @@ to quickly write data to disk and analysis offline.</p>
 <div><a class="reference internal image-reference" href="../_images/fileio_1.png"><img alt="Alternative text" src="../_images/fileio_1.png" style="width: 800px;" /></a>
 </div></blockquote>
 <ol class="arabic">
-<li><p>Go to the <code class="docutils literal notranslate"><span class="pre">System</span></code> tab and click on <code class="docutils literal notranslate"><span class="pre">Close</span></code></p>
-<a class="reference internal image-reference" href="../_images/fileio_2.png"><img alt="Alternative text" src="../_images/fileio_2.png" style="width: 800px;" /></a>
+<li><p>Go to the <code class="docutils literal notranslate"><span class="pre">System</span></code> tab wait for the frame count to reach 256 (A), and click on <code class="docutils literal notranslate"><span class="pre">Close</span></code> (B)</p>
+<a class="reference internal image-reference" href="../_images/fileio_3.png"><img alt="Alternative text" src="../_images/fileio_3.png" style="width: 800px;" /></a>
 </li>
 <li><p>Close the PyDM GUI</p></li>
 <li><p>Run the fileReader python script</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python scripts/fileReader.py --dataFile data_20220614_092954.dat
-Rogue/pyrogue version v5.14.0. https://github.com/slaclab/rogue
-Start: Started zmqServer on ports <span class="m">9099</span>-9101
-    To start a gui: python -m pyrogue gui --server<span class="o">=</span><span class="s1">&#39;localhost:9099&#39;</span>
-    To use a virtual client: <span class="nv">client</span> <span class="o">=</span> pyrogue.interfaces.VirtualClient<span class="o">(</span><span class="nv">addr</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span>, <span class="nv">port</span><span class="o">=</span><span class="m">9099</span><span class="o">)</span>
-eventFrame.header <span class="o">=</span> <span class="m">0</span>
-eventFrame.header <span class="o">=</span> <span class="m">1</span>
-eventFrame.header <span class="o">=</span> <span class="m">2</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>scripts/fileReader.py<span class="w"> </span>--dataFile<span class="w"> </span>data_20220614_092954.dat
+Rogue/pyrogue<span class="w"> </span>version<span class="w"> </span>v5.14.0.<span class="w"> </span>https://github.com/slaclab/rogue
+Start:<span class="w"> </span>Started<span class="w"> </span>zmqServer<span class="w"> </span>on<span class="w"> </span>ports<span class="w"> </span><span class="m">9099</span>-9101
+<span class="w">    </span>To<span class="w"> </span>start<span class="w"> </span>a<span class="w"> </span>gui:<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pyrogue<span class="w"> </span>gui<span class="w"> </span>--server<span class="o">=</span><span class="s1">&#39;localhost:9099&#39;</span>
+<span class="w">    </span>To<span class="w"> </span>use<span class="w"> </span>a<span class="w"> </span>virtual<span class="w"> </span>client:<span class="w"> </span><span class="nv">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>pyrogue.interfaces.VirtualClient<span class="o">(</span><span class="nv">addr</span><span class="o">=</span><span class="s1">&#39;localhost&#39;</span>,<span class="w"> </span><span class="nv">port</span><span class="o">=</span><span class="m">9099</span><span class="o">)</span>
+eventFrame.header<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">0</span>
+eventFrame.header<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">1</span>
+eventFrame.header<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span>
 ...
 ...
 ...
-eventFrame.header <span class="o">=</span> <span class="m">253</span>
-eventFrame.header <span class="o">=</span> <span class="m">254</span>
-eventFrame.header <span class="o">=</span> <span class="m">255</span>
+eventFrame.header<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">253</span>
+eventFrame.header<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">254</span>
+eventFrame.header<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">255</span>
 </pre></div>
 </div>
 </li>

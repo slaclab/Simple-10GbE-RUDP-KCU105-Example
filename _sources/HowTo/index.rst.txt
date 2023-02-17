@@ -10,6 +10,7 @@ This section describes "HowTos"
    :maxdepth: 1
    :caption: HowTos:
 
+   clone
    firmware
    remote_program
    software_gui

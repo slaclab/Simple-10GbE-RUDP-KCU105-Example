@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Network Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v2.0.0-3-g241e392 documentation</title>
+  <title>Network Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v2.1.0-21-ga0728cb documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -29,11 +29,15 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="../index.html" class="icon icon-home"> Simple-10GbE-RUDP-KCU105-Example
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            Simple-10GbE-RUDP-KCU105-Example
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -47,7 +51,6 @@
 <li class="toctree-l2"><a class="reference internal" href="hardware_setup.html">Hardware Setup</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Network Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="cloning.html">Before you clone the GIT repository</a></li>
-<li class="toctree-l2"><a class="reference internal" href="clone.html">How to Clone the GIT repository</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vivado_setup.html">Vivado and VCS Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rogue_setup.html">Rogue Software Setup</a></li>
 </ul>
@@ -68,9 +71,9 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-          <li><a href="index.html">Setup</a> &raquo;</li>
-      <li>Network Setup</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">Setup</a></li>
+      <li class="breadcrumb-item active">Network Setup</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/Setup/network_setup.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -85,11 +88,11 @@
 <p>The default configuration for the firmware is no DHCP for IP address
 assignment and static IP address of 192.168.2.10.  You will need
 to configure your network interface to be on the 192.168.2.XXX subnet:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ ip addr show &lt;Network_Interface&gt;
-&lt;Network_Interface&gt;: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu <span class="m">9000</span> qdisc mq state UP group default qlen <span class="m">1000</span>
-    link/ether <span class="m">00</span>:1b:21:bd:40:22 brd ff:ff:ff:ff:ff:ff
-    inet <span class="m">192</span>.168.2.1/24 brd <span class="m">192</span>.168.2.255 scope global noprefixroute &lt;Network_Interface&gt;
-       valid_lft forever preferred_lft forever
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>ip<span class="w"> </span>addr<span class="w"> </span>show<span class="w"> </span>&lt;Network_Interface&gt;
+&lt;Network_Interface&gt;:<span class="w"> </span>&lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">9000</span><span class="w"> </span>qdisc<span class="w"> </span>mq<span class="w"> </span>state<span class="w"> </span>UP<span class="w"> </span>group<span class="w"> </span>default<span class="w"> </span>qlen<span class="w"> </span><span class="m">1000</span>
+<span class="w">    </span>link/ether<span class="w"> </span><span class="m">00</span>:1b:21:bd:40:22<span class="w"> </span>brd<span class="w"> </span>ff:ff:ff:ff:ff:ff
+<span class="w">    </span>inet<span class="w"> </span><span class="m">192</span>.168.2.1/24<span class="w"> </span>brd<span class="w"> </span><span class="m">192</span>.168.2.255<span class="w"> </span>scope<span class="w"> </span>global<span class="w"> </span>noprefixroute<span class="w"> </span>&lt;Network_Interface&gt;
+<span class="w">       </span>valid_lft<span class="w"> </span>forever<span class="w"> </span>preferred_lft<span class="w"> </span>forever
 </pre></div>
 </div>
 <p>The RUDP streaming interface uses <strong>JUMBO</strong> Ethernet frames.
@@ -97,7 +100,7 @@ You will need to make sure that you configure your network interface
 to enable jumbo frame support.  If your RUDP Ethernet traffic goes through
 any Ethernet switches or routers, you will need to enable jubmo frame
 support for those devices as well.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo ip link <span class="nb">set</span> dev &lt;Network_Interface&gt; mtu <span class="m">9000</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>sudo<span class="w"> </span>ip<span class="w"> </span>link<span class="w"> </span><span class="nb">set</span><span class="w"> </span>dev<span class="w"> </span>&lt;Network_Interface&gt;<span class="w"> </span>mtu<span class="w"> </span><span class="m">9000</span>
 </pre></div>
 </div>
 </section>

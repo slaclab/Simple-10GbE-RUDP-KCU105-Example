@@ -75,7 +75,13 @@ then connect the UDP client to the XVC server:
             self.udpClient == self.xvc
 
 You will need to first start the rogue software (either GUI mode or interactive mode) to start the XVC server.
-Next, from Vivado main screen, you will open ``Vivado Hardware Manager`` and ``open new target``:
+Next, from Vivado main screen, you will open ``Vivado Hardware Manager`` and open new target:
+   
+   .. image:: ../../images/xcv_7.png
+     :width: 400
+     :alt: Alternative text
+
+Or you can directly click on ``open new target``:
 
    .. image:: ../../images/xcv_0.png
      :width: 400

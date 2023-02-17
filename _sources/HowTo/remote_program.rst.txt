@@ -12,7 +12,7 @@ How to reprogram your KCU105 board's QSPI Boot Prom
 
         .. code-block::
 
-                $ cd /afs/slac.stanford.edu/g/reseng/vol34/xilinx/2021.1/Vivado/2021.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+                $ cd /afs/slac.stanford.edu/g/reseng/vol37/xilinx/2022.2/Vivado/2022.2/data/xicom/cable_drivers/lin64/install_script/install_drivers/
  
    #. Execute the “install drivers” scripts as “sudo”:
 
