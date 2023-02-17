@@ -29,4 +29,4 @@ After doing the local anaconda install, you will need to setup the conda envirom
    $ source /path/to/my/anaconda3/etc/profile.d/conda.sh
 
    # Activate Rogue conda Environment
-   $ conda activate rogue_v5.8.0
+   $ conda activate rogue_v5.16.1
