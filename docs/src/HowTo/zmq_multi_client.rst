@@ -28,7 +28,7 @@ How to start the ZMQ server then launch two different ZMQ clients
 
    .. code-block:: bash
 
-      $ python scripts/zmqClientGui.py
+      $ python -m pyrogue --server=localhost:9099 gui
 
 * For the second terminal:
 
@@ -37,7 +37,7 @@ How to start the ZMQ server then launch two different ZMQ clients
    .. code-block:: bash
 
       $ cd Simple-10GbE-RUDP-KCU105-Example/software
-      $ python scripts/zmqClientGui.py
+      $ python -m pyrogue --server=localhost:9099 gui
 
    .. image:: ../../images/devGui.png
      :width: 800
@@ -53,7 +53,7 @@ How to get access with another client if ZMQ server is already running
    .. code-block:: bash
 
       $ cd Simple-10GbE-RUDP-KCU105-Example/software
-      $ python scripts/zmqClientGui.py
+      $ python -m pyrogue --server=localhost:9099 gui
 
    .. image:: ../../images/zmqClientGui.png
      :width: 800
