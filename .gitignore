@@ -28,6 +28,7 @@ build.info
 
 # Build directories 
 build*
+images*
 bin*
 .Xil*
 .obj*
