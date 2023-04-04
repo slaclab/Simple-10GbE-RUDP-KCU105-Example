@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- Company    : SLAC National Accelerator Laboratory
 -------------------------------------------------------------------------------
--- Description: Simulation test bed for FPGA FW/SW cosimulation
+-- Description: Simulation test bed for FPGA FW/SW co-simulation
 -------------------------------------------------------------------------------
 -- This file is part of 'Simple-10GbE-RUDP-KCU105-Example'.
 -- It is subject to the license terms in the LICENSE.txt file found in the
