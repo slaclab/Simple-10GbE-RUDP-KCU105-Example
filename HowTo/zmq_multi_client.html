@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to run multiple GUI clients on the same KCU105 server &mdash; Simple-10GbE-RUDP-KCU105-Example v2.2.0 documentation</title>
+  <title>How to run multiple GUI clients on the same KCU105 server &mdash; Simple-10GbE-RUDP-KCU105-Example v2.2.0-9-g2e18ace documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -12,9 +12,6 @@
   <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
@@ -54,8 +51,8 @@
 <li class="toctree-l2"><a class="reference internal" href="software_gui.html">How to run the Software Development GUI with KCU105 Hardware</a></li>
 <li class="toctree-l2"><a class="reference internal" href="interactive_mode.html">How to run the Software in Interactive Mode</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">How to run multiple GUI clients on the same KCU105 server</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#how-to-get-access-with-another-client-if-pydm-gui-is-already-opened">How to get access with another client if PyDM GUI is already opened</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#how-to-create-a-zmq-server-without-pydm-gui-in-one-terminal-and-zmq-client-with-pydm-in-another-terminal">How to create a ZMQ server without PyDM GUI in one terminal and ZMQ client with PyDM in another terminal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-start-the-zmq-server-then-launch-two-different-zmq-clients">How to start the ZMQ server then launch two different ZMQ clients</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-to-get-access-with-another-client-if-zmq-server-is-already-running">How to get access with another client if ZMQ server is already running</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="simulation.html">How to run the Software Development GUI with VCS firmware simulator</a></li>
@@ -98,29 +95,21 @@
 This means that you can run multiple <code class="docutils literal notranslate"><span class="pre">devGui.py</span></code> scripts
 at the same time (refer to <a class="reference internal" href="software_gui.html#how-to-software-gui"><span class="std std-ref">How to run the Software Development GUI with KCU105 Hardware</span></a>) because the PyDM GUI does NOT access the hardware directly, but uses a ZeroMQ to manage asynchronous I/O from
 multiple clients and manage the hardware access.</p>
-<section id="how-to-get-access-with-another-client-if-pydm-gui-is-already-opened">
-<h2>How to get access with another client if PyDM GUI is already opened<a class="headerlink" href="#how-to-get-access-with-another-client-if-pydm-gui-is-already-opened" title="Permalink to this heading"></a></h2>
-<ol class="arabic">
-<li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
-<li><p>Run the ZmqClientGui python script to get access to the devGui’s script ZMQ server</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Simple-10GbE-RUDP-KCU105-Example/software
-$<span class="w"> </span>python<span class="w"> </span>scripts/zmqClientGui.py
-</pre></div>
-</div>
-<a class="reference internal image-reference" href="../_images/zmqClientGui.png"><img alt="Alternative text" src="../_images/zmqClientGui.png" style="width: 800px;" /></a>
-</li>
-</ol>
-</section>
-<section id="how-to-create-a-zmq-server-without-pydm-gui-in-one-terminal-and-zmq-client-with-pydm-in-another-terminal">
-<h2>How to create a ZMQ server without PyDM GUI in one terminal and ZMQ client with PyDM in another terminal<a class="headerlink" href="#how-to-create-a-zmq-server-without-pydm-gui-in-one-terminal-and-zmq-client-with-pydm-in-another-terminal" title="Permalink to this heading"></a></h2>
+<section id="how-to-start-the-zmq-server-then-launch-two-different-zmq-clients">
+<h2>How to start the ZMQ server then launch two different ZMQ clients<a class="headerlink" href="#how-to-start-the-zmq-server-then-launch-two-different-zmq-clients" title="Permalink to this heading"></a></h2>
 <ul class="simple">
 <li><p>For the first terminal:</p></li>
 </ul>
 <ol class="arabic">
 <li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
-<li><p>Run the Development GUI python script <code class="docutils literal notranslate"><span class="pre">--guiType</span> <span class="pre">None</span></code> argument</p>
+<li><p>Start the ZMQ server (basically devGui script but with <code class="docutils literal notranslate"><span class="pre">--guiType</span> <span class="pre">None</span></code> argument)</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Simple-10GbE-RUDP-KCU105-Example/software
-$<span class="w"> </span>python<span class="w"> </span>scripts/devGui.py<span class="w"> </span>--guiType<span class="w"> </span>None
+$<span class="w"> </span>python<span class="w"> </span>scripts/devGui.py<span class="w"> </span>--guiType<span class="w"> </span>None<span class="w"> </span><span class="p">&amp;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Start the 1st ZMQ client</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pyrogue<span class="w"> </span>--server<span class="o">=</span>localhost:9099<span class="w"> </span>gui
 </pre></div>
 </div>
 </li>
@@ -129,12 +118,25 @@ $<span class="w"> </span>python<span class="w"> </span>scripts/devGui.py<span cl
 <li><p>For the second terminal:</p></li>
 </ul>
 <ol class="arabic">
-<li><p>Run the ZmqClientGui python script to get access to the ZMQ server without a GUI running</p>
+<li><p>Start the 2nd ZMQ client</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Simple-10GbE-RUDP-KCU105-Example/software
-$<span class="w"> </span>python<span class="w"> </span>scripts/zmqClientGui.py
+$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pyrogue<span class="w"> </span>--server<span class="o">=</span>localhost:9099<span class="w"> </span>gui
 </pre></div>
 </div>
 <a class="reference internal image-reference" href="../_images/devGui.png"><img alt="Alternative text" src="../_images/devGui.png" style="width: 800px;" /></a>
+</li>
+</ol>
+</section>
+<section id="how-to-get-access-with-another-client-if-zmq-server-is-already-running">
+<h2>How to get access with another client if ZMQ server is already running<a class="headerlink" href="#how-to-get-access-with-another-client-if-zmq-server-is-already-running" title="Permalink to this heading"></a></h2>
+<ol class="arabic">
+<li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
+<li><p>Run the ZmqClientGui python script to get access to the devGui’s script ZMQ server</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Simple-10GbE-RUDP-KCU105-Example/software
+$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>pyrogue<span class="w"> </span>--server<span class="o">=</span>localhost:9099<span class="w"> </span>gui
+</pre></div>
+</div>
+<a class="reference internal image-reference" href="../_images/zmqClientGui.png"><img alt="Alternative text" src="../_images/zmqClientGui.png" style="width: 800px;" /></a>
 </li>
 </ol>
 </section>
