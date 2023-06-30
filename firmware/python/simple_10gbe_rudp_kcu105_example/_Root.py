@@ -19,7 +19,7 @@ import rogue.utilities.fileio
 
 import simple_10gbe_rudp_kcu105_example as devBoard
 
-rogue.Version.minVersion('5.14.0')
+rogue.Version.minVersion('6.0.0')
 
 class Root(pr.Root):
     def __init__(   self,
