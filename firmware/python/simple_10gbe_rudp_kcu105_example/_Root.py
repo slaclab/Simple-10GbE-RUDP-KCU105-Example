@@ -27,8 +27,15 @@ class Root(pr.Root):
             pollEn   = True,  # Enable automatic polling registers
             initRead = True,  # Read all registers at start of the system
             promProg = False, # Flag to disable all devices not related to PROM programming
-            enSwRx   = True, # Flag to enable the software stream receiver
+            enSwRx   = True,  # Flag to enable the software stream receiver
+            zmqSrvEn = True,  # Flag to include the ZMQ server
             **kwargs):
+        super().__init__(**kwargs)
+
+        #################################################################
+        if zmqSrvEn:
+            self.zmqServer = pyrogue.interfaces.ZmqServer(root=self, addr='*', port=0)
+            self.addInterface(self.zmqServer)
 
         #################################################################
 
@@ -36,13 +43,11 @@ class Root(pr.Root):
         self.sim    = (ip == 'sim')
         if (self.sim):
             # Set the timeout
-            kwargs['timeout'] = 100000000 # firmware simulation slow and timeout base on real time (not simulation time)
+            self._timeout = 100000000 # firmware simulation slow and timeout base on real time (not simulation time)
 
         else:
             # Set the timeout
-            kwargs['timeout'] = 5000000 # 5.0 seconds default
-
-        super().__init__(**kwargs)
+            self._timeout = 5000000 # 5.0 seconds default
 
         #################################################################
 
