@@ -11,6 +11,7 @@
 import pyrogue  as pr
 import pyrogue.protocols
 import pyrogue.utilities.fileio
+import pyrogue.interfaces.simulation
 
 import rogue
 import rogue.hardware.axi
@@ -24,39 +25,45 @@ rogue.Version.minVersion('6.0.0')
 class Root(pr.Root):
     def __init__(   self,
             ip       = '192.168.2.10',
-            pollEn   = True,  # Enable automatic polling registers
-            initRead = True,  # Read all registers at start of the system
             promProg = False, # Flag to disable all devices not related to PROM programming
             enSwRx   = True,  # Flag to enable the software stream receiver
             zmqSrvEn = True,  # Flag to include the ZMQ server
             **kwargs):
         super().__init__(**kwargs)
 
-        #################################################################
+        self.enSwRx = not promProg and enSwRx
+        self.sim    = (ip == 'sim')
+
+        # Check if including ZMQ server (required for PyDM GUI)
         if zmqSrvEn:
-            self.zmqServer = pyrogue.interfaces.ZmqServer(root=self, addr='*', port=0)
+            self.zmqServer = pr.interfaces.ZmqServer(root=self, addr='*', port=0)
             self.addInterface(self.zmqServer)
 
         #################################################################
 
-        self.enSwRx = not promProg and enSwRx
-        self.sim    = (ip == 'sim')
-        if (self.sim):
-            # Set the timeout
-            self._timeout = 100000000 # firmware simulation slow and timeout base on real time (not simulation time)
+        # Check if running in HW emulation mode
+        if (ip == 'emu'):
 
+            # Emulate the memory and stream interfaces
+            self.srp =  pr.interfaces.simulation.MemEmulate()
+            self.stream = rogue.interfaces.stream.Master()
+
+        # Check if VCS FW/SW co-simulation
+        elif (ip == 'sim'):
+
+            # Firmware simulation slow and timeout base on real time (not simulation time)
+            self._timeout = 100000000
+
+            # Override start up flags are FALSE for simulation mode
+            self._pollEn   = False
+            self._initRead = False
+
+            # Map the simulation memory and stream interfaces
+            self.srp    = rogue.interfaces.memory.TcpClient('localhost',10000)
+            self.stream = rogue.interfaces.stream.TcpClient('localhost',10002)
+
+        # Else communicating to the actual hardware
         else:
-            # Set the timeout
-            self._timeout = 5000000 # 5.0 seconds default
-
-        #################################################################
-
-        # Check if not VCS simulation
-        if (not self.sim):
-
-            # Start up flags
-            self._pollEn   = pollEn
-            self._initRead = initRead
 
             # Add RUDP Software clients
             self.rudp = [None for i in range(2)]
@@ -90,16 +97,6 @@ class Root(pr.Root):
 
             # Connect the UDP Client to the XVC
             self.udpClient == self.xvc
-
-        else:
-
-            # Start up flags are FALSE for simulation mode
-            self._pollEn   = False
-            self._initRead = False
-
-            # Map the simulation memory and stream interfaces
-            self.srp    = rogue.interfaces.memory.TcpClient('localhost',10000)
-            self.stream = rogue.interfaces.stream.TcpClient('localhost',10002)
 
         #################################################################
 
