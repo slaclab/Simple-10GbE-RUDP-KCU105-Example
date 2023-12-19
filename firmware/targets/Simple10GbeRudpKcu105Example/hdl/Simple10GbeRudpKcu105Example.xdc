@@ -53,7 +53,7 @@ set_property -dict { PACKAGE_PIN K20 IOSTANDARD LVCMOS18 } [get_ports { emcClk }
 
 create_clock -name ethClkP -period  6.400 [get_ports {ethClkP}]
 
-set_clock_groups -asynchronous -group [get_clocks ethClkP] -group [get_clocks -of_objects [get_pins {U_Core/GEN_ETH.U_Rudp/U_10GigE/GEN_LANE[0].TenGigEthGthUltraScale_Inst/U_TenGigEthRst/CLK156_BUFG_GT/O}]]
+set_clock_groups -asynchronous -group [get_clocks ethClkP] -group [get_clocks -of_objects [get_pins {U_Core/GEN_ETH.U_Rudp/GEN_10G.U_10GigE/GEN_LANE[0].TenGigEthGthUltraScale_Inst/U_TenGigEthRst/CLK156_BUFG_GT/O}]]
 
 ##############################################################################
 # BITSTREAM: .bit file Configuration

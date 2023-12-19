@@ -27,9 +27,10 @@ use unisim.vcomponents.all;
 
 entity Rudp is
    generic (
-      TPD_G            : time             := 1 ns;
-      IP_ADDR_G        : slv(31 downto 0) := x"0A02A8C0";  -- 192.168.2.10
-      DHCP_G           : boolean          := false;
+      TPD_G            : time := 1 ns;
+      BUILD_10G_G      : boolean;
+      IP_ADDR_G        : slv(31 downto 0);
+      DHCP_G           : boolean;
       AXIL_BASE_ADDR_G : slv(31 downto 0));
    port (
       -- System Ports
@@ -80,7 +81,7 @@ architecture mapping of Rudp is
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
 
-   constant CLK_FREQUENCY_C : real := 156.25E+6;  -- In units of Hz
+   constant CLK_FREQUENCY_C : real := ite(BUILD_10G_G, 156.25E+6, 125.0E+6);
 
    -- UDP constants
    constant UDP_SRV_SRP_IDX_C  : natural  := 0;
@@ -174,45 +175,95 @@ begin
          clk    => ethClk,
          rstOut => extReset);
 
-   ----------------------------------
-   -- 10 GigE PHY/MAC Ethernet Layers
-   ----------------------------------
-   U_10GigE : entity surf.TenGigEthGthUltraScaleWrapper
-      generic map (
-         TPD_G        => TPD_G,
-         NUM_LANE_G   => 1,
-         PAUSE_EN_G   => true,          -- Enable ETH pause
-         EN_AXI_REG_G => true)          -- Enable diagnostic AXI-Lite interface
-      port map (
-         -- Local Configurations
-         localMac(0)            => localMac,
-         -- Streaming DMA Interface
-         dmaClk(0)              => ethClk,
-         dmaRst(0)              => ethRst,
-         dmaIbMasters(0)        => obMacMaster,
-         dmaIbSlaves(0)         => obMacSlave,
-         dmaObMasters(0)        => ibMacMaster,
-         dmaObSlaves(0)         => ibMacSlave,
-         -- Slave AXI-Lite Interface
-         axiLiteClk(0)          => ethClk,
-         axiLiteRst(0)          => ethRst,
-         axiLiteReadMasters(0)  => axilReadMasters(PHY_INDEX_C),
-         axiLiteReadSlaves(0)   => axilReadSlaves(PHY_INDEX_C),
-         axiLiteWriteMasters(0) => axilWriteMasters(PHY_INDEX_C),
-         axiLiteWriteSlaves(0)  => axilWriteSlaves(PHY_INDEX_C),
-         -- Misc. Signals
-         extRst                 => extReset,
-         coreClk                => ethClk,
-         coreRst                => ethRst,
-         phyReady(0)            => phyReady,
-         -- MGT Clock Port 156.25 MHz
-         gtClkP                 => ethClkP,
-         gtClkN                 => ethClkN,
-         -- MGT Ports
-         gtTxP(0)               => ethTxP,
-         gtTxN(0)               => ethTxN,
-         gtRxP(0)               => ethRxP,
-         gtRxN(0)               => ethRxN);
+   GEN_10G : if (BUILD_10G_G = true) generate
+      ----------------------------------
+      -- 10 GigE PHY/MAC Ethernet Layers
+      ----------------------------------
+      U_10GigE : entity surf.TenGigEthGthUltraScaleWrapper
+         generic map (
+            TPD_G        => TPD_G,
+            NUM_LANE_G   => 1,
+            PAUSE_EN_G   => true,       -- Enable ETH pause
+            EN_AXI_REG_G => true)       -- Enable diagnostic AXI-Lite interface
+         port map (
+            -- Local Configurations
+            localMac(0)            => localMac,
+            -- Streaming DMA Interface
+            dmaClk(0)              => ethClk,
+            dmaRst(0)              => ethRst,
+            dmaIbMasters(0)        => obMacMaster,
+            dmaIbSlaves(0)         => obMacSlave,
+            dmaObMasters(0)        => ibMacMaster,
+            dmaObSlaves(0)         => ibMacSlave,
+            -- Slave AXI-Lite Interface
+            axiLiteClk(0)          => ethClk,
+            axiLiteRst(0)          => ethRst,
+            axiLiteReadMasters(0)  => axilReadMasters(PHY_INDEX_C),
+            axiLiteReadSlaves(0)   => axilReadSlaves(PHY_INDEX_C),
+            axiLiteWriteMasters(0) => axilWriteMasters(PHY_INDEX_C),
+            axiLiteWriteSlaves(0)  => axilWriteSlaves(PHY_INDEX_C),
+            -- Misc. Signals
+            extRst                 => extReset,
+            coreClk                => ethClk,
+            coreRst                => ethRst,
+            phyReady(0)            => phyReady,
+            -- MGT Clock Port 156.25 MHz
+            gtClkP                 => ethClkP,
+            gtClkN                 => ethClkN,
+            -- MGT Ports
+            gtTxP(0)               => ethTxP,
+            gtTxN(0)               => ethTxN,
+            gtRxP(0)               => ethRxP,
+            gtRxN(0)               => ethRxN);
+   end generate;
+
+   GEN_1G : if (BUILD_10G_G = false) generate
+      ----------------------------------
+      -- 1 GigE PHY/MAC Ethernet Layers
+      ----------------------------------
+      U_1GigE : entity surf.GigEthGthUltraScaleWrapper
+         generic map (
+            TPD_G              => TPD_G,
+            NUM_LANE_G         => 1,
+            PAUSE_EN_G         => true,  -- Enable ETH pause
+            EN_AXI_REG_G       => true,  -- Enable diagnostic AXI-Lite interface
+            -- QUAD PLL Configurations
+            USE_GTREFCLK_G     => false,
+            CLKIN_PERIOD_G     => 6.4,  -- 156.25 MHz
+            DIVCLK_DIVIDE_G    => 5,    -- 31.25 MHz = (156.25 MHz/5)
+            CLKFBOUT_MULT_F_G  => 32.0,  -- 1 GHz = (32 x 31.25 MHz)
+            CLKOUT0_DIVIDE_F_G => 8.0)  -- 125 MHz = (1.0 GHz/8)
+         port map (
+            -- Local Configurations
+            localMac(0)            => localMac,
+            -- Streaming DMA Interface
+            dmaClk(0)              => ethClk,
+            dmaRst(0)              => ethRst,
+            dmaIbMasters(0)        => obMacMaster,
+            dmaIbSlaves(0)         => obMacSlave,
+            dmaObMasters(0)        => ibMacMaster,
+            dmaObSlaves(0)         => ibMacSlave,
+            -- Slave AXI-Lite Interface
+            axiLiteClk(0)          => ethClk,
+            axiLiteRst(0)          => ethRst,
+            axiLiteReadMasters(0)  => axilReadMasters(PHY_INDEX_C),
+            axiLiteReadSlaves(0)   => axilReadSlaves(PHY_INDEX_C),
+            axiLiteWriteMasters(0) => axilWriteMasters(PHY_INDEX_C),
+            axiLiteWriteSlaves(0)  => axilWriteSlaves(PHY_INDEX_C),
+            -- Misc. Signals
+            extRst                 => extReset,
+            phyClk                 => ethClk,
+            phyRst                 => ethRst,
+            phyReady(0)            => phyReady,
+            -- MGT Clock Port
+            gtClkP                 => ethClkP,
+            gtClkN                 => ethClkN,
+            -- MGT Ports
+            gtTxP(0)               => ethTxP,
+            gtTxN(0)               => ethTxN,
+            gtRxP(0)               => ethRxP,
+            gtRxN(0)               => ethRxN);
+   end generate;
 
    ------------------------------------
    -- IPv4/ARP/UDP/DHCP Ethernet Layers

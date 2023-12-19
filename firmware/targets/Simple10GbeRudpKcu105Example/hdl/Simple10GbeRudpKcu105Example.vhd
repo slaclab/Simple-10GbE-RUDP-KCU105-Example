@@ -96,12 +96,13 @@ begin
          TPD_G        => TPD_G,
          BUILD_INFO_G => BUILD_INFO_G,
          SIMULATION_G => SIMULATION_G,
+         BUILD_10G_G  => true,          -- 10GbE
          IP_ADDR_G    => IP_ADDR_G,
          DHCP_G       => DHCP_G)
       port map (
          -- Clock and Reset
-         axilClk          => axilClk,
-         axilRst          => axilRst,
+         axilClk         => axilClk,
+         axilRst         => axilRst,
          -- AXI-Stream Interface
          ibRudpMaster    => ibRudpMaster,
          ibRudpSlave     => ibRudpSlave,
@@ -149,8 +150,8 @@ begin
          SIMULATION_G => SIMULATION_G)
       port map (
          -- Clock and Reset
-         axilClk          => axilClk,
-         axilRst          => axilRst,
+         axilClk         => axilClk,
+         axilRst         => axilRst,
          -- AXI-Stream Interface
          ibRudpMaster    => ibRudpMaster,
          ibRudpSlave     => ibRudpSlave,

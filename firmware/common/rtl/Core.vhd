@@ -28,11 +28,12 @@ use unisim.vcomponents.all;
 
 entity Core is
    generic (
-      TPD_G        : time             := 1 ns;
+      TPD_G        : time := 1 ns;
       BUILD_INFO_G : BuildInfoType;
-      SIMULATION_G : boolean          := false;
-      IP_ADDR_G    : slv(31 downto 0) := x"0A02A8C0";  -- 192.168.2.10
-      DHCP_G       : boolean          := false);
+      SIMULATION_G : boolean;
+      BUILD_10G_G  : boolean;
+      IP_ADDR_G    : slv(31 downto 0);
+      DHCP_G       : boolean);
    port (
       -- Clock and Reset
       axilClk         : out   sl;
@@ -77,6 +78,8 @@ entity Core is
 end Core;
 
 architecture mapping of Core is
+
+   constant AXIL_CLK_FREQ_C : real := ite(BUILD_10G_G, 156.25E+6, 125.0E+6);
 
    constant VERSION_INDEX_C : natural := 0;
    constant SYS_MON_INDEX_C : natural := 1;
@@ -177,6 +180,7 @@ begin
       U_Rudp : entity work.Rudp
          generic map (
             TPD_G            => TPD_G,
+            BUILD_10G_G      => BUILD_10G_G,
             IP_ADDR_G        => IP_ADDR_G,
             DHCP_G           => DHCP_G,
             AXIL_BASE_ADDR_G => XBAR_CONFIG_C(ETH_INDEX_C).baseAddr)
@@ -281,7 +285,7 @@ begin
       generic map (
          TPD_G           => TPD_G,
          BUILD_INFO_G    => BUILD_INFO_G,
-         CLK_PERIOD_G    => (1.0/156.25E+6),
+         CLK_PERIOD_G    => (1.0/AXIL_CLK_FREQ_C),
          XIL_DEVICE_G    => "ULTRASCALE",
          USE_SLOWCLK_G   => true,
          EN_DEVICE_DNA_G => true,
@@ -305,8 +309,8 @@ begin
          U_BootProm : entity surf.AxiMicronN25QCore
             generic map (
                TPD_G          => TPD_G,
-               AXI_CLK_FREQ_G => 156.25E+6,         -- units of Hz
-               SPI_CLK_FREQ_G => (156.25E+6/16.0))  -- units of Hz
+               AXI_CLK_FREQ_G => AXIL_CLK_FREQ_C,         -- units of Hz
+               SPI_CLK_FREQ_G => (AXIL_CLK_FREQ_C/16.0))  -- units of Hz
             port map (
                -- FLASH Memory Ports
                csL            => bootCsL(i),
@@ -391,7 +395,7 @@ begin
             MUX_DECODE_MAP_G   => I2C_MUX_DECODE_MAP_TCA9548_C,
             I2C_MUX_ADDR_G     => b"1110_100",
             I2C_SCL_FREQ_G     => 400.0E+3,  -- units of Hz
-            AXIL_CLK_FREQ_G    => 156.25E+6,
+            AXIL_CLK_FREQ_G    => AXIL_CLK_FREQ_C,
             -- AXI-Lite Crossbar Generics
             NUM_MASTER_SLOTS_G => 8,
             MASTERS_CONFIG_G   => XBAR_I2C_CONFIG_C)
@@ -420,7 +424,7 @@ begin
                TPD_G          => TPD_G,
                I2C_SCL_FREQ_G => 400.0E+3,  -- units of Hz
                DEVICE_MAP_G   => SFF8472_I2C_CONFIG_C,
-               AXI_CLK_FREQ_G => 156.25E+6)
+               AXI_CLK_FREQ_G => AXIL_CLK_FREQ_C)
             port map (
                -- I2C Ports
                i2ci           => i2ci,
