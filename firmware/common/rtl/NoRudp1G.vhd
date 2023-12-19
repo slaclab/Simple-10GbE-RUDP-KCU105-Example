@@ -25,10 +25,10 @@ use surf.RssiPkg.all;
 library unisim;
 use unisim.vcomponents.all;
 
-entity Rudp is
+entity NoRudp1G is
    generic (
       TPD_G            : time             := 1 ns;
-      IP_ADDR_G        : slv(31 downto 0) := x"0A02A8C0";  -- 192.168.2.10
+      IP_ADDR_G        : slv(31 downto 0) := x"0A03A8C0";  -- 192.168.3.10
       DHCP_G           : boolean          := false;
       AXIL_BASE_ADDR_G : slv(31 downto 0));
    port (
@@ -62,9 +62,12 @@ entity Rudp is
       ethRxN           : in  sl;
       ethTxP           : out sl;
       ethTxN           : out sl);
-end Rudp;
+end NoRudp1G;
 
-architecture mapping of Rudp is
+architecture mapping of NoRudp1G is
+
+   --constant AXIS_SIZE_C       : positive                         := 1;
+   constant ETH_AXIS_CONFIG_C : AxiStreamConfigArray(3 downto 0) := (others => EMAC_AXIS_CONFIG_C);
 
    constant PHY_INDEX_C      : natural := 0;
    constant UDP_INDEX_C      : natural := 1;
@@ -80,7 +83,8 @@ architecture mapping of Rudp is
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
 
-   constant CLK_FREQUENCY_C : real := 156.25E+6;  -- In units of Hz
+   constant CLK_FREQUENCY_C : real := 125.0E+6;  -- In units of Hz
+   constant RSSI_C          : boolean := false;  -- false = UDP only, true = RUDP
 
    -- UDP constants
    constant UDP_SRV_SRP_IDX_C  : natural  := 0;
@@ -95,7 +99,7 @@ architecture mapping of Rudp is
    -- RSSI constants
    constant RSSI_SIZE_C : positive := 1;  -- Implementing only 1 VC per RSSI link
    constant AXIS_CONFIG_C : AxiStreamConfigArray(RSSI_SIZE_C-1 downto 0) := (
-      0 => RSSI_AXIS_CONFIG_C);  -- Only using 64 bit AXI stream configuration
+      0 => EMAC_AXIS_CONFIG_C);  -- Only using 64 bit AXI stream configuration
 
    signal ibMacMaster : AxiStreamMasterType;
    signal ibMacSlave  : AxiStreamSlaveType;
@@ -174,49 +178,59 @@ begin
          clk    => ethClk,
          rstOut => extReset);
 
-   ----------------------------------
-   -- 10 GigE PHY/MAC Ethernet Layers
-   ----------------------------------
-   U_10GigE : entity surf.TenGigEthGthUltraScaleWrapper
-      generic map (
-         TPD_G        => TPD_G,
-         NUM_LANE_G   => 1,
-         PAUSE_EN_G   => true,          -- Enable ETH pause
-         EN_AXI_REG_G => true)          -- Enable diagnostic AXI-Lite interface
-      port map (
-         -- Local Configurations
-         localMac(0)            => localMac,
-         -- Streaming DMA Interface
-         dmaClk(0)              => ethClk,
-         dmaRst(0)              => ethRst,
-         dmaIbMasters(0)        => obMacMaster,
-         dmaIbSlaves(0)         => obMacSlave,
-         dmaObMasters(0)        => ibMacMaster,
-         dmaObSlaves(0)         => ibMacSlave,
-         -- Slave AXI-Lite Interface
-         axiLiteClk(0)          => ethClk,
-         axiLiteRst(0)          => ethRst,
-         axiLiteReadMasters(0)  => axilReadMasters(PHY_INDEX_C),
-         axiLiteReadSlaves(0)   => axilReadSlaves(PHY_INDEX_C),
-         axiLiteWriteMasters(0) => axilWriteMasters(PHY_INDEX_C),
-         axiLiteWriteSlaves(0)  => axilWriteSlaves(PHY_INDEX_C),
-         -- Misc. Signals
-         extRst                 => extReset,
-         coreClk                => ethClk,
-         coreRst                => ethRst,
-         phyReady(0)            => phyReady,
-         -- MGT Clock Port 156.25 MHz
-         gtClkP                 => ethClkP,
-         gtClkN                 => ethClkN,
-         -- MGT Ports
-         gtTxP(0)               => ethTxP,
-         gtTxN(0)               => ethTxN,
-         gtRxP(0)               => ethRxP,
-         gtRxN(0)               => ethRxN);
+     ---------------------
+      -- 1 GigE XAUI Module
+      ---------------------
+      U_1GigE : entity surf.GigEthGthUltraScaleWrapper
+         generic map (
+            TPD_G              => TPD_G,
+            -- DMA/MAC Configurations
+            NUM_LANE_G         => 1,
+			EN_AXI_REG_G       => true,
+            -- QUAD PLL Configurations
+            USE_GTREFCLK_G     => false,
+            CLKIN_PERIOD_G     => 6.4,   -- 156.25 MHz
+            DIVCLK_DIVIDE_G    => 5,     -- 31.25 MHz = (156.25 MHz/5)
+            CLKFBOUT_MULT_F_G  => 32.0,  -- 1 GHz = (32 x 31.25 MHz)
+            CLKOUT0_DIVIDE_F_G => 8.0,   -- 125 MHz = (1.0 GHz/8)
+            -- AXI Streaming Configurations
+            AXIS_CONFIG_G      => ETH_AXIS_CONFIG_C)
+         port map (
+            -- Local Configurations
+            localMac(0)  => localMac,
+            -- Streaming DMA Interface
+            dmaClk(0)    => ethClk,
+            dmaRst(0)    => ethRst,
+            dmaIbMasters(0) => obMacMaster,
+            dmaIbSlaves(0)  => obMacSlave,
+            dmaObMasters(0) => ibMacMaster,
+            dmaObSlaves(0)  => ibMacSlave,
+            -- Slave AXI-Lite Interface
+			axiLiteClk(0)          => ethClk,
+			axiLiteRst(0)          => ethRst,
+			axiLiteReadMasters(0)  => axilReadMasters(PHY_INDEX_C),
+			axiLiteReadSlaves(0)   => axilReadSlaves(PHY_INDEX_C),
+			axiLiteWriteMasters(0) => axilWriteMasters(PHY_INDEX_C),
+			axiLiteWriteSlaves(0)  => axilWriteSlaves(PHY_INDEX_C),
+            -- Misc. Signals
+            extRst       => extReset,
+            phyClk       => ethClk,
+            phyRst       => ethRst,
+            phyReady(0)  => phyReady,
+            -- MGT Clock Port
+            gtClkP       => ethClkP,
+            gtClkN       => ethClkN,
+            -- MGT Ports
+            gtTxP(0)     => ethTxP,
+            gtTxN(0)     => ethTxN,
+            gtRxP(0)     => ethRxP,
+            gtRxN(0)     => ethRxN);
+
 
    ------------------------------------
    -- IPv4/ARP/UDP/DHCP Ethernet Layers
    ------------------------------------
+
    U_UDP : entity surf.UdpEngineWrapper
       generic map (
          -- Simulation Generics
@@ -273,57 +287,72 @@ begin
 
    GEN_VEC :
    for i in 0 to 1 generate
+      GEN_RSSI : if (RSSI_C = true) generate
+		  ------------------------------------------
+		  -- Software's RSSI Server Interface @ 8192
+		  ------------------------------------------
+		  U_RssiServer : entity surf.RssiCoreWrapper
+			 generic map (
+				TPD_G              => TPD_G,
+				PIPE_STAGES_G      => 1,
+				SERVER_G           => true,
+				APP_ILEAVE_EN_G    => true,
+				MAX_SEG_SIZE_G     => ite(i = 0, 1024, 8192),  -- 1kB for SRPv3, 8KB for AXI stream
+				APP_STREAMS_G      => RSSI_SIZE_C,
+				CLK_FREQUENCY_G    => CLK_FREQUENCY_C,
+				WINDOW_ADDR_SIZE_G => ite(i = 0, 4, 5),  -- 2^4 buffers for SRPv3, 2^5 buffers for AXI stream
+				MAX_RETRANS_CNT_G  => 16,
+				APP_AXIS_CONFIG_G  => AXIS_CONFIG_C,
+				TSP_AXIS_CONFIG_G  => EMAC_AXIS_CONFIG_C)
+			 port map (
+				clk_i                => ethClk,
+				rst_i                => ethRst,
+				openRq_i             => '1',
+				rssiConnected_o      => rssiLinkUp(i),
+				-- Application Layer Interface
+				sAppAxisMasters_i(0) => rssiIbMasters(i),
+				sAppAxisSlaves_o(0)  => rssiIbSlaves(i),
+				mAppAxisMasters_o(0) => rssiObMasters(i),
+				mAppAxisSlaves_i(0)  => rssiObSlaves(i),
+				-- Transport Layer Interface
+				sTspAxisMaster_i     => obServerMasters(i),
+				sTspAxisSlave_o      => obServerSlaves(i),
+				mTspAxisMaster_o     => ibServerMasters(i),
+				mTspAxisSlave_i      => ibServerSlaves(i),
+				-- AXI-Lite Interface
+				axiClk_i             => ethClk,
+				axiRst_i             => ethRst,
+				axilReadMaster       => axilReadMasters(RSSI_INDEX_C+i),
+				axilReadSlave        => axilReadSlaves(RSSI_INDEX_C+i),
+				axilWriteMaster      => axilWriteMasters(RSSI_INDEX_C+i),
+				axilWriteSlave       => axilWriteSlaves(RSSI_INDEX_C+i));
+             end generate;
 
-      ------------------------------------------
-      -- Software's RSSI Server Interface @ 8192
-      ------------------------------------------
-      U_RssiServer : entity surf.RssiCoreWrapper
-         generic map (
-            TPD_G              => TPD_G,
-            PIPE_STAGES_G      => 1,
-            SERVER_G           => true,
-            APP_ILEAVE_EN_G    => true,
-            MAX_SEG_SIZE_G     => ite(i = 0, 1024, 8192),  -- 1kB for SRPv3, 8KB for AXI stream
-            APP_STREAMS_G      => RSSI_SIZE_C,
-            CLK_FREQUENCY_G    => CLK_FREQUENCY_C,
-            WINDOW_ADDR_SIZE_G => ite(i = 0, 4, 5),  -- 2^4 buffers for SRPv3, 2^5 buffers for AXI stream
-            MAX_RETRANS_CNT_G  => 16,
-            APP_AXIS_CONFIG_G  => AXIS_CONFIG_C,
-            TSP_AXIS_CONFIG_G  => EMAC_AXIS_CONFIG_C)
-         port map (
-            clk_i                => ethClk,
-            rst_i                => ethRst,
-            openRq_i             => '1',
-            rssiConnected_o      => rssiLinkUp(i),
-            -- Application Layer Interface
-            sAppAxisMasters_i(0) => rssiIbMasters(i),
-            sAppAxisSlaves_o(0)  => rssiIbSlaves(i),
-            mAppAxisMasters_o(0) => rssiObMasters(i),
-            mAppAxisSlaves_i(0)  => rssiObSlaves(i),
-            -- Transport Layer Interface
-            sTspAxisMaster_i     => obServerMasters(i),
-            sTspAxisSlave_o      => obServerSlaves(i),
-            mTspAxisMaster_o     => ibServerMasters(i),
-            mTspAxisSlave_i      => ibServerSlaves(i),
-            -- AXI-Lite Interface
-            axiClk_i             => ethClk,
-            axiRst_i             => ethRst,
-            axilReadMaster       => axilReadMasters(RSSI_INDEX_C+i),
-            axilReadSlave        => axilReadSlaves(RSSI_INDEX_C+i),
-            axilWriteMaster      => axilWriteMasters(RSSI_INDEX_C+i),
-            axilWriteSlave       => axilWriteSlaves(RSSI_INDEX_C+i));
+			 BYP_RSSI : if (RSSI_C = false) generate
+
+				---------------------------
+				-- No UDP reliability Layer
+				---------------------------
+				rssiObMasters(i)    <= obServerMasters(i);
+				obServerSlaves(i)   <= rssiObSlaves(i);
+				ibServerMasters(i)  <= rssiIbMasters(i);
+				rssiIbSlaves(i)     <= ibServerSlaves(i);
+				rssiLinkUp(i)       <= '0';
+
+			 end generate;
 
    end generate GEN_VEC;
 
    ------------------------------------------------------------------
-   -- RSSI[0] @ UDP Port(SERVER_PORTS_C[0]) = Register access control
+   --  @ UDP Port(SERVER_PORTS_C[0]) = Register access control
    ------------------------------------------------------------------
+
    U_SRPv3 : entity surf.SrpV3AxiLite
       generic map (
          TPD_G               => TPD_G,
          SLAVE_READY_EN_G    => true,
          GEN_SYNC_FIFO_G     => true,
-         AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
+         AXI_STREAM_CONFIG_G => EMAC_AXIS_CONFIG_C)
       port map (
          -- Streaming Slave (Rx) Interface (sAxisClk domain)
          sAxisClk         => ethClk,
@@ -344,8 +373,10 @@ begin
          mAxilWriteSlave  => mAxilWriteSlave);
 
    ---------------------------------------------------------------
-   -- RSSI[1] @ UDP Port(SERVER_PORTS_C[1]) = AXI Stream Interface
+   -- @ UDP Port(SERVER_PORTS_C[1]) = AXI Stream Interface
    ---------------------------------------------------------------
+
+
    rssiIbMasters(1) <= ibRudpMaster;
    ibRudpSlave      <= rssiIbSlaves(1);
    obRudpMaster     <= rssiObMasters(1);
@@ -360,7 +391,7 @@ begin
          COMMON_CLK_G     => true,
          AXIS_CLK_FREQ_G  => CLK_FREQUENCY_C,
          AXIS_NUM_SLOTS_G => 2,
-         AXIS_CONFIG_G    => RSSI_AXIS_CONFIG_C)
+         AXIS_CONFIG_G    => EMAC_AXIS_CONFIG_C)
       port map(
          -- AXIS Stream Interface
          axisClk          => ethClk,

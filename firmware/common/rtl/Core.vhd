@@ -174,7 +174,7 @@ begin
 
    GEN_ETH : if (SIMULATION_G = false) generate
 
-      U_Rudp : entity work.Rudp
+      U_NoRudp1G : entity work.NoRudp1G
          generic map (
             TPD_G            => TPD_G,
             IP_ADDR_G        => IP_ADDR_G,
