@@ -36,7 +36,7 @@ if __name__ == "__main__":
         "--ip",
         type     = str,
         required = False,
-        default  = '192.168.2.10',
+        default  = '192.168.3.10',
         help     = "IP address",
     )
 

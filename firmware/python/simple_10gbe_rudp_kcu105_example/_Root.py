@@ -24,7 +24,7 @@ rogue.Version.minVersion('6.0.0')
 
 class Root(pr.Root):
     def __init__(   self,
-            ip       = '192.168.2.10',
+            ip       = '192.168.3.10',
             promProg = False, # Flag to disable all devices not related to PROM programming
             enSwRx   = True,  # Flag to enable the software stream receiver
             zmqSrvEn = True,  # Flag to include the ZMQ server
@@ -65,30 +65,20 @@ class Root(pr.Root):
         # Else communicating to the actual hardware
         else:
 
-            # Add RUDP Software clients
-            self.rudp = [None for i in range(2)]
+            # Add Software clients
+            self.udpClts = [None for i in range(2)]
 
             for i in range(2):
-                # Create the ETH interface @ IP Address = ip
-                self.rudp[i] = pr.protocols.UdpRssiPack(
-                    name    = f'SwRudpClient[{i}]',
-                    host    = ip,
-                    port    = 8192+i,
-                    packVer = 2,
-                    jumbo   = (i>0), # Jumbo frames for RUDP[1] (streaming) only
-                    expand  = False,
-                    )
-                self.add(self.rudp[i])
-
+                self.udpClts[i] = rogue.protocols.udp.Client(  ip, 8192+i, 1500 )
 
             # Create SRPv3
             self.srp = rogue.protocols.srp.SrpV3()
 
-            # Connect SRPv3 to RDUP[0]
-            self.srp == self.rudp[0].application(0)
+            # Connect SRPv3 to udpClts[0]
+            self.srp == self.udpClts[0]
 
             # Map the streaming interface
-            self.stream = self.rudp[1].application(0)
+            self.stream = self.udpClts[1]
 
             # Create XVC server and UDP client
             self.udpClient = rogue.protocols.udp.Client( ip, 2542, False ) # Client(host, port, jumbo)
