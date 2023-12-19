@@ -69,7 +69,7 @@ class Root(pr.Root):
             self.udpClts = [None for i in range(2)]
 
             for i in range(2):
-                self.udpClts[i] = rogue.protocols.udp.Client(  ip, 8192+i, 1500 )
+                self.udpClts[i] = rogue.protocols.udp.Client(  ip, 8192+i, False ) # Client(host, port, jumbo)
 
             # Create SRPv3
             self.srp = rogue.protocols.srp.SrpV3()
