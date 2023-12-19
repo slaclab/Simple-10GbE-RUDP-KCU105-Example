@@ -25,7 +25,7 @@ entity Simple10GbeRudpKcu105Example is
       TPD_G        : time             := 1 ns;
       BUILD_INFO_G : BuildInfoType;
       SIMULATION_G : boolean          := false;
-      IP_ADDR_G    : slv(31 downto 0) := x"0A02A8C0";  -- 192.168.2.10
+      IP_ADDR_G    : slv(31 downto 0) := x"0A03A8C0"; -- 192.168.3.10
       DHCP_G       : boolean          := false);
    port (
       -- I2C Ports
