@@ -121,6 +121,7 @@ architecture mapping of Rudp is
    signal ethClk   : sl;
    signal ethRst   : sl;
    signal extReset : sl;
+   signal refClk   : sl;
 
 begin
 
@@ -172,7 +173,7 @@ begin
          DURATION_G => 156250000)
       port map (
          arst   => extRst,
-         clk    => ethClk,
+         clk    => refClk,
          rstOut => extReset);
 
    GEN_10G : if (BUILD_10G_G = true) generate
@@ -215,6 +216,7 @@ begin
             gtTxN(0)               => ethTxN,
             gtRxP(0)               => ethRxP,
             gtRxN(0)               => ethRxN);
+      refClk <= ethClk;
    end generate;
 
    GEN_1G : if (BUILD_10G_G = false) generate
@@ -255,6 +257,7 @@ begin
             phyClk                 => ethClk,
             phyRst                 => ethRst,
             phyReady(0)            => phyReady,
+            refClkOut              => refClk,
             -- MGT Clock Port
             gtClkP                 => ethClkP,
             gtClkN                 => ethClkN,
