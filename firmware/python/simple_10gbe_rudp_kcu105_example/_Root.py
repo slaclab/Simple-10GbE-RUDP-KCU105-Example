@@ -36,7 +36,7 @@ class Root(pr.Root):
 
         # Check if including ZMQ server (required for PyDM GUI)
         if zmqSrvEn:
-            self.zmqServer = pr.interfaces.ZmqServer(root=self, addr='*', port=0)
+            self.zmqServer = pr.interfaces.ZmqServer(root=self, addr='127.0.0.1', port=0)
             self.addInterface(self.zmqServer)
 
         #################################################################
