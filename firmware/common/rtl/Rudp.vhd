@@ -312,18 +312,33 @@ begin
    -- Xilinx Virtual Cable (XVC)
    -- https://www.xilinx.com/products/intellectual-property/xvc.html
    -----------------------------------------------------------------
-   U_XVC : entity surf.UdpDebugBridgeWrapper
+--   U_XVC : entity surf.UdpDebugBridgeWrapper
+--      generic map (
+--         TPD_G => TPD_G)
+--      port map (
+--         -- Clock and Reset
+--         clk            => ethClk,
+--         rst            => ethRst,
+--         -- UDP XVC Interface
+--         obServerMaster => obServerMasters(UDP_SRV_XVC_IDX_C),
+--         obServerSlave  => obServerSlaves(UDP_SRV_XVC_IDX_C),
+--         ibServerMaster => ibServerMasters(UDP_SRV_XVC_IDX_C),
+--         ibServerSlave  => ibServerSlaves(UDP_SRV_XVC_IDX_C));
+   U_DmaXvcWrapper : entity surf.DmaXvcWrapper  -- Using this project to regression test DmaXvcWrapper, we could of just used UdpDebugBridgeWrapper directly (see above) for this UDP application instead
       generic map (
-         TPD_G => TPD_G)
+         TPD_G             => TPD_G,
+         DMA_AXIS_CONFIG_G => EMAC_AXIS_CONFIG_C)
       port map (
-         -- Clock and Reset
-         clk            => ethClk,
-         rst            => ethRst,
-         -- UDP XVC Interface
-         obServerMaster => obServerMasters(UDP_SRV_XVC_IDX_C),
-         obServerSlave  => obServerSlaves(UDP_SRV_XVC_IDX_C),
-         ibServerMaster => ibServerMasters(UDP_SRV_XVC_IDX_C),
-         ibServerSlave  => ibServerSlaves(UDP_SRV_XVC_IDX_C));
+         -- 156.25MHz XVC Clock/Reset (xvcClk156 domain)
+         xvcClk156   => ethClk,
+         xvcRst156   => ethRst,
+         -- DMA Interface (dmaClk domain)
+         dmaClk      => ethClk,
+         dmaRst      => ethRst,
+         dmaObMaster => obServerMasters(UDP_SRV_XVC_IDX_C),
+         dmaObSlave  => obServerSlaves(UDP_SRV_XVC_IDX_C),
+         dmaIbMaster => ibServerMasters(UDP_SRV_XVC_IDX_C),
+         dmaIbSlave  => ibServerSlaves(UDP_SRV_XVC_IDX_C));
 
    GEN_VEC :
    for i in 0 to 1 generate
