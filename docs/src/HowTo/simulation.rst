@@ -9,7 +9,7 @@ How to run the Software Development GUI with VCS firmware simulator
 In the first terminal
 =====================
 
-#. Follow the instructions [here](https://github.com/slaclab/tid-id-xilinx-dockers/blob/main/README.md) to build and use the `vcs` docker container.
+#. Follow the instructions `here <https://github.com/slaclab/tid-id-xilinx-dockers/blob/main/README.md>`_ to build and use the `vcs` docker container.
 
 #. Once in the container, setup Vivado and VCS (refer to :ref:`setup_vivado_setup`)
 
