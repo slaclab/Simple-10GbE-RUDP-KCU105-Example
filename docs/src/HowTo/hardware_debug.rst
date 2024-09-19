@@ -4,9 +4,9 @@
 How to implement ILA in Vivado with ruckus
 ==========================================
 
-* Add a "post_synthesis.tcl" to your target's vivado directory.  Here's an example
+* Add a "pre_opt_run.tcl" to your target's vivado directory.  Here's an example
 
-   https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/post_synthesis.tcl
+   https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/pre_opt_run.tcl
 
 
 * Here the basic format of the TCL script
@@ -30,15 +30,6 @@ How to implement ILA in Vivado with ruckus
       # ELSE ... comment out the return to include chipscope
       ######################################################
       #return
-
-   * This script gets called after "synth_1" and will open up the synth_1 design
-
-   .. code-block::
-
-      ############################
-      ## Open the synthesis design
-      ############################
-      open_run synth_1
 
    * Define "ilaName" variable and create the ILA core
 
