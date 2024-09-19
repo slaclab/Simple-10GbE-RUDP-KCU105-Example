@@ -80,7 +80,7 @@ How to implement ILA in Vivado with ruckus
       ...
       ConfigProbe ${ilaName} {<probe_netname>}
 
-   * Write the debug probes into the synth_1 design before impl_1
+   * Write the debug probes
 
    .. code-block::
 
