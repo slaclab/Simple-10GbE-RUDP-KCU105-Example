@@ -1,6 +1,9 @@
 # Load RUCKUS environment and library
 source -quiet $::env(RUCKUS_DIR)/vivado_proc.tcl
 
+# Check for version 2024.1 of Vivado (or later)
+if { [VersionCheck 2024.1] < 0 } {exit -1}
+
 # Load common and sub-module ruckus.tcl files
 loadRuckusTcl $::env(TOP_DIR)/submodules/surf
 loadRuckusTcl $::env(TOP_DIR)/common
