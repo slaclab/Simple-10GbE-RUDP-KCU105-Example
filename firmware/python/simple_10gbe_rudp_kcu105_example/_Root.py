@@ -90,13 +90,14 @@ class Root(pr.Root):
             # Map the streaming interface
             self.stream = self.rudp[1].application(0)
 
-            # Create XVC server and UDP client
-            self.udpClient = rogue.protocols.udp.Client( ip, 2542, False ) # Client(host, port, jumbo)
-            self.xvc = rogue.protocols.xilinx.Xvc ( 2542 ) # Server(port)
-            self.addProtocol( self.xvc )
+            if not promProg:
+                # Create XVC server and UDP client
+                self.udpClient = rogue.protocols.udp.Client( ip, 2542, False ) # Client(host, port, jumbo)
+                self.xvc = rogue.protocols.xilinx.Xvc ( 2542 ) # Server(port)
+                self.addProtocol( self.xvc )
 
-            # Connect the UDP Client to the XVC
-            self.udpClient == self.xvc
+                # Connect the UDP Client to the XVC
+                self.udpClient == self.xvc
 
         #################################################################
 
