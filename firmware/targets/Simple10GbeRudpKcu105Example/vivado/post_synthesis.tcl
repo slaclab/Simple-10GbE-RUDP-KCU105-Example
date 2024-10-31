@@ -1,4 +1,3 @@
-return
 ##############################################################################
 ## This file is part of 'Simple-10GbE-RUDP-KCU105-Example'.
 ## It is subject to the license terms in the LICENSE.txt file found in the
@@ -20,6 +19,11 @@ source -quiet $::env(RUCKUS_DIR)/vivado_proc.tcl
 # ELSE ... comment out the return to include chipscope
 ######################################################
 #return
+
+############################
+## Open the synthesis design
+############################
+open_run synth_1
 
 ###############################
 ## Set the name of the ILA core
