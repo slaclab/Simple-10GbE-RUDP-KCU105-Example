@@ -109,6 +109,7 @@ begin
       generic map (
          TPD_G        => TPD_G,
          COMMON_CLK_G => true,
+         SYNTH_MODE_G => "xpm",
          ADDR_WIDTH_G => 10,
          DATA_WIDTH_G => 32)
       port map (
