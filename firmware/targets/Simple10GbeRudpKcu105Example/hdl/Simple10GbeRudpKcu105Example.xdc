@@ -59,9 +59,15 @@ set_clock_groups -asynchronous -group [get_clocks ethClkP] -group [get_clocks -o
 # BITSTREAM: .bit file Configuration
 ##############################################################################
 
-set_property CONFIG_VOLTAGE 1.8                      [current_design]
-set_property CFGBVS GND                              [current_design]
-set_property BITSTREAM.GENERAL.COMPRESS TRUE         [current_design]
-set_property CONFIG_MODE SPIx8                       [current_design]
-set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 8         [current_design]
-set_property BITSTREAM.CONFIG.CONFIGRATE 12          [current_design]
+set_property CONFIG_VOLTAGE 1.8              [current_design]
+set_property CFGBVS GND                      [current_design]
+set_property CONFIG_MODE SPIx8               [current_design]
+set_property BITSTREAM.CONFIG.SPI_BUSWIDTH 8 [current_design]
+
+set_property BITSTREAM.CONFIG.CONFIGRATE 12  [current_design]
+#set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN div-1 [current_design]
+#set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES [current_design]
+set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup [current_design]
+set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes [current_design]
+set_property BITSTREAM.STARTUP.LCK_CYCLE NoWait [current_design]
+set_property BITSTREAM.STARTUP.MATCH_CYCLE NoWait [current_design]
