@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to implement ILA in Vivado with ruckus &mdash; Simple-10GbE-RUDP-KCU105-Example v2.12.0-4-ga4f041c documentation</title>
+  <title>How to implement ILA in Vivado with ruckus &mdash; Simple-10GbE-RUDP-KCU105-Example v2.13.0-2-g00e865d documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=1e4d90e7"></script>
+      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=1fd6fae6"></script>
       <script src="../_static/doctools.js?v=888ff710"></script>
       <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
     <script src="../_static/js/theme.js"></script>
@@ -90,9 +90,9 @@
   <section id="how-to-implement-ila-in-vivado-with-ruckus">
 <span id="how-to-hardware-debug"></span><h1>How to implement ILA in Vivado with ruckus<a class="headerlink" href="#how-to-implement-ila-in-vivado-with-ruckus" title="Permalink to this heading"></a></h1>
 <ul>
-<li><p>Add a “pre_opt_run.tcl” to your target’s vivado directory.  Here’s an example</p>
+<li><p>Add a “post_synthesis.tcl” to your target’s vivado directory.  Here’s an example</p>
 <blockquote>
-<div><p><a class="reference external" href="https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/pre_opt_run.tcl">https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/pre_opt_run.tcl</a></p>
+<div><p><a class="reference external" href="https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/post_synthesis.tcl">https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/post_synthesis.tcl</a></p>
 </div></blockquote>
 </li>
 <li><p>Here the basic format of the TCL script</p>
@@ -115,6 +115,15 @@ source -quiet $::env(RUCKUS_DIR)/vivado_proc.tcl
 <span class="c1"># ELSE ... comment out the return to include chipscope</span>
 <span class="c1">######################################################</span>
 <span class="c1">#return</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>This script gets called after “synth_1” and will open up the synth_1 design</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1">############################</span>
+<span class="c1">## Open the synthesis design</span>
+<span class="c1">############################</span>
+<span class="n">open_run</span> <span class="n">synth_1</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -165,7 +174,7 @@ ConfigProbe ${ilaName} {&lt;probe_netname&gt;}
 </pre></div>
 </div>
 <ul class="simple">
-<li><p>Write the debug probes</p></li>
+<li><p>Write the debug probes into the synth_1 design before impl_1</p></li>
 </ul>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>##########################
 ## Write the port map file
@@ -192,7 +201,7 @@ WriteDebugProbes ${ilaName}
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2021, SLAC National Accelerator Laboratory.</p>
+    <p>&#169; Copyright 2025, SLAC National Accelerator Laboratory.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
