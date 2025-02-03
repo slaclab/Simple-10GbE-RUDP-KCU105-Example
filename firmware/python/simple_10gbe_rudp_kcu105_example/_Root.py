@@ -27,11 +27,13 @@ class Root(pr.Root):
             ip       = '192.168.2.10',
             promProg = False, # Flag to disable all devices not related to PROM programming
             enSwRx   = True,  # Flag to enable the software stream receiver
-            zmqSrvEn = True,  # Flag to include the ZMQ server
+            zmqSrvEn = False, # Flag to include the ZMQ server
+            xvcSrvEn = True,  # Flag to include the XVC server
             **kwargs):
         super().__init__(**kwargs)
 
         self.enSwRx = not promProg and enSwRx
+        self.promProg = promProg
         self.sim    = (ip == 'sim')
 
         # Check if including ZMQ server (required for PyDM GUI)
@@ -90,7 +92,7 @@ class Root(pr.Root):
             # Map the streaming interface
             self.stream = self.rudp[1].application(0)
 
-            if not promProg:
+            if not self.promProg and xvcSrvEn:
                 # Create XVC server and UDP client
                 self.udpClient = rogue.protocols.udp.Client( ip, 2542, False ) # Client(host, port, jumbo)
                 self.xvc = rogue.protocols.xilinx.Xvc ( 2542 ) # Server(port)
