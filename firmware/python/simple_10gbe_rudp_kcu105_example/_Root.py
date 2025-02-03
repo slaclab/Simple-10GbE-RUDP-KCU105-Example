@@ -27,7 +27,7 @@ class Root(pr.Root):
             ip       = '192.168.2.10',
             promProg = False, # Flag to disable all devices not related to PROM programming
             enSwRx   = True,  # Flag to enable the software stream receiver
-            zmqSrvEn = False, # Flag to include the ZMQ server
+            zmqSrvEn = True,  # Flag to include the ZMQ server
             xvcSrvEn = True,  # Flag to include the XVC server
             **kwargs):
         super().__init__(**kwargs)
