@@ -1,21 +1,21 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to use Xilinx Virtual Cable (XVC) with ILA &mdash; Simple-10GbE-RUDP-KCU105-Example v2.14.0-7-gf9db4f4 documentation</title>
+  <title>How to use Xilinx Virtual Cable (XVC) with ILA &mdash; Simple-10GbE-RUDP-KCU105-Example v2.15.0-5-g2f2016d documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=18b42fb1"></script>
-      <script src="../_static/doctools.js?v=888ff710"></script>
-      <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="../_static/documentation_options.js?v=43df5aff"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -88,7 +88,7 @@
            <div itemprop="articleBody">
              
   <section id="how-to-use-xilinx-virtual-cable-xvc-with-ila">
-<span id="how-to-remote-debug"></span><h1>How to use Xilinx Virtual Cable (XVC) with ILA<a class="headerlink" href="#how-to-use-xilinx-virtual-cable-xvc-with-ila" title="Permalink to this heading"></a></h1>
+<span id="how-to-remote-debug"></span><h1>How to use Xilinx Virtual Cable (XVC) with ILA<a class="headerlink" href="#how-to-use-xilinx-virtual-cable-xvc-with-ila" title="Link to this heading"></a></h1>
 <p>The Xilinx Virtual Cable (XVC) lets you remotely access the ILA
 (A.K.A. <code class="docutils literal notranslate"><span class="pre">Chipscope</span></code>) via the KCU105 Ethernet (instead of using JTAG).
 The XVC will let you view and interact with ILA remotely via
@@ -159,39 +159,47 @@ then connect the UDP client to the XVC server:</p>
 <p>You will need to first start the rogue software (either GUI mode or interactive mode) to start the XVC server.
 Next, from Vivado main screen, you will open <code class="docutils literal notranslate"><span class="pre">Vivado</span> <span class="pre">Hardware</span> <span class="pre">Manager</span></code> and open new target:</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_7.png"><img alt="Alternative text" src="../_images/xcv_7.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_7.png"><img alt="Alternative text" src="../_images/xcv_7.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>Or you can directly click on <code class="docutils literal notranslate"><span class="pre">open</span> <span class="pre">new</span> <span class="pre">target</span></code>:</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_0.png"><img alt="Alternative text" src="../_images/xcv_0.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_0.png"><img alt="Alternative text" src="../_images/xcv_0.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>Select that you are connecting to a remote server and enter the <code class="docutils literal notranslate"><span class="pre">host</span></code> name.
 If locally ran, then use <code class="docutils literal notranslate"><span class="pre">localhost</span></code>.
 If running remotely for different computer, you can use IP address or PC’s hostname on your network.</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_1.png"><img alt="Alternative text" src="../_images/xcv_1.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_1.png"><img alt="Alternative text" src="../_images/xcv_1.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>Click on <code class="docutils literal notranslate"><span class="pre">Add</span> <span class="pre">Xilinx</span> <span class="pre">Virtual</span> <span class="pre">Cable</span> <span class="pre">(XVC)</span></code>:</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_2.png"><img alt="Alternative text" src="../_images/xcv_2.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_2.png"><img alt="Alternative text" src="../_images/xcv_2.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>If locally ran, then use <code class="docutils literal notranslate"><span class="pre">localhost</span></code> for “Host Name”.
 If running remotely for different computer, you can use IP address or PC’s hostname on your network.</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_3.png"><img alt="Alternative text" src="../_images/xcv_3.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_3.png"><img alt="Alternative text" src="../_images/xcv_3.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>Next you will click on <code class="docutils literal notranslate"><span class="pre">NEXT</span></code> then click on <code class="docutils literal notranslate"><span class="pre">Finished</span></code> on the window after that</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_4.png"><img alt="Alternative text" src="../_images/xcv_4.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_4.png"><img alt="Alternative text" src="../_images/xcv_4.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>Click on “debug_bridge_0”, go to the “General Tab” and click on the <code class="docutils literal notranslate"><span class="pre">...</span></code> next to “Probes File”:</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_5.png"><img alt="Alternative text" src="../_images/xcv_5.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_5.png"><img alt="Alternative text" src="../_images/xcv_5.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 <p>Navigate to the <code class="docutils literal notranslate"><span class="pre">.ltx</span></code> file that generated from your <code class="docutils literal notranslate"><span class="pre">post_synthesis.tcl</span></code> TCL script (refer to <a class="reference internal" href="hardware_debug.html#how-to-hardware-debug"><span class="std std-ref">How to implement ILA in Vivado with ruckus</span></a>).
 Once the .ltx file is loaded, the ILA can now be access remotely via the Ethernet link.</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="../_images/xcv_6.png"><img alt="Alternative text" src="../_images/xcv_6.png" style="width: 400px;" /></a>
+<div><a class="reference internal image-reference" href="../_images/xcv_6.png"><img alt="Alternative text" src="../_images/xcv_6.png" style="width: 400px;" />
+</a>
 </div></blockquote>
 </section>
 

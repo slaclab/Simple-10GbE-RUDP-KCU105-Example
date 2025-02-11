@@ -1,21 +1,21 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="../">
 <head>
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to run the Software Development GUI with VCS firmware simulator &mdash; Simple-10GbE-RUDP-KCU105-Example v2.14.0-7-gf9db4f4 documentation</title>
+  <title>How to run the Software Development GUI with VCS firmware simulator &mdash; Simple-10GbE-RUDP-KCU105-Example v2.15.0-5-g2f2016d documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js?v=18b42fb1"></script>
-      <script src="../_static/doctools.js?v=888ff710"></script>
-      <script src="../_static/sphinx_highlight.js?v=4825356b"></script>
+      <script src="../_static/documentation_options.js?v=43df5aff"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -92,12 +92,12 @@
            <div itemprop="articleBody">
              
   <section id="how-to-run-the-software-development-gui-with-vcs-firmware-simulator">
-<span id="how-to-simulation"></span><h1>How to run the Software Development GUI with VCS firmware simulator<a class="headerlink" href="#how-to-run-the-software-development-gui-with-vcs-firmware-simulator" title="Permalink to this heading"></a></h1>
+<span id="how-to-simulation"></span><h1>How to run the Software Development GUI with VCS firmware simulator<a class="headerlink" href="#how-to-run-the-software-development-gui-with-vcs-firmware-simulator" title="Link to this heading"></a></h1>
 <ul class="simple">
 <li><p>Start up two terminals …</p></li>
 </ul>
 <section id="in-the-first-terminal">
-<h2>In the first terminal<a class="headerlink" href="#in-the-first-terminal" title="Permalink to this heading"></a></h2>
+<h2>In the first terminal<a class="headerlink" href="#in-the-first-terminal" title="Link to this heading"></a></h2>
 <ol class="arabic">
 <li><p>Follow the instructions <a class="reference external" href="https://github.com/slaclab/tid-id-xilinx-dockers/blob/main/README.md">here</a> to build and use the <cite>vcs</cite> docker container.</p></li>
 <li><p>Once in the container, setup Vivado and VCS (refer to <a class="reference internal" href="../Setup/vivado_setup.html#setup-vivado-setup"><span class="std std-ref">Vivado and VCS Setup</span></a>)</p></li>
@@ -128,12 +128,13 @@ $<span class="w"> </span>make<span class="w"> </span>vcs
 </div>
 </li>
 <li><p>When the VCS GUI pops up, start the simulation run</p>
-<a class="reference internal image-reference" href="../_images/vcsGui.png"><img alt="Alternative text" src="../_images/vcsGui.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/vcsGui.png"><img alt="Alternative text" src="../_images/vcsGui.png" style="width: 800px;" />
+</a>
 </li>
 </ol>
 </section>
 <section id="in-the-second-terminal">
-<h2>In the Second terminal<a class="headerlink" href="#in-the-second-terminal" title="Permalink to this heading"></a></h2>
+<h2>In the Second terminal<a class="headerlink" href="#in-the-second-terminal" title="Link to this heading"></a></h2>
 <ol class="arabic">
 <li><p>Setup rogue software (refer to <a class="reference internal" href="../Setup/rogue_setup.html#setup-rogue-setup"><span class="std std-ref">Rogue Software Setup</span></a>)</p></li>
 <li><p>run the Development GUI python script with <strong>–ip sim</strong> argument</p>
@@ -141,7 +142,8 @@ $<span class="w"> </span>make<span class="w"> </span>vcs
 $<span class="w"> </span>python<span class="w"> </span>scripts/devGui.py<span class="w"> </span>--ip<span class="w"> </span>sim
 </pre></div>
 </div>
-<a class="reference internal image-reference" href="../_images/cosimGui.png"><img alt="Alternative text" src="../_images/cosimGui.png" style="width: 800px;" /></a>
+<a class="reference internal image-reference" href="../_images/cosimGui.png"><img alt="Alternative text" src="../_images/cosimGui.png" style="width: 800px;" />
+</a>
 </li>
 </ol>
 </section>
