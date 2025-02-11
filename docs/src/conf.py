@@ -187,3 +187,5 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 breathe_projects = { 'Simple-10GbE-RUDP-KCU105-Example' : '../build/doxyxml' }
 breathe_default_project = 'Simple-10GbE-RUDP-KCU105-Example'
 
+# Example configuration for intersphinx: refer to the Python standard library.
+intersphinx_mapping = {'https://docs.python.org/': None}
