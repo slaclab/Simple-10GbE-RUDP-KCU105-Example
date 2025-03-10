@@ -32,7 +32,7 @@ class Root(pr.Root):
             **kwargs):
 
         # Pass custom value to parent via super function
-        kwargs['timeout'] = 5.0 (ip != 'sim') 100.0 # Firmware simulation slow and timeout base on real time (not simulation time)
+        kwargs['timeout'] = 5.0 if (ip != 'sim') else 100.0 # Firmware simulation slow and timeout base on real time (not simulation time)
         super().__init__(**kwargs)
 
         self.enSwRx = not promProg and enSwRx
