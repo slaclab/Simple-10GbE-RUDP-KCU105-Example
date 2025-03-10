@@ -30,6 +30,9 @@ class Root(pr.Root):
             zmqSrvEn = True,  # Flag to include the ZMQ server
             xvcSrvEn = True,  # Flag to include the XVC server
             **kwargs):
+
+        # Pass custom value to parent via super function
+        kwargs['timeout'] = 5.0 (ip != 'sim') 100.0 # Firmware simulation slow and timeout base on real time (not simulation time)
         super().__init__(**kwargs)
 
         self.enSwRx = not promProg and enSwRx
@@ -52,9 +55,6 @@ class Root(pr.Root):
 
         # Check if VCS FW/SW co-simulation
         elif (ip == 'sim'):
-
-            # Firmware simulation slow and timeout base on real time (not simulation time)
-            self._timeout = 100000000
 
             # Override start up flags are FALSE for simulation mode
             self._pollEn   = False
