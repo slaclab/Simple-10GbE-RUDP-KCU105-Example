@@ -1,7 +1,7 @@
 ##################################
 # Setup environment
 ##################################
-source /sdf/group/faders/tools/anaconda3/etc/profile.d/conda.sh
+source /sdf/group/faders/users/$USER/anaconda3/etc/profile.d/conda.sh
 
 ##################################
 # Activate Rogue conda Environment
