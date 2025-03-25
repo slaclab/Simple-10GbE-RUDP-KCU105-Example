@@ -29,4 +29,4 @@ with position#1 in the arrow direction:
   :width: 800
   :alt: Alternative text
 
-You will also need a micro USB cable to load the firmware for the first time, using the JTAG-to-USB connector on the board. (instructions on how to make this first loading will come afterwards).
+You will also need a micro USB cable to load the firmware for the first time, using the JTAG-to-USB connector on the board (`here are the instructions for programming the KCU105 for the 1st time with SLAC firmware <https://docs.google.com/presentation/d/1ANiM92PP5BN3exUhUnahFOepXYiiALVsTczf8t8YVJ0/edit?usp=sharing>`_).
