@@ -25,9 +25,9 @@ use surf.SsiPkg.all;
 library ruckus;
 use ruckus.BuildInfoPkg.all;
 
-entity Simple10GbeRudpKcu105ExampleTb is end Simple10GbeRudpKcu105ExampleTb;
+entity SimpleRj45RudpKcu105ExampleTb is end SimpleRj45RudpKcu105ExampleTb;
 
-architecture testbed of Simple10GbeRudpKcu105ExampleTb is
+architecture testbed of SimpleRj45RudpKcu105ExampleTb is
 
    constant GET_BUILD_INFO_C : BuildInfoRetType := toBuildInfo(BUILD_INFO_C);
    constant MOD_BUILD_INFO_C : BuildInfoRetType := (
@@ -38,7 +38,7 @@ architecture testbed of Simple10GbeRudpKcu105ExampleTb is
 
 begin
 
-   U_Fpga : entity work.Simple10GbeRudpKcu105Example
+   U_Fpga : entity work.SimpleRj45RudpKcu105Example
       generic map (
          SIMULATION_G => true,
          BUILD_INFO_G => SIM_BUILD_INFO_C)

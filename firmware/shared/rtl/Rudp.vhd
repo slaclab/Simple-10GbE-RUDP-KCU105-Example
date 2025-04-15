@@ -22,47 +22,63 @@ use surf.AxiLitePkg.all;
 use surf.EthMacPkg.all;
 use surf.RssiPkg.all;
 
+library work;
+use work.CorePkg.all;
+
 library unisim;
 use unisim.vcomponents.all;
 
 entity Rudp is
    generic (
       TPD_G            : time := 1 ns;
-      BUILD_10G_G      : boolean;
+      ETH_BUILD_G      : BuildEthType;
       IP_ADDR_G        : slv(31 downto 0);
       DHCP_G           : boolean;
       AXIL_BASE_ADDR_G : slv(31 downto 0));
    port (
       -- System Ports
-      extRst           : in  sl;
+      extRst           : in    sl;
+      sysClk300P       : in    sl;
+      sysClk300N       : in    sl;
       -- Ethernet Status
-      phyReady         : out sl;
-      rssiLinkUp       : out slv(1 downto 0);
+      phyReady         : out   sl;
+      rssiLinkUp       : out   slv(1 downto 0);
       -- Clock and Reset
-      axilClk          : out sl;
-      axilRst          : out sl;
+      axilClk          : out   sl;
+      axilRst          : out   sl;
       -- AXI-Stream Interface
-      ibRudpMaster     : in  AxiStreamMasterType;
-      ibRudpSlave      : out AxiStreamSlaveType;
-      obRudpMaster     : out AxiStreamMasterType;
-      obRudpSlave      : in  AxiStreamSlaveType;
+      ibRudpMaster     : in    AxiStreamMasterType;
+      ibRudpSlave      : out   AxiStreamSlaveType;
+      obRudpMaster     : out   AxiStreamMasterType;
+      obRudpSlave      : in    AxiStreamSlaveType;
       -- Master AXI-Lite Interface
-      mAxilReadMaster  : out AxiLiteReadMasterType;
-      mAxilReadSlave   : in  AxiLiteReadSlaveType;
-      mAxilWriteMaster : out AxiLiteWriteMasterType;
-      mAxilWriteSlave  : in  AxiLiteWriteSlaveType;
+      mAxilReadMaster  : out   AxiLiteReadMasterType;
+      mAxilReadSlave   : in    AxiLiteReadSlaveType;
+      mAxilWriteMaster : out   AxiLiteWriteMasterType;
+      mAxilWriteSlave  : in    AxiLiteWriteSlaveType;
       -- Slave AXI-Lite Interfaces
-      sAxilReadMaster  : in  AxiLiteReadMasterType;
-      sAxilReadSlave   : out AxiLiteReadSlaveType;
-      sAxilWriteMaster : in  AxiLiteWriteMasterType;
-      sAxilWriteSlave  : out AxiLiteWriteSlaveType;
-      -- ETH GT Pins
-      ethClkP          : in  sl;
-      ethClkN          : in  sl;
-      ethRxP           : in  sl;
-      ethRxN           : in  sl;
-      ethTxP           : out sl;
-      ethTxN           : out sl);
+      sAxilReadMaster  : in    AxiLiteReadMasterType;
+      sAxilReadSlave   : out   AxiLiteReadSlaveType;
+      sAxilWriteMaster : in    AxiLiteWriteMasterType;
+      sAxilWriteSlave  : out   AxiLiteWriteSlaveType;
+      -- SFP ETH Ports
+      ethClkP          : in    sl;
+      ethClkN          : in    sl;
+      ethRxP           : in    sl;
+      ethRxN           : in    sl;
+      ethTxP           : out   sl;
+      ethTxN           : out   sl;
+      -- RJ45 ETH Ports
+      phyClkP          : in    sl;
+      phyClkN          : in    sl;
+      phyRxP           : in    sl;
+      phyRxN           : in    sl;
+      phyTxP           : out   sl;
+      phyTxN           : out   sl;
+      phyMdc           : out   sl;
+      phyMdio          : inout sl;
+      phyRstN          : out   sl;
+      phyIrqN          : in    sl);
 end Rudp;
 
 architecture mapping of Rudp is
@@ -81,7 +97,7 @@ architecture mapping of Rudp is
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
 
-   constant CLK_FREQUENCY_C : real := ite(BUILD_10G_G, 156.25E+6, 125.0E+6);
+   constant CLK_FREQUENCY_C : real := ite((ETH_BUILD_G = SFP_10G_C), 156.25E+6, 125.0E+6);
 
    -- UDP constants
    constant UDP_SRV_SRP_IDX_C  : natural  := 0;
@@ -121,12 +137,27 @@ architecture mapping of Rudp is
    signal ethClk   : sl;
    signal ethRst   : sl;
    signal extReset : sl;
-   signal refClk   : sl;
+   signal gtClk    : sl;
+   signal fabClk   : sl;
+
+   signal sysClk300    : sl;
+   signal refClk300MHz : sl;
 
 begin
 
    axilClk <= ethClk;
    axilRst <= ethRst;
+
+   U_IBUFDS : IBUFDS
+      port map (
+         I  => sysClk300P,
+         IB => sysClk300N,
+         O  => sysClk300);
+
+   U_BUFG : BUFG
+      port map (
+         I => sysClk300,
+         O => refClk300MHz);
 
    U_XBAR : entity surf.AxiLiteCrossbar
       generic map (
@@ -170,13 +201,20 @@ begin
    U_PwrUpRst : entity surf.PwrUpRst
       generic map (
          TPD_G      => TPD_G,
-         DURATION_G => 156250000)
+         DURATION_G => 300000000)
       port map (
          arst   => extRst,
-         clk    => refClk,
+         clk    => refClk300MHz,
          rstOut => extReset);
 
-   GEN_10G : if (BUILD_10G_G = true) generate
+   GEN_10G : if (ETH_BUILD_G = SFP_10G_C) generate
+
+      U_OBUFDS : OBUFDS
+         port map (
+            I  => '0',
+            O  => phyTxP,
+            OB => phyTxN);
+
       ----------------------------------
       -- 10 GigE PHY/MAC Ethernet Layers
       ----------------------------------
@@ -216,10 +254,17 @@ begin
             gtTxN(0)               => ethTxN,
             gtRxP(0)               => ethRxP,
             gtRxN(0)               => ethRxN);
-      refClk <= ethClk;
+
    end generate;
 
-   GEN_1G : if (BUILD_10G_G = false) generate
+   GEN_1G : if (ETH_BUILD_G = SFP_1G_C) generate
+
+      U_OBUFDS : OBUFDS
+         port map (
+            I  => '0',
+            O  => phyTxP,
+            OB => phyTxN);
+
       ----------------------------------
       -- 1 GigE PHY/MAC Ethernet Layers
       ----------------------------------
@@ -257,7 +302,6 @@ begin
             phyClk                 => ethClk,
             phyRst                 => ethRst,
             phyReady(0)            => phyReady,
-            refClkOut              => refClk,
             -- MGT Clock Port
             gtClkP                 => ethClkP,
             gtClkN                 => ethClkN,
@@ -266,6 +310,90 @@ begin
             gtTxN(0)               => ethTxN,
             gtRxP(0)               => ethRxP,
             gtRxN(0)               => ethRxN);
+
+
+   end generate;
+
+   GEN_RJ45 : if (ETH_BUILD_G = RJ45_1G_C) generate
+
+      U_IBUFDS : IBUFDS_GTE3
+         generic map (
+            REFCLK_EN_TX_PATH  => '0',
+            REFCLK_HROW_CK_SEL => "00",  -- 2'b00: ODIV2 = O
+            REFCLK_ICNTL_RX    => "00")
+         port map (
+            I     => ethClkP,
+            IB    => ethClkN,
+            CEB   => '0',
+            ODIV2 => gtClk,
+            O     => open);
+
+      U_BUFG_GT : BUFG_GT
+         port map (
+            I       => gtClk,
+            CE      => '1',
+            CEMASK  => '1',
+            CLR     => '0',
+            CLRMASK => '1',
+            DIV     => "000",           -- Divide by 1
+            O       => fabClk);
+
+      U_TERM_GTs : entity surf.Gthe3ChannelDummy
+         generic map (
+            TPD_G   => TPD_G,
+            WIDTH_G => 1)
+         port map (
+            refClk   => fabClk,
+            gtRxP(0) => ethRxP,
+            gtRxN(0) => ethRxN,
+            gtTxP(0) => ethTxP,
+            gtTxN(0) => ethTxN);
+
+      ----------------------------------
+      -- 1 GigE PHY/MAC Ethernet Layers
+      ----------------------------------
+      U_MarvelWrap : entity surf.Sgmii88E1111LvdsUltraScale
+         generic map (
+            TPD_G             => TPD_G,
+            STABLE_CLK_FREQ_G => 300.0E+6,
+            PAUSE_EN_G        => false,
+            EN_AXIL_REG_G     => true,
+            AXIS_CONFIG_G     => EMAC_AXIS_CONFIG_C)
+         port map (
+            -- clock and reset
+            extRst          => extReset,
+            stableClk       => refClk300MHz,
+            phyClk          => ethClk,
+            phyRst          => ethRst,
+            -- Local Configurations/status
+            localMac        => localMac,
+            phyReady        => phyReady,
+            -- Interface to Ethernet Media Access Controller (MAC)
+            macClk          => ethClk,
+            macRst          => ethRst,
+            obMacMaster     => obMacMaster,
+            obMacSlave      => obMacSlave,
+            ibMacMaster     => ibMacMaster,
+            ibMacSlave      => ibMacSlave,
+            -- AXI-Lite Interface
+            axilClk         => ethClk,
+            axilRst         => ethRst,
+            axilReadMaster  => axilReadMasters(PHY_INDEX_C),
+            axilReadSlave   => axilReadSlaves(PHY_INDEX_C),
+            axilWriteMaster => axilWriteMasters(PHY_INDEX_C),
+            axilWriteSlave  => axilWriteSlaves(PHY_INDEX_C),
+            -- ETH external PHY Ports
+            phyClkP         => phyClkP,
+            phyClkN         => phyClkN,
+            phyMdc          => phyMdc,
+            phyMdio         => phyMdio,
+            phyRstN         => phyRstN,
+            phyIrqN         => phyIrqN,
+            -- LVDS SGMII Ports
+            sgmiiTxP        => phyTxP,
+            sgmiiTxN        => phyTxN,
+            sgmiiRxP        => phyRxP,
+            sgmiiRxN        => phyRxN);
    end generate;
 
    ------------------------------------
@@ -312,18 +440,6 @@ begin
    -- Xilinx Virtual Cable (XVC)
    -- https://www.xilinx.com/products/intellectual-property/xvc.html
    -----------------------------------------------------------------
---   U_XVC : entity surf.UdpDebugBridgeWrapper
---      generic map (
---         TPD_G => TPD_G)
---      port map (
---         -- Clock and Reset
---         clk            => ethClk,
---         rst            => ethRst,
---         -- UDP XVC Interface
---         obServerMaster => obServerMasters(UDP_SRV_XVC_IDX_C),
---         obServerSlave  => obServerSlaves(UDP_SRV_XVC_IDX_C),
---         ibServerMaster => ibServerMasters(UDP_SRV_XVC_IDX_C),
---         ibServerSlave  => ibServerSlaves(UDP_SRV_XVC_IDX_C));
    U_DmaXvcWrapper : entity surf.DmaXvcWrapper  -- Using this project to regression test DmaXvcWrapper, we could of just used UdpDebugBridgeWrapper directly (see above) for this UDP application instead
       generic map (
          TPD_G             => TPD_G,

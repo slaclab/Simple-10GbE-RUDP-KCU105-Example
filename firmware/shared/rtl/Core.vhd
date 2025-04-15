@@ -23,6 +23,9 @@ use surf.RssiPkg.all;
 use surf.I2cPkg.all;
 use surf.I2cMuxPkg.all;
 
+library work;
+use work.CorePkg.all;
+
 library unisim;
 use unisim.vcomponents.all;
 
@@ -31,7 +34,7 @@ entity Core is
       TPD_G        : time := 1 ns;
       BUILD_INFO_G : BuildInfoType;
       SIMULATION_G : boolean;
-      BUILD_10G_G  : boolean;
+      ETH_BUILD_G  : BuildEthType;
       IP_ADDR_G    : slv(31 downto 0);
       DHCP_G       : boolean);
    port (
@@ -58,6 +61,8 @@ entity Core is
       vNIn            : in    sl;
       -- System Ports
       extRst          : in    sl;
+      sysClk300P      : in    sl;
+      sysClk300N      : in    sl;
       emcClk          : in    sl;
       heartbeat       : out   sl;
       phyReady        : out   sl;
@@ -68,18 +73,29 @@ entity Core is
       flashMiso       : in    sl;
       flashHoldL      : out   sl;
       flashWp         : out   sl;
-      -- ETH GT Pins
+      -- SFP ETH Ports
       ethClkP         : in    sl;
       ethClkN         : in    sl;
       ethRxP          : in    sl;
       ethRxN          : in    sl;
       ethTxP          : out   sl;
-      ethTxN          : out   sl);
+      ethTxN          : out   sl;
+      -- RJ45 ETH Ports
+      phyClkP         : in    sl;
+      phyClkN         : in    sl;
+      phyRxP          : in    sl;
+      phyRxN          : in    sl;
+      phyTxP          : out   sl;
+      phyTxN          : out   sl;
+      phyMdc          : out   sl;
+      phyMdio         : inout sl;
+      phyRstN         : out   sl;
+      phyIrqN         : in    sl);
 end Core;
 
 architecture mapping of Core is
 
-   constant AXIL_CLK_FREQ_C : real := ite(BUILD_10G_G, 156.25E+6, 125.0E+6);
+   constant AXIL_CLK_FREQ_C : real := ite((ETH_BUILD_G = SFP_10G_C), 156.25E+6, 125.0E+6);
 
    constant VERSION_INDEX_C : natural := 0;
    constant SYS_MON_INDEX_C : natural := 1;
@@ -180,13 +196,15 @@ begin
       U_Rudp : entity work.Rudp
          generic map (
             TPD_G            => TPD_G,
-            BUILD_10G_G      => BUILD_10G_G,
+            ETH_BUILD_G      => ETH_BUILD_G,
             IP_ADDR_G        => IP_ADDR_G,
             DHCP_G           => DHCP_G,
             AXIL_BASE_ADDR_G => XBAR_CONFIG_C(ETH_INDEX_C).baseAddr)
          port map (
             -- System Ports
             extRst           => extRst,
+            sysClk300P       => sysClk300P,
+            sysClk300N       => sysClk300N,
             -- Ethernet Status
             phyReady         => phyReady,
             rssiLinkUp       => rssiLinkUp,
@@ -208,13 +226,24 @@ begin
             sAxilReadSlave   => axilReadSlaves(ETH_INDEX_C),
             sAxilWriteMaster => axilWriteMasters(ETH_INDEX_C),
             sAxilWriteSlave  => axilWriteSlaves(ETH_INDEX_C),
-            -- ETH GT Pins
+            -- SFP ETH Ports
             ethClkP          => ethClkP,
             ethClkN          => ethClkN,
             ethRxP           => ethRxP,
             ethRxN           => ethRxN,
             ethTxP           => ethTxP,
-            ethTxN           => ethTxN);
+            ethTxN           => ethTxN,
+            -- RJ45 ETH Ports
+            phyClkP          => phyClkP,
+            phyClkN          => phyClkN,
+            phyRxP           => phyRxP,
+            phyRxN           => phyRxN,
+            phyTxP           => phyTxP,
+            phyTxN           => phyTxN,
+            phyMdc           => phyMdc,
+            phyMdio          => phyMdio,
+            phyRstN          => phyRstN,
+            phyIrqN          => phyIrqN);
 
    end generate;
 

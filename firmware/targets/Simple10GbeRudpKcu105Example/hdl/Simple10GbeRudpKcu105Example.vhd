@@ -20,6 +20,9 @@ use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
 
+library work;
+use work.CorePkg.all;
+
 entity Simple10GbeRudpKcu105Example is
    generic (
       TPD_G        : time             := 1 ns;
@@ -39,6 +42,8 @@ entity Simple10GbeRudpKcu105Example is
       -- System Ports
       emcClk     : in    sl;
       extRst     : in    sl;
+      sysClk300P : in    sl;
+      sysClk300N : in    sl;
       led        : out   slv(7 downto 0);
       -- Boot Memory Ports
       flashCsL   : out   sl;
@@ -46,13 +51,24 @@ entity Simple10GbeRudpKcu105Example is
       flashMiso  : in    sl;
       flashHoldL : out   sl;
       flashWp    : out   sl;
-      -- ETH GT Pins
+      -- SFP ETH Ports
       ethClkP    : in    sl;
       ethClkN    : in    sl;
       ethRxP     : in    sl;
       ethRxN     : in    sl;
       ethTxP     : out   sl;
-      ethTxN     : out   sl);
+      ethTxN     : out   sl;
+      -- RJ45 ETH Ports
+      phyClkP    : in    sl;
+      phyClkN    : in    sl;
+      phyRxP     : in    sl;
+      phyRxN     : in    sl;
+      phyTxP     : out   sl;
+      phyTxN     : out   sl;
+      phyMdc     : out   sl;
+      phyMdio    : inout sl;
+      phyRstN    : out   sl;
+      phyIrqN    : in    sl);
 end Simple10GbeRudpKcu105Example;
 
 architecture top_level of Simple10GbeRudpKcu105Example is
@@ -96,7 +112,7 @@ begin
          TPD_G        => TPD_G,
          BUILD_INFO_G => BUILD_INFO_G,
          SIMULATION_G => SIMULATION_G,
-         BUILD_10G_G  => true,          -- 10GbE
+         ETH_BUILD_G  => SFP_10G_C,
          IP_ADDR_G    => IP_ADDR_G,
          DHCP_G       => DHCP_G)
       port map (
@@ -123,6 +139,8 @@ begin
          vNIn            => vNIn,
          -- System Ports
          extRst          => extRst,
+         sysClk300P      => sysClk300P,
+         sysClk300N      => sysClk300N,
          emcClk          => emcClk,
          heartbeat       => heartbeat,
          phyReady        => phyReady,
@@ -133,13 +151,24 @@ begin
          flashMiso       => flashMiso,
          flashHoldL      => flashHoldL,
          flashWp         => flashWp,
-         -- ETH GT Pins
+         -- SFP ETH Ports
          ethClkP         => ethClkP,
          ethClkN         => ethClkN,
          ethRxP          => ethRxP,
          ethRxN          => ethRxN,
          ethTxP          => ethTxP,
-         ethTxN          => ethTxN);
+         ethTxN          => ethTxN,
+         -- RJ45 ETH Ports
+         phyClkP         => phyClkP,
+         phyClkN         => phyClkN,
+         phyRxP          => phyRxP,
+         phyRxN          => phyRxN,
+         phyTxP          => phyTxP,
+         phyTxN          => phyTxN,
+         phyMdc          => phyMdc,
+         phyMdio         => phyMdio,
+         phyRstN         => phyRstN,
+         phyIrqN         => phyIrqN);
 
    ------------------------------
    -- Application Firmware Module

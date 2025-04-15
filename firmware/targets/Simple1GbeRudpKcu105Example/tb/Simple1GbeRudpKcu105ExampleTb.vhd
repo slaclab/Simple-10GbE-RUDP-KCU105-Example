@@ -53,6 +53,8 @@ begin
          vNIn       => '1',
          -- System Ports
          emcClk     => '0',
+         sysClk300P => '0',
+         sysClk300N => '1',
          extRst     => '0',
          led        => open,
          -- Boot Memory Ports
@@ -61,11 +63,23 @@ begin
          flashMiso  => '1',
          flashHoldL => open,
          flashWp    => open,
-         -- ETH GT Pins
+         -- SFP ETH Ports
          ethClkP    => '0',
          ethClkN    => '1',
          ethRxP     => '0',
          ethRxN     => '1',
          ethTxP     => open,
-         ethTxN     => open);
+         ethTxN     => open,
+         -- RJ45 ETH Ports
+         phyClkP    => '0',
+         phyClkN    => '1',
+         phyRxP     => '0',
+         phyRxN     => '1',
+         phyTxP     => open,
+         phyTxN     => open,
+         phyMdc     => open,
+         phyMdio    => open,
+         phyRstN    => open,
+         phyIrqN    => '1');
+
 end testbed;

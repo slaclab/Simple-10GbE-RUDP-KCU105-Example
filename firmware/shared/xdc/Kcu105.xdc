@@ -12,6 +12,22 @@
 # I/O Constraints
 ##############################################################################
 
+set_property -dict { PACKAGE_PIN P24 IOSTANDARD DIFF_HSTL_I_18 } [get_ports { phyRxP }]
+set_property -dict { PACKAGE_PIN P25 IOSTANDARD DIFF_HSTL_I_18 } [get_ports { phyRxN }]
+set_property -dict { PACKAGE_PIN N24 IOSTANDARD DIFF_HSTL_I_18 } [get_ports { phyTxP }]
+set_property -dict { PACKAGE_PIN M24 IOSTANDARD DIFF_HSTL_I_18 } [get_ports { phyTxN }]
+
+set_property -dict { PACKAGE_PIN P26 IOSTANDARD LVDS_25 } [get_ports { phyClkP }]
+set_property -dict { PACKAGE_PIN N26 IOSTANDARD LVDS_25 } [get_ports { phyClkN }]
+
+set_property -dict { PACKAGE_PIN K25 IOSTANDARD LVCMOS18 } [get_ports { phyIrqN }]
+set_property -dict { PACKAGE_PIN L25 IOSTANDARD LVCMOS18 } [get_ports { phyMdc }]
+set_property -dict { PACKAGE_PIN H26 IOSTANDARD LVCMOS18 } [get_ports { phyMdio }]
+set_property -dict { PACKAGE_PIN J23 IOSTANDARD LVCMOS18 } [get_ports { phyRstN }]
+
+set_property -dict { PACKAGE_PIN AK17 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300P }]
+set_property -dict { PACKAGE_PIN AK16 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300N }]
+
 set_property PACKAGE_PIN U4 [get_ports ethTxP]
 set_property PACKAGE_PIN U3 [get_ports ethTxN]
 set_property PACKAGE_PIN T2 [get_ports ethRxP]
@@ -51,7 +67,12 @@ set_property -dict { PACKAGE_PIN K20 IOSTANDARD LVCMOS18 } [get_ports { emcClk }
 # Timing Constraints
 ##############################################################################
 
-create_clock -name ethClkP -period  6.400 [get_ports {ethClkP}]
+create_clock -name ethClkP    -period 6.400 [get_ports {ethClkP}]
+create_clock -name phyClkP    -period 1.600 [get_ports {phyClkP}]
+create_clock -name sysClk300P -period 3.333 [get_ports {sysClk300P}]
+
+set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks {ethClkP}] -group [get_clocks -include_generated_clocks {sysClk300P}]
+set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks {phyClkP}] -group [get_clocks -include_generated_clocks {sysClk300P}]
 
 ##############################################################################
 # BITSTREAM: .bit file Configuration

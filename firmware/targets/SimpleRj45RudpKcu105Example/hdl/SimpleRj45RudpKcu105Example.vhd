@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 -- Company    : SLAC National Accelerator Laboratory
 -------------------------------------------------------------------------------
--- Description: Simple 1000baseX/Full Example
+-- Description: Simple 1000baseT/Full Example
 -------------------------------------------------------------------------------
 -- This file is part of 'Simple-10GbE-RUDP-KCU105-Example'.
 -- It is subject to the license terms in the LICENSE.txt file found in the
@@ -23,7 +23,7 @@ use surf.AxiLitePkg.all;
 library work;
 use work.CorePkg.all;
 
-entity Simple1GbeRudpKcu105Example is
+entity SimpleRj45RudpKcu105Example is
    generic (
       TPD_G        : time             := 1 ns;
       BUILD_INFO_G : BuildInfoType;
@@ -69,9 +69,9 @@ entity Simple1GbeRudpKcu105Example is
       phyMdio    : inout sl;
       phyRstN    : out   sl;
       phyIrqN    : in    sl);
-end Simple1GbeRudpKcu105Example;
+end SimpleRj45RudpKcu105Example;
 
-architecture top_level of Simple1GbeRudpKcu105Example is
+architecture top_level of SimpleRj45RudpKcu105Example is
 
    signal heartbeat  : sl;
    signal phyReady   : sl;
@@ -112,7 +112,7 @@ begin
          TPD_G        => TPD_G,
          BUILD_INFO_G => BUILD_INFO_G,
          SIMULATION_G => SIMULATION_G,
-         ETH_BUILD_G  => SFP_1G_C,
+         ETH_BUILD_G  => RJ45_1G_C,
          IP_ADDR_G    => IP_ADDR_G,
          DHCP_G       => DHCP_G)
       port map (
