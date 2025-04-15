@@ -8,4 +8,6 @@
 ## the terms contained in the LICENSE.txt file.
 ##############################################################################
 
-set_clock_groups -asynchronous -group [get_clocks ethClkP] -group [get_clocks -of_objects [get_pins {U_Core/GEN_ETH.U_Rudp/GEN_10G.U_10GigE/GEN_LANE[0].TenGigEthGthUltraScale_Inst/U_TenGigEthRst/CLK156_BUFG_GT/O}]]
+set format   "mcs"
+set inteface "SPIx8"
+set size     "512"

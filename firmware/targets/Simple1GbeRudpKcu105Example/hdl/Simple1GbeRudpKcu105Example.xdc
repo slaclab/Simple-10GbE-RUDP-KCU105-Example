@@ -8,10 +8,4 @@
 ## the terms contained in the LICENSE.txt file.
 ##############################################################################
 
-proc my_func1 {{msg ""}} {
-	puts "my_func1: $msg"
-}
-
-proc my_func2 {{msg ""}} {
-	puts "my_func2: $msg"
-}
+set_clock_groups -asynchronous -group [get_clocks ethClkP] -group [get_clocks -of_objects [get_pins U_Core/GEN_ETH.U_Rudp/GEN_1G.U_1GigE/GEN_INT_PLL.U_MMCM/MmcmGen.U_Mmcm/CLKOUT0]]
