@@ -17,16 +17,16 @@ Here's how to setup the SLAC AFS conda build of rogue:
 If you are NOT on the SLAC AFS network
 ======================================
 
-Here is "How to install the Rogue With Anaconda":
+Here is "How to install the Rogue With Miniforge":
 
-   https://slaclab.github.io/rogue/installing/anaconda.html
+   https://slaclab.github.io/rogue/installing/miniforge.html
 
-After doing the local anaconda install, you will need to setup the conda enviroment
+After doing the local Miniforge install, you will need to setup the conda enviroment
 
 .. code-block:: bash
 
    # Setup conda environment
-   $ source /path/to/my/anaconda3/etc/profile.d/conda.sh
+   $ source /path/to/my/miniforge3/etc/profile.d/conda.sh
 
    # Activate Rogue conda Environment
    $ conda activate rogue_v6.4.4
