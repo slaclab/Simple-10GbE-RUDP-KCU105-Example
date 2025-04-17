@@ -62,6 +62,14 @@ if __name__ == "__main__":
         help     = "Sets the GUI type (PyDM or None)",
     )
 
+    parser.add_argument(
+        "--zmqSrvPort",
+        type     = int,
+        required = False,
+        default  = 9099,
+        help     = "Zeromq server port (set to zero if you want it dynamic)",
+    )
+
     # Get the arguments
     args = parser.parse_args()
 
@@ -71,6 +79,7 @@ if __name__ == "__main__":
         ip         = args.ip,
         pollEn     = args.pollEn,
         initRead   = args.initRead,
+        zmqSrvPort = args.zmqSrvPort,
     ) as root:
 
         ######################

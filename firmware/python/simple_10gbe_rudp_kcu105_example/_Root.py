@@ -27,22 +27,21 @@ class Root(pr.Root):
             ip       = '192.168.2.10',
             promProg = False, # Flag to disable all devices not related to PROM programming
             enSwRx   = True,  # Flag to enable the software stream receiver
-            zmqSrvEn = True,  # Flag to include the ZMQ server
             xvcSrvEn = True,  # Flag to include the XVC server
+            zmqSrvPort  = 9099, # Set to zero if dynamic (instead of static)
             **kwargs):
+        super().__init__(timeout=(5.0 if (ip != 'sim') else 100.0),**kwargs)
 
-        # Pass custom value to parent via super function
-        kwargs['timeout'] = 5.0 if (ip != 'sim') else 100.0 # Firmware simulation slow and timeout base on real time (not simulation time)
-        super().__init__(**kwargs)
+        #################################################################
+
+        self.zmqServer = pyrogue.interfaces.ZmqServer(root=self, addr='127.0.0.1', port=zmqSrvPort)
+        self.addInterface(self.zmqServer)
+
+        #################################################################
 
         self.enSwRx = not promProg and enSwRx
         self.promProg = promProg
         self.sim    = (ip == 'sim')
-
-        # Check if including ZMQ server (required for PyDM GUI)
-        if zmqSrvEn:
-            self.zmqServer = pr.interfaces.ZmqServer(root=self, addr='127.0.0.1', port=0)
-            self.addInterface(self.zmqServer)
 
         #################################################################
 
