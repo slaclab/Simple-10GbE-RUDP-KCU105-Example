@@ -39,7 +39,9 @@ entity AppTx is
       axilReadMaster  : in  AxiLiteReadMasterType;
       axilReadSlave   : out AxiLiteReadSlaveType;
       axilWriteMaster : in  AxiLiteWriteMasterType;
-      axilWriteSlave  : out AxiLiteWriteSlaveType);
+      axilWriteSlave  : out AxiLiteWriteSlaveType;
+      -- LED Output Port
+      led_out           : out slv(1 downto 0));
 end AppTx;
 
 architecture rtl of AppTx is
@@ -60,6 +62,7 @@ architecture rtl of AppTx is
       axilReadSlave  : AxiLiteReadSlaveType;
       axilWriteSlave : AxiLiteWriteSlaveType;
       state          : StateType;
+      ledControl     : slv(1 downto 0);
    end record RegType;
    constant REG_INIT_C : RegType := (
       frameSize      => x"0001_ffff",  -- Default Optimized for max. bandwidth (~9.8 Gb/s) and max. frame rate (~1.2 kHz)
@@ -72,7 +75,8 @@ architecture rtl of AppTx is
       txMaster       => axiStreamMasterInit(RSSI_AXIS_CONFIG_C),
       axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C,
-      state          => IDLE_S);
+      state          => IDLE_S,
+      ledControl     => x"11");
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -103,6 +107,9 @@ begin
 
       -- Closeout the transaction
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
+      
+      -- R/W access for LED control
+      axiSlaveRegister (axilEp, x"014", 0, v.ledControl);
 
       ----------------------------------------------------------------------
       --                AXI Stream TX Logic
@@ -208,6 +215,7 @@ begin
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
       txMaster       <= r.txMaster;
+      led_out          <= r.ledControl;
 
       ----------------------------------------------------------------------
 

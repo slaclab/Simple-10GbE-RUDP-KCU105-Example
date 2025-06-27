@@ -20,6 +20,9 @@ use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
 
+library work;
+use work.all;
+
 entity App is
    generic (
       TPD_G        : time    := 1 ns;
@@ -37,14 +40,18 @@ entity App is
       axilReadMaster  : in  AxiLiteReadMasterType;
       axilReadSlave   : out AxiLiteReadSlaveType;
       axilWriteMaster : in  AxiLiteWriteMasterType;
-      axilWriteSlave  : out AxiLiteWriteSlaveType);
+      axilWriteSlave  : out AxiLiteWriteSlaveType;
+      -- LED Output Port
+      led_o           : out slv(1 downto 0));
+      
 end App;
 
 architecture mapping of App is
 
    constant TX_INDEX_C  : natural := 0;
    constant MEM_INDEX_C : natural := 1;
-
+   
+   -- Number of masters is now 2, as the custom register module was removed.
    constant NUM_AXIL_MASTERS_C : positive := 2;
 
    constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
@@ -53,9 +60,13 @@ architecture mapping of App is
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
+   
+   signal appTx_leds : slv(1 downto 0);
 
 begin
-
+   -- Connect the internal signal to the final output port
+   led_o <= appTx_leds; 
+   
    -------------------------------
    -- Terminating unused RX stream
    -------------------------------
@@ -100,7 +111,8 @@ begin
          axilReadMaster  => axilReadMasters(TX_INDEX_C),
          axilReadSlave   => axilReadSlaves(TX_INDEX_C),
          axilWriteMaster => axilWriteMasters(TX_INDEX_C),
-         axilWriteSlave  => axilWriteSlaves(TX_INDEX_C));
+         axilWriteSlave  => axilWriteSlaves(TX_INDEX_C),
+         led_out         => appTx_leds);
 
    --------------------------------
    -- AXI-Lite General Memory Module
@@ -120,5 +132,5 @@ begin
          axiReadSlave   => axilReadSlaves(MEM_INDEX_C),
          axiWriteMaster => axilWriteMasters(MEM_INDEX_C),
          axiWriteSlave  => axilWriteSlaves(MEM_INDEX_C));
-
+        
 end mapping;

@@ -22,6 +22,7 @@ use surf.AxiLitePkg.all;
 
 library work;
 use work.CorePkg.all;
+use work.all;
 
 entity Simple1GbeRudpKcu105Example is
    generic (
@@ -92,12 +93,14 @@ architecture top_level of Simple1GbeRudpKcu105Example is
    signal axilReadSlave   : AxiLiteReadSlaveType;
    signal axilWriteMaster : AxiLiteWriteMasterType;
    signal axilWriteSlave  : AxiLiteWriteSlaveType;
+   
+   -- LED signal passed from App
+    signal appLedOuts      : slv(1 downto 0);
 
 begin
 
-   led(7) <= '1';
-   led(6) <= '0';
-   led(5) <= heartbeat;
+   led(7 downto 6) <= appLedOuts;
+   led(5) <= heartbeat; 
    led(4) <= axilRst;
    led(3) <= not(axilRst);
    led(2) <= rssiLinkUp(1);
@@ -190,6 +193,8 @@ begin
          axilReadMaster  => axilReadMaster,
          axilReadSlave   => axilReadSlave,
          axilWriteMaster => axilWriteMaster,
-         axilWriteSlave  => axilWriteSlave);
+         axilWriteSlave  => axilWriteSlave,
+         -- LED Output Port
+         led_o           => appLedOuts);
 
 end top_level;
