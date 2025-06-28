@@ -20,9 +20,6 @@ use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
 
-library work;
-use work.all;
-
 entity App is
    generic (
       TPD_G        : time    := 1 ns;
@@ -60,13 +57,8 @@ architecture mapping of App is
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
-   
-   signal appTx_leds : slv(1 downto 0);
 
 begin
-   -- Connect the internal signal to the final output port
-   led_o <= appTx_leds; 
-   
    -------------------------------
    -- Terminating unused RX stream
    -------------------------------
@@ -112,7 +104,7 @@ begin
          axilReadSlave   => axilReadSlaves(TX_INDEX_C),
          axilWriteMaster => axilWriteMasters(TX_INDEX_C),
          axilWriteSlave  => axilWriteSlaves(TX_INDEX_C),
-         led_out         => appTx_leds);
+         led_out         => led_o);
 
    --------------------------------
    -- AXI-Lite General Memory Module

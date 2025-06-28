@@ -22,7 +22,6 @@ use surf.AxiLitePkg.all;
 
 library work;
 use work.CorePkg.all;
-use work.all;
 
 entity Simple1GbeRudpKcu105Example is
    generic (

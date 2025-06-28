@@ -62,7 +62,7 @@ architecture rtl of AppTx is
       axilReadSlave  : AxiLiteReadSlaveType;
       axilWriteSlave : AxiLiteWriteSlaveType;
       state          : StateType;
-      ledControl     : slv(1 downto 0);
+      led     : slv(1 downto 0);
    end record RegType;
    constant REG_INIT_C : RegType := (
       frameSize      => x"0001_ffff",  -- Default Optimized for max. bandwidth (~9.8 Gb/s) and max. frame rate (~1.2 kHz)
@@ -76,7 +76,7 @@ architecture rtl of AppTx is
       axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C,
       state          => IDLE_S,
-      ledControl     => x"11");
+      led     => "11");
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -105,11 +105,11 @@ begin
 
       axiSlaveRegister (axilEp, x"010", 0, v.continousMode);  -- Bursting Continuously Flag
 
+      -- R/W access for LED control
+      axiSlaveRegister (axilEp, x"014", 0, v.led);
+
       -- Closeout the transaction
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
-      
-      -- R/W access for LED control
-      axiSlaveRegister (axilEp, x"014", 0, v.ledControl);
 
       ----------------------------------------------------------------------
       --                AXI Stream TX Logic
@@ -215,7 +215,7 @@ begin
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
       txMaster       <= r.txMaster;
-      led_out          <= r.ledControl;
+      led_out          <= r.led;
 
       ----------------------------------------------------------------------
 
