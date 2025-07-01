@@ -62,9 +62,7 @@ architecture rtl of AppTx is
       axilReadSlave  : AxiLiteReadSlaveType;
       axilWriteSlave : AxiLiteWriteSlaveType;
       state          : StateType;
-      led            : slv(1 downto 0);
-      toggleRate     : slv(31 downto 0);
-      toggleCounter  : slv(31 downto 0);
+      led     : slv(1 downto 0);
    end record RegType;
    constant REG_INIT_C : RegType := (
       frameSize      => x"0001_ffff",  -- Default Optimized for max. bandwidth (~9.8 Gb/s) and max. frame rate (~1.2 kHz)
@@ -78,9 +76,7 @@ architecture rtl of AppTx is
       axilReadSlave  => AXI_LITE_READ_SLAVE_INIT_C,
       axilWriteSlave => AXI_LITE_WRITE_SLAVE_INIT_C,
       state          => IDLE_S,
-      led            => "11",
-      toggleRate     => x"1111_1111",
-      toggleCounter  => (others => '0')); -- toggles every ~2.5 sec
+      led     => "11");
 
    signal r   : RegType := REG_INIT_C;
    signal rin : RegType;
@@ -111,26 +107,15 @@ begin
 
       -- R/W access for LED control
       axiSlaveRegister (axilEp, x"014", 0, v.led);
-      
-      -- toggleRate reg
+
+      -- toggleRate register
       axiSlaveRegister (axilEp, x"018", 0, v.toggleRate);
 
       -- Closeout the transaction
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
-      -- counter for toggleRate
-      v.toggleCounter := r.toggleCounter + 1;
-
-      -- conditionals for toggleRate
-      if (v.toggleCounter = v.toggleRate) then
-         v.led := not r.led;
-         v.toggleCounter := (others => '0');
-      end if;
-      
-      if (v.toggleRate /= r.toggleRate) then
-         v.toggleCounter := (others => '0');
-      end if;
-
+      if 
+        
       ----------------------------------------------------------------------
       --                AXI Stream TX Logic
       ----------------------------------------------------------------------
@@ -148,7 +133,7 @@ begin
 
                -- Latch the frameSize (in cause software changes it during streaming)
                if r.frameSize /= 0 then
-                  v.wordMax := r.frameSize-1;   
+                  v.wordMax := r.frameSize-1;
                else
                   v.wordMax := r.frameSize;
                end if;
@@ -235,7 +220,7 @@ begin
       axilWriteSlave <= r.axilWriteSlave;
       axilReadSlave  <= r.axilReadSlave;
       txMaster       <= r.txMaster;
-      led_out        <= r.led;
+      led_out          <= r.led;
 
       ----------------------------------------------------------------------
 
