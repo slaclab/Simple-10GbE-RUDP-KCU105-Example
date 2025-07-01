@@ -120,6 +120,8 @@ begin
 
       -- counter for toggleRate
       v.toggleCounter := r.toggleCounter + 1;
+     
+     axiSlaveRegister (axilEp, x"01C", 0, v.toggleCounter);
 
       -- conditionals for toggleRate
       if (v.toggleCounter = v.toggleRate) then
