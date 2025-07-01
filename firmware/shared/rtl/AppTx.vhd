@@ -114,14 +114,15 @@ begin
       
       -- toggleRate reg
       axiSlaveRegister (axilEp, x"018", 0, v.toggleRate);
+      
+      -- counter reg
+      axiSlaveRegister (axilEp, x"01C", 0, v.toggleCounter);
 
       -- Closeout the transaction
       axiSlaveDefault(axilEp, v.axilWriteSlave, v.axilReadSlave, AXI_RESP_DECERR_C);
 
       -- counter for toggleRate
       v.toggleCounter := r.toggleCounter + 1;
-     
-     axiSlaveRegister (axilEp, x"01C", 0, v.toggleCounter);
 
       -- conditionals for toggleRate
       if (v.toggleCounter = v.toggleRate) then
