@@ -19,6 +19,7 @@ library surf;
 use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
+use surf.Pgp4Pkg.all;
 
 entity App is
    generic (
@@ -39,7 +40,14 @@ entity App is
       axilWriteMaster : in  AxiLiteWriteMasterType;
       axilWriteSlave  : out AxiLiteWriteSlaveType;
       -- LED Output Port
-      led_o           : out slv(1 downto 0));
+      led_o           : out slv(1 downto 0);
+      -- PGP Serial Ports
+      pgpClkP         : in  sl;
+      pgpClkN         : in  sl;
+      pgpRxP          : in  slv(0 downto 0);
+      pgpRxN          : in  slv(0 downto 0);
+      pgpTxP          : out slv(0 downto 0);
+      pgpTxN          : out slv(0 downto 0));
       
 end App;
 
@@ -47,9 +55,9 @@ architecture mapping of App is
 
    constant TX_INDEX_C  : natural := 0;
    constant MEM_INDEX_C : natural := 1;
+   constant PGP_INDEX_C : natural := 2;
    
-   -- Number of masters is now 2, as the custom register module was removed.
-   constant NUM_AXIL_MASTERS_C : positive := 2;
+   constant NUM_AXIL_MASTERS_C : positive := 3;
 
    constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
 
@@ -57,6 +65,23 @@ architecture mapping of App is
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
+    
+   -- PGP AXI-Stream Signals
+   constant NUM_PGP_LANES_C : positive := 1;
+   constant NUM_PGP_VCS_C   : positive := 4;
+   signal pgpTxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
+   signal pgpTxSlaves_s     : AxiStreamSlaveArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
+   signal pgpRxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
+   signal pgpRxSlaves_s     : AxiStreamSlaveArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0) := (others => AXI_STREAM_SLAVE_FORCE_C);
+
+   -- Constants and signals for unused Non-VC ports
+   constant PGP4_RX_IN_C      : Pgp4RxInArray(NUM_PGP_LANES_C-1 downto 0)      := (others => PGP4_RX_IN_INIT_C);
+   constant PGP4_TX_IN_C      : Pgp4TxInArray(NUM_PGP_LANES_C-1 downto 0)      := (others => PGP4_TX_IN_INIT_C);
+   constant AXI_STREAM_CTRL_C : AxiStreamCtrlArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0) := (others => AXI_STREAM_CTRL_INIT_C);
+   signal   pgpRxOut_s        : Pgp4RxOutArray(NUM_PGP_LANES_C-1 downto 0);
+   signal   pgpTxOut_s        : Pgp4TxOutArray(NUM_PGP_LANES_C-1 downto 0);
+   signal   pgpClk_s          : slv(NUM_PGP_LANES_C-1 downto 0);
+   signal   pgpClkRst_s       : slv(NUM_PGP_LANES_C-1 downto 0);
 
 begin
    -------------------------------
@@ -124,5 +149,61 @@ begin
          axiReadSlave   => axilReadSlaves(MEM_INDEX_C),
          axiWriteMaster => axilWriteMasters(MEM_INDEX_C),
          axiWriteSlave  => axilWriteSlaves(MEM_INDEX_C));
+         
+   -----------------------------------------------------------------
+   -- PGPv4 GTH Wrapper
+   -----------------------------------------------------------------
+   U_PgpWrapper : entity surf.Pgp4GthUsWrapper
+      generic map(
+         TPD_G             => TPD_G,
+         NUM_LANES_G       => NUM_PGP_LANES_C,
+         NUM_VC_G          => NUM_PGP_VCS_C,
+         RATE_G            => "6.25Gbps", -- Or "6.25Gbps", "3.125Gbps" CHANGED FROM 10.3125 for our case
+         REFCLK_FREQ_G     => 156.25E+6,
+         AXIL_CLK_FREQ_G   => 125.0E+6)      -- Assumes axilClk is 125MHz
+      port map(
+         -- Stable Clock and Reset
+         stableClk         => axilClk,
+         stableRst         => axilRst,
+         -- Gt Serial IO
+         pgpGtTxP          => pgpTxP,
+         pgpGtTxN          => pgpTxN,
+         pgpGtRxP          => pgpRxP,
+         pgpGtRxN          => pgpRxN,
+         -- GT Clocking
+         pgpRefClkP        => pgpClkP,
+         pgpRefClkN        => pgpClkN,
+         pgpRefClkOut      => open,          -- Unused output
+         pgpRefClkDiv2Bufg => open,          -- Unused output
+         -- PGP Core Clocking
+         pgpClk            => pgpClk_s,      -- Unused output
+         pgpClkRst         => pgpClkRst_s,   -- Unused output
+         -- Rx/Tx I/O
+         pgpRxIn           => PGP4_RX_IN_C,
+         pgpRxOut          => pgpRxOut_s,
+         pgpTxIn           => PGP4_TX_IN_C,
+         pgpTxOut          => pgpTxOut_s,
+         -- Frame Transmit Interface
+         pgpTxMasters      => pgpTxMasters_s,
+         pgpTxSlaves       => pgpTxSlaves_s,
+         -- Frame Receive Interface
+         pgpRxMasters      => pgpRxMasters_s,
+         pgpRxSlaves       => pgpRxSlaves_s,
+         pgpRxCtrl         => AXI_STREAM_CTRL_C, -- Connect to constant default
+         -- AXI-Lite Register Interface (axilClk domain)
+         axilClk           => axilClk,
+         axilRst           => axilRst,
+         axilReadMaster    => axilReadMasters(PGP_INDEX_C),
+         axilReadSlave     => axilReadSlaves(PGP_INDEX_C),
+         axilWriteMaster   => axilWriteMasters(PGP_INDEX_C),
+         axilWriteSlave    => axilWriteSlaves(PGP_INDEX_C));
+         
+   -----------------------------------------------------------------
+   -- AXI-Stream Loopback for demonstration
+   -- Connects PGP Received Data back to PGP Transmit Data
+   -----------------------------------------------------------------
+   pgp_loopback : for i in (NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0 generate
+      pgpTxMasters_s(i) <= pgpRxMasters_s(i);
+   end generate;
         
 end mapping;

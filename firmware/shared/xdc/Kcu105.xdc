@@ -28,6 +28,16 @@ set_property -dict { PACKAGE_PIN J23 IOSTANDARD LVCMOS18 } [get_ports { phyRstN 
 set_property -dict { PACKAGE_PIN AK17 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300P }]
 set_property -dict { PACKAGE_PIN AK16 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300N }]
 
+set_property PACKAGE_PIN K6 [get_ports { pgpClkP }]
+set_property PACKAGE_PIN K5 [get_ports { pgpClkN }]
+create_clock -name pgpClk -period 6.400 [get_ports { pgpClkP }]
+
+set_property PACKAGE_PIN F6 [get_ports { pgpTxP }]
+set_property PACKAGE_PIN F5 [get_ports { pgpTxN }]
+
+set_property PACKAGE_PIN E4 [get_ports { pgpRxP }]
+set_property PACKAGE_PIN E3 [get_ports { pgpRxN }]
+
 set_property PACKAGE_PIN U4 [get_ports ethTxP]
 set_property PACKAGE_PIN U3 [get_ports ethTxN]
 set_property PACKAGE_PIN T2 [get_ports ethRxP]

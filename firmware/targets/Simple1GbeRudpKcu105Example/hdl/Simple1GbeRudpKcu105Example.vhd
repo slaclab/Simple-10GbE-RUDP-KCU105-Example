@@ -68,7 +68,14 @@ entity Simple1GbeRudpKcu105Example is
       phyMdc     : out   sl;
       phyMdio    : inout sl;
       phyRstN    : out   sl;
-      phyIrqN    : in    sl);
+      phyIrqN    : in    sl;
+      -- PGP Serial Ports
+      pgpClkP    : in    sl;
+      pgpClkN    : in    sl;
+      pgpRxP     : in    slv(0 downto 0);
+      pgpRxN     : in    slv(0 downto 0);
+      pgpTxP     : out   slv(0 downto 0);
+      pgpTxN     : out   slv(0 downto 0));
 end Simple1GbeRudpKcu105Example;
 
 architecture top_level of Simple1GbeRudpKcu105Example is
@@ -94,11 +101,11 @@ architecture top_level of Simple1GbeRudpKcu105Example is
    signal axilWriteSlave  : AxiLiteWriteSlaveType;
    
    -- LED signal passed from App
-    signal appLedOuts      : slv(1 downto 0);
+    signal appLedOut      : slv(1 downto 0);
 
 begin
 
-   led(7 downto 6) <= appLedOuts;
+   led(7 downto 6) <= appLedOut;
    led(5) <= heartbeat; 
    led(4) <= axilRst;
    led(3) <= not(axilRst);
@@ -194,6 +201,13 @@ begin
          axilWriteMaster => axilWriteMaster,
          axilWriteSlave  => axilWriteSlave,
          -- LED Output Port
-         led_o           => appLedOuts);
+         led_o           => appLedOut,
+          -- PGP Serial Ports
+         pgpClkP         => pgpClkP,
+         pgpClkN         => pgpClkN,
+         pgpRxP          => pgpRxP,
+         pgpRxN          => pgpRxN,
+         pgpTxP          => pgpTxP,
+         pgpTxN          => pgpTxN);
 
 end top_level;
