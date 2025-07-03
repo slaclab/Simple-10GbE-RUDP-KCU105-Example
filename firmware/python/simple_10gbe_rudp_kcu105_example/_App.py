@@ -12,6 +12,8 @@ import pyrogue as pr
 
 import simple_10gbe_rudp_kcu105_example as devBoard
 
+import surf.protocols.pgp as pgp
+
 class App(pr.Device):
     def __init__( self,sim=False,**kwargs):
         super().__init__(**kwargs)
@@ -24,3 +26,10 @@ class App(pr.Device):
         self.add(devBoard.AppMem(
             offset  = 0x0001_0000,
         ))
+        
+        self.add(pgp.Pgp4AxiL(
+            offset  = 0x0002_0000,
+	    numVc   = 4,
+	    writeEn = True,
+	    enabled = True,
+	))
