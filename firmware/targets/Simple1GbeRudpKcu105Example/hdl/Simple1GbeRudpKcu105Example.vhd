@@ -72,10 +72,10 @@ entity Simple1GbeRudpKcu105Example is
       -- PGP Serial Ports
       pgpClkP    : in    sl;
       pgpClkN    : in    sl;
-      pgpRxP     : in    slv(0 downto 0);
-      pgpRxN     : in    slv(0 downto 0);
-      pgpTxP     : out   slv(0 downto 0);
-      pgpTxN     : out   slv(0 downto 0));
+      pgpRxP     : in    slv(3 downto 0);
+      pgpRxN     : in    slv(3 downto 0);
+      pgpTxP     : out   slv(3 downto 0);
+      pgpTxN     : out   slv(3 downto 0));
 end Simple1GbeRudpKcu105Example;
 
 architecture top_level of Simple1GbeRudpKcu105Example is
