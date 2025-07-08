@@ -48,10 +48,10 @@ entity App is
       -- PGP Serial Ports
       pgpClkP         : in  sl;
       pgpClkN         : in  sl;
-      pgpRxP          : in  slv(0 downto 0);
-      pgpRxN          : in  slv(0 downto 0);
-      pgpTxP          : out slv(0 downto 0);
-      pgpTxN          : out slv(0 downto 0));
+      pgpRxP          : in  slv(3 downto 0);
+      pgpRxN          : in  slv(3 downto 0);
+      pgpTxP          : out slv(3 downto 0);
+      pgpTxN          : out slv(3 downto 0));
       
 end App;
 
@@ -71,7 +71,7 @@ architecture mapping of App is
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
     
    -- PGP AXI-Stream Signals
-   constant NUM_PGP_LANES_C : positive := 1;
+   constant NUM_PGP_LANES_C : positive := 4;
    constant NUM_PGP_VCS_C   : positive := 1;
    signal pgpTxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal pgpTxSlaves_s     : AxiStreamSlaveArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
