@@ -20,11 +20,15 @@ use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
 use surf.Pgp4Pkg.all;
+use ieee.numeric_std.all;
 
 entity App is
    generic (
       TPD_G        : time    := 1 ns;
-      SIMULATION_G : boolean := false);
+      SIMULATION_G : boolean := false;
+      EN_PGP_MON_G : boolean := false;
+      EN_GTH_DRP_G : boolean := false;
+      EN_QPLL_DRP_G : boolean := false);
    port (
       -- Clock and Reset
       axilClk         : in  sl;
@@ -68,8 +72,8 @@ architecture mapping of App is
     
    -- PGP AXI-Stream Signals
    constant NUM_PGP_LANES_C : positive := 1;
-   constant NUM_PGP_VCS_C   : positive := 4;
-   signal pgpTxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
+   constant NUM_PGP_VCS_C   : positive := 1;
+   signal pgpTxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal pgpTxSlaves_s     : AxiStreamSlaveArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
    signal pgpRxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
    signal pgpRxSlaves_s     : AxiStreamSlaveArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0) := (others => AXI_STREAM_SLAVE_FORCE_C);
@@ -188,6 +192,7 @@ begin
          pgpTxSlaves       => pgpTxSlaves_s,
          -- Frame Receive Interface
          pgpRxMasters      => pgpRxMasters_s,
+--         pgpRxSlaves       => AXI_STREAM_SLAVE_FORCE_C,
          pgpRxSlaves       => pgpRxSlaves_s,
          pgpRxCtrl         => AXI_STREAM_CTRL_C, -- Connect to constant default
          -- AXI-Lite Register Interface (axilClk domain)
@@ -197,13 +202,5 @@ begin
          axilReadSlave     => axilReadSlaves(PGP_INDEX_C),
          axilWriteMaster   => axilWriteMasters(PGP_INDEX_C),
          axilWriteSlave    => axilWriteSlaves(PGP_INDEX_C));
-         
-   -----------------------------------------------------------------
-   -- AXI-Stream Loopback for demonstration
-   -- Connects PGP Received Data back to PGP Transmit Data
-   -----------------------------------------------------------------
-   pgp_loopback : for i in (NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0 generate
-      pgpTxMasters_s(i) <= pgpRxMasters_s(i);
-   end generate;
         
 end mapping;
