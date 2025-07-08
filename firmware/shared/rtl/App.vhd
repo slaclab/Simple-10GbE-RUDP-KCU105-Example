@@ -165,9 +165,10 @@ begin
          RATE_G            => "6.25Gbps", -- Or "6.25Gbps", "3.125Gbps" CHANGED FROM 10.3125 for our case
          REFCLK_FREQ_G     => 156.25E+6,
          AXIL_CLK_FREQ_G   => 125.0E+6, -- Assumes axilClk is 125MHz
-         EN_PGP_MON_G    => EN_PGP_MON_G,
-         EN_GTH_DRP_G    => EN_GTH_DRP_G,
-         EN_QPLL_DRP_G   => EN_QPLL_DRP_G)      
+         AXIL_BASE_ADDR_G  => AXIL_XBAR_CONFIG_C(PGP_INDEX_C).baseAddr,
+         EN_PGP_MON_G      => EN_PGP_MON_G,
+         EN_GTH_DRP_G      => EN_GTH_DRP_G,
+         EN_QPLL_DRP_G     => EN_QPLL_DRP_G)      
       port map(
          -- Stable Clock and Reset
          stableClk         => axilClk,
