@@ -30,9 +30,9 @@ class App(pr.Device):
         self.add(pgp.Pgp4AxiL(
             offset  = 0x0002_0000,
 	    numVc   = 1,
-	    #enPgpMon = True,
-	    #enGthDrp = True,
-	    #enQpllDrp = True,
+	    enPgpMon = True,
+	    enGthDrp = True,
+	    enQpllDrp = True,
 	    writeEn = True,
 	    enabled = True,
 	))
