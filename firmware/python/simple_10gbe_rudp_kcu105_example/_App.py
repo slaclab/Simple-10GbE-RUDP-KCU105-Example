@@ -29,7 +29,28 @@ class App(pr.Device):
         
         self.add(pgp.Pgp4AxiL(
             offset  = 0x0002_0000,
-	    numVc   = 4,
+	    numVc   = 1,
 	    writeEn = True,
-	    enabled = False,
+	    enabled = True,
+	))
+	
+	self.add(pgp.Pgp4AxiL(
+            offset  = 0x0002_2000,
+	    numVc   = 1,
+	    writeEn = True,
+	    enabled = True,
+	))
+	
+	self.add(pgp.Pgp4AxiL(
+            offset  = 0x0002_4000,
+	    numVc   = 1,
+	    writeEn = True,
+	    enabled = True,
+	))
+	
+	self.add(pgp.Pgp4AxiL(
+            offset  = 0x0002_6000,
+	    numVc   = 1,
+	    writeEn = True,
+	    enabled = True,
 	))
