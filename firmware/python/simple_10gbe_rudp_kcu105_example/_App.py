@@ -2,7 +2,7 @@
 # This file is part of the 'Simple-10GbE-RUDP-KCU105-Example'. It is subject to
 # the license terms in the LICENSE.txt file found in the top-level directory
 # of this distribution and at:
-#    https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
+#     https://confluence.slac.stanford.edu/display/ppareg/LICENSE.html.
 # No part of the 'Simple-10GbE-RUDP-KCU105-Example', including this file, may be
 # copied, modified, propagated, or distributed except according to the terms
 # contained in the LICENSE.txt file.
@@ -26,31 +26,12 @@ class App(pr.Device):
         self.add(devBoard.AppMem(
             offset  = 0x0001_0000,
         ))
-        
-        self.add(pgp.Pgp4AxiL(
-            offset  = 0x0002_0000,
-	    numVc   = 1,
-	    writeEn = True,
-	    enabled = True,
-	))
-	
-	self.add(pgp.Pgp4AxiL(
-            offset  = 0x0002_2000,
-	    numVc   = 1,
-	    writeEn = True,
-	    enabled = True,
-	))
-	
-	self.add(pgp.Pgp4AxiL(
-            offset  = 0x0002_4000,
-	    numVc   = 1,
-	    writeEn = True,
-	    enabled = True,
-	))
-	
-	self.add(pgp.Pgp4AxiL(
-            offset  = 0x0002_6000,
-	    numVc   = 1,
-	    writeEn = True,
-	    enabled = True,
-	))
+
+        for i in range(4):
+            self.add(pgp.Pgp4AxiL(
+                name    = f"Pgp4AxiL[{i}]",
+                offset  = 0x0002_0000 + (i * 0x2000),
+                numVc   = 1,
+                writeEn = True,
+                enabled = True,
+            ))

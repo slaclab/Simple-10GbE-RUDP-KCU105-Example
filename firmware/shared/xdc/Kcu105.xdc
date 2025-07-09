@@ -28,6 +28,7 @@ set_property -dict { PACKAGE_PIN J23 IOSTANDARD LVCMOS18 } [get_ports { phyRstN 
 set_property -dict { PACKAGE_PIN AK17 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300P }]
 set_property -dict { PACKAGE_PIN AK16 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300N }]
 
+# PGP differential clk
 set_property PACKAGE_PIN K6 [get_ports { pgpClkP }]
 set_property PACKAGE_PIN K5 [get_ports { pgpClkN }]
 create_clock -name pgpClk -period 6.400 [get_ports { pgpClkP }]
@@ -95,9 +96,6 @@ create_clock -name ethClkP    -period 6.400 [get_ports {ethClkP}]
 create_clock -name phyClkP    -period 1.600 [get_ports {phyClkP}]
 create_clock -name sysClk300P -period 3.333 [get_ports {sysClk300P}]
 
-#set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks {ethClkP}] -group [get_clocks -include_generated_clocks {sysClk300P}]
-#set_clock_groups -asynchronous -group [get_clocks -include_generated_clocks {phyClkP}] -group [get_clocks -include_generated_clocks {sysClk300P}]
-
 # Constraint for marking these clock domains as asynchronous (fix "unsafe" clock interactions)
  set_clock_groups -asynchronous \
         -group [get_clocks -include_generated_clocks *pgpClk*] \
@@ -105,10 +103,6 @@ create_clock -name sysClk300P -period 3.333 [get_ports {sysClk300P}]
         -group [get_clocks -include_generated_clocks *sysClk300P*] \
         -group [get_clocks -include_generated_clocks *ethClkP*] \
         -group [get_clocks -include_generated_clocks *phyClkP*]
-
-## Exception to handle path between PGP recovered clock and Ethernet PHY clock
-#set_false_path -from [get_clocks *phyRxClk*] -to [get_clocks U_Pgp3GthUsIpWrapper_1_n_82]
-#set_false_path -from [get_clocks U_Pgp3GthUsIpWrapper_1_n_82] -to [get_clocks *phyRxClk*]
 
 ##############################################################################
 # BITSTREAM: .bit file Configuration
