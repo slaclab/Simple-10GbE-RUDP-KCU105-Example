@@ -13,6 +13,7 @@ import pyrogue as pr
 import simple_10gbe_rudp_kcu105_example as devBoard
 
 import surf.protocols.pgp as pgp
+import surf.protocols.ssi as ssi
 
 class App(pr.Device):
     def __init__( self,sim=False,**kwargs):
