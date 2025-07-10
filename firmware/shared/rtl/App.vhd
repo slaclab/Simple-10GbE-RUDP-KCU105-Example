@@ -14,13 +14,15 @@
 
 library ieee;
 use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
 
 library surf;
 use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
 use surf.Pgp4Pkg.all;
-use ieee.numeric_std.all;
+use surf.SsiPkg.all;
+
 
 entity App is
    generic (
@@ -61,9 +63,52 @@ architecture mapping of App is
    constant MEM_INDEX_C : natural := 1;
    constant PGP_INDEX_C : natural := 2;
    
-   constant NUM_AXIL_MASTERS_C : positive := 3;
-
-   constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
+   constant PRBS_TX_INDEX_C : natural := 3;
+   constant PRBS_RX_INDEX_C : natural := 7;
+   
+   constant NUM_PGP_LANES_C : positive := 4;
+   constant NUM_PGP_VCS_C   : positive := 1;
+   
+   constant NUM_AXIL_MASTERS_C : positive := 11; -- AppTx, Mem, Pgp, 8 PRBS Tx/Rx
+   
+   constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := (
+        -- Slot 0: AppTx (64kB space)
+        TX_INDEX_C => (
+            baseAddr     => x"80000000",
+            addrBits     => 16,
+            connectivity => x"0001"),
+        -- Slot 1: AppMem (64kB space)
+        MEM_INDEX_C => (
+            baseAddr     => x"80010000",
+            addrBits     => 16,
+            connectivity => x"0001"),
+        -- Slot 2: PgpWrapper (64kB space)
+        PGP_INDEX_C => (
+            baseAddr     => x"80020000",
+            addrBits     => 16,
+            connectivity => x"0001"),
+        -- Slots 3-6: PRBS Transmitters (4kB space each)
+        3 => (baseAddr => x"80030000", addrBits => 12, connectivity => x"0001"),
+        4 => (baseAddr => x"80031000", addrBits => 12, connectivity => x"0001"),
+        5 => (baseAddr => x"80032000", addrBits => 12, connectivity => x"0001"),
+        6 => (baseAddr => x"80033000", addrBits => 12, connectivity => x"0001"),
+        -- Slots 7-10: PRBS Receivers (4kB space each)
+        7  => (baseAddr => x"80034000", addrBits => 12, connectivity => x"0001"),
+        8  => (baseAddr => x"80035000", addrBits => 12, connectivity => x"0001"),
+        9  => (baseAddr => x"80036000", addrBits => 12, connectivity => x"0001"),
+        10 => (baseAddr => x"80037000", addrBits => 12, connectivity => x"0001")
+    );
+    
+   -- Configuration for the 64-bit PGP AXI-Stream bus
+    constant PGP_AXIS_CONFIG_C : AxiStreamConfigType := (
+        TSTRB_EN_C    => false,
+        TDATA_BYTES_C => 8,  -- 64-bit data bus
+        TDEST_BITS_C  => 1,
+        TID_BITS_C    => 1,
+        TKEEP_MODE_C  => TKEEP_COMP_C,
+        TUSER_BITS_C  => 1,
+        TUSER_MODE_C  => TUSER_NONE_C
+    );
 
    signal axilWriteMasters : AxiLiteWriteMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
@@ -71,8 +116,6 @@ architecture mapping of App is
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
     
    -- PGP AXI-Stream Signals
-   constant NUM_PGP_LANES_C : positive := 4;
-   constant NUM_PGP_VCS_C   : positive := 1;
    signal pgpTxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0) := (others => AXI_STREAM_MASTER_INIT_C);
    signal pgpTxSlaves_s     : AxiStreamSlaveArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
    signal pgpRxMasters_s    : AxiStreamMasterArray((NUM_PGP_LANES_C*NUM_PGP_VCS_C)-1 downto 0);
@@ -206,5 +249,63 @@ begin
          axilReadSlave     => axilReadSlaves(PGP_INDEX_C),
          axilWriteMaster   => axilWriteMasters(PGP_INDEX_C),
          axilWriteSlave    => axilWriteSlaves(PGP_INDEX_C));
+        
+   -----------------------------------------------------------------
+    -- PRBS Generator and Checker for each PGP Lane
+    -----------------------------------------------------------------
+    GEN_PRBS : for i in 0 to NUM_PGP_LANES_C-1 generate
+        constant PRBS_TX_IDX : natural := PRBS_TX_INDEX_C + i;
+        constant PRBS_RX_IDX : natural := PRBS_RX_INDEX_C + i;
+    begin
+
+        -- PRBS Transmitter Instance
+        U_PrbsTx : entity surf.SsiPrbsTx
+            generic map (
+                TPD_G                        => TPD_G,
+                PRBS_SEED_SIZE_G             => 64,
+                PRBS_TAPS_G                  => (0 => 63, 1 => 62, 2 => 60, 3 => 59), -- Taps for PRBS-63
+                MASTER_AXI_STREAM_CONFIG_G   => PGP_AXIS_CONFIG_C
+            )
+            port map (
+                -- AXI Stream clock domain is the PGP recovered clock for this lane
+                mAxisClk        => pgpClk_s(i),
+                mAxisRst        => pgpClkRst_s(i),
+                mAxisMaster     => pgpTxMasters_s(i),
+                mAxisSlave      => pgpTxSlaves_s(i),
+                -- AXI-Lite clock domain is the main system AXI-Lite clock.
+                -- Note: Library uses 'locClk'/'locRst' for this module.
+                locClk          => axilClk,
+                locRst          => axilRst,
+                axilReadMaster  => axilReadMasters(PRBS_TX_IDX),
+                axilReadSlave   => axilReadSlaves(PRBS_TX_IDX),
+                axilWriteMaster => axilWriteMasters(PRBS_TX_IDX),
+                axilWriteSlave  => axilWriteSlaves(PRBS_TX_IDX)
+            );
+
+        -- PRBS Receiver Instance
+        U_PrbsRx : entity surf.SsiPrbsRx
+            generic map (
+                TPD_G                       => TPD_G,
+                PRBS_SEED_SIZE_G            => 64,
+                PRBS_TAPS_G                 => (0 => 63, 1 => 62, 2 => 60, 3 => 59), -- Taps for PRBS-63
+                SLAVE_AXI_STREAM_CONFIG_G   => PGP_AXIS_CONFIG_C
+            )
+            port map (
+                -- AXI Stream clock domain is the PGP recovered clock for this lane
+                sAxisClk        => pgpClk_s(i),
+                sAxisRst        => pgpClkRst_s(i),
+                sAxisMaster     => pgpRxMasters_s(i),
+                sAxisSlave      => pgpRxSlaves_s(i),
+                -- AXI-Lite clock domain is the main system AXI-Lite clock.
+                -- Note: Library uses 'axiClk'/'axiRst' for this module.
+                axiClk          => axilClk,
+                axiRst          => axilRst,
+                axiReadMaster   => axilReadMasters(PRBS_RX_IDX),
+                axiReadSlave    => axilReadSlaves(PRBS_RX_IDX),
+                axiWriteMaster  => axilWriteMasters(PRBS_RX_IDX),
+                axiWriteSlave   => axilWriteSlaves(PRBS_RX_IDX)
+            );
+
+   end generate GEN_PRBS;
         
 end mapping;
