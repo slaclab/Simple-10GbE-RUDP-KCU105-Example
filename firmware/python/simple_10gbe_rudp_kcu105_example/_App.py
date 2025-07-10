@@ -30,8 +30,22 @@ class App(pr.Device):
         for i in range(4):
             self.add(pgp.Pgp4AxiL(
                 name    = f"Pgp4AxiL[{i}]",
-                offset  = 0x0002_0000 + (i * 0x2000),
+                offset  = 0x0002_0000 + (i * 0x2000), # 8kB stride
                 numVc   = 1,
                 writeEn = True,
                 enabled = True,
             ))
+            
+            self.add(ssi.SsiPrbsTx(
+                name   = f"PrbsTx[{i}]",
+                offset = 0x0003_0000 + (i * 0x1000), # 4kB stride
+                expand = True,
+            ))
+
+            self.add(ssi.SsiPrbsRx(
+                name   = f"PrbsRx[{i}]",
+                offset = 0x0003_4000 + (i * 0x1000), # 4kB stride
+                expand = True,
+            ))
+        
+        
