@@ -100,15 +100,15 @@ architecture mapping of App is
     );
     
    -- Configuration for the 64-bit PGP AXI-Stream bus
-    constant PGP_AXIS_CONFIG_C : AxiStreamConfigType := (
-        TSTRB_EN_C    => false,
-        TDATA_BYTES_C => 8,  -- 64-bit data bus
-        TDEST_BITS_C  => 1,
-        TID_BITS_C    => 1,
-        TKEEP_MODE_C  => TKEEP_COMP_C,
-        TUSER_BITS_C  => 1,
-        TUSER_MODE_C  => TUSER_NONE_C
-    );
+--    constant PGP_AXIS_CONFIG_C : AxiStreamConfigType := (
+--        TSTRB_EN_C    => false,
+--        TDATA_BYTES_C => 8,  -- 64-bit data bus
+--        TDEST_BITS_C  => 1,
+--        TID_BITS_C    => 1,
+--        TKEEP_MODE_C  => TKEEP_COMP_C,
+--        TUSER_BITS_C  => 1,
+--        TUSER_MODE_C  => TUSER_NONE_C
+--    );
 
    signal axilWriteMasters : AxiLiteWriteMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
@@ -263,7 +263,7 @@ begin
             generic map (
                 TPD_G                        => TPD_G,
                 PRBS_SEED_SIZE_G             => 64,
-                MASTER_AXI_STREAM_CONFIG_G   => PGP_AXIS_CONFIG_C
+                MASTER_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
                 -- AXI Stream clock domain is the PGP recovered clock for this lane
@@ -286,7 +286,7 @@ begin
             generic map (
                 TPD_G                       => TPD_G,
                 PRBS_SEED_SIZE_G            => 64,
-                SLAVE_AXI_STREAM_CONFIG_G   => PGP_AXIS_CONFIG_C
+                SLAVE_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
                 -- AXI Stream clock domain is the PGP recovered clock for this lane
