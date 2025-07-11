@@ -263,7 +263,6 @@ begin
             generic map (
                 TPD_G                        => TPD_G,
                 PRBS_SEED_SIZE_G             => 64,
-                PRBS_TAPS_G                  => (0 => 63, 1 => 62, 2 => 60, 3 => 59), -- Taps for PRBS-63
                 MASTER_AXI_STREAM_CONFIG_G   => PGP_AXIS_CONFIG_C
             )
             port map (
@@ -287,7 +286,6 @@ begin
             generic map (
                 TPD_G                       => TPD_G,
                 PRBS_SEED_SIZE_G            => 64,
-                PRBS_TAPS_G                 => (0 => 63, 1 => 62, 2 => 60, 3 => 59), -- Taps for PRBS-63
                 SLAVE_AXI_STREAM_CONFIG_G   => PGP_AXIS_CONFIG_C
             )
             port map (
