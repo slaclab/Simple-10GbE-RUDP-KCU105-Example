@@ -98,17 +98,6 @@ architecture mapping of App is
         9  => (baseAddr => x"80036000", addrBits => 12, connectivity => x"0001"),
         10 => (baseAddr => x"80037000", addrBits => 12, connectivity => x"0001")
     );
-    
-   -- Configuration for the 64-bit PGP AXI-Stream bus
---    constant PGP_AXIS_CONFIG_C : AxiStreamConfigType := (
---        TSTRB_EN_C    => false,
---        TDATA_BYTES_C => 8,  -- 64-bit data bus
---        TDEST_BITS_C  => 1,
---        TID_BITS_C    => 1,
---        TKEEP_MODE_C  => TKEEP_COMP_C,
---        TUSER_BITS_C  => 1,
---        TUSER_MODE_C  => TUSER_NONE_C
---    );
 
    signal axilWriteMasters : AxiLiteWriteMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
@@ -263,6 +252,7 @@ begin
             generic map (
                 TPD_G                        => TPD_G,
                 PRBS_SEED_SIZE_G             => 64,
+                PRBS_TAPS_G                  => (0 => 63, 1 => 62, 2 => 60, 3 => 59),
                 MASTER_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
@@ -272,7 +262,6 @@ begin
                 mAxisMaster     => pgpTxMasters_s(i),
                 mAxisSlave      => pgpTxSlaves_s(i),
                 -- AXI-Lite clock domain is the main system AXI-Lite clock.
-                -- Note: Library uses 'locClk'/'locRst' for this module.
                 locClk          => axilClk,
                 locRst          => axilRst,
                 axilReadMaster  => axilReadMasters(PRBS_TX_IDX),
@@ -286,6 +275,7 @@ begin
             generic map (
                 TPD_G                       => TPD_G,
                 PRBS_SEED_SIZE_G            => 64,
+                PRBS_TAPS_G                  => (0 => 63, 1 => 62, 2 => 60, 3 => 59),
                 SLAVE_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
@@ -295,7 +285,6 @@ begin
                 sAxisMaster     => pgpRxMasters_s(i),
                 sAxisSlave      => pgpRxSlaves_s(i),
                 -- AXI-Lite clock domain is the main system AXI-Lite clock.
-                -- Note: Library uses 'axiClk'/'axiRst' for this module.
                 axiClk          => axilClk,
                 axiRst          => axilRst,
                 axiReadMaster   => axilReadMasters(PRBS_RX_IDX),
