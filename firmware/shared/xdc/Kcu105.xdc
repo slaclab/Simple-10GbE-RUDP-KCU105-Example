@@ -29,8 +29,8 @@ set_property -dict { PACKAGE_PIN AK17 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [g
 set_property -dict { PACKAGE_PIN AK16 IOSTANDARD DIFF_SSTL12_DCI ODT RTT_48 } [get_ports { sysClk300N }]
 
 # PGP differential clk
-set_property PACKAGE_PIN K6 [get_ports { pgpClkP }]
-set_property PACKAGE_PIN K5 [get_ports { pgpClkN }]
+set_property PACKAGE_PIN T6 [get_ports { pgpClkP }]
+set_property PACKAGE_PIN T5 [get_ports { pgpClkN }]
 create_clock -name pgpClk -period 6.400 [get_ports { pgpClkP }]
 
 # Use C2M pins here
