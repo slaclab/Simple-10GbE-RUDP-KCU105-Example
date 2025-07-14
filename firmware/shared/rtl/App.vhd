@@ -118,6 +118,7 @@ architecture mapping of App is
    signal   pgpTxOut_s        : Pgp4TxOutArray(NUM_PGP_LANES_C-1 downto 0);
    signal   pgpClk_s          : slv(NUM_PGP_LANES_C-1 downto 0);
    signal   pgpClkRst_s       : slv(NUM_PGP_LANES_C-1 downto 0);
+   signal   pgpRxCtrl_s       : AxiStreamCtrlArray(NUM_PGP_LANES_C-1 downto 0);
 
 begin
    -------------------------------
@@ -228,9 +229,8 @@ begin
          pgpTxSlaves       => pgpTxSlaves_s,
          -- Frame Receive Interface
          pgpRxMasters      => pgpRxMasters_s,
---         pgpRxSlaves       => AXI_STREAM_SLAVE_FORCE_C,
-         pgpRxSlaves       => pgpRxSlaves_s,
-         pgpRxCtrl         => AXI_STREAM_CTRL_C, -- Connect to constant default
+--         pgpRxSlaves       => pgpRxSlaves_s,
+         pgpRxCtrl         => pgpRxCtrl_s,
          -- AXI-Lite Register Interface (axilClk domain)
          axilClk           => axilClk,
          axilRst           => axilRst,
@@ -252,7 +252,6 @@ begin
             generic map (
                 TPD_G                        => TPD_G,
                 PRBS_SEED_SIZE_G             => 64,
-                PRBS_TAPS_G                  => (0 => 63, 1 => 62, 2 => 60, 3 => 59),
                 MASTER_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
@@ -275,7 +274,6 @@ begin
             generic map (
                 TPD_G                       => TPD_G,
                 PRBS_SEED_SIZE_G            => 64,
-                PRBS_TAPS_G                  => (0 => 63, 1 => 62, 2 => 60, 3 => 59),
                 SLAVE_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
@@ -283,7 +281,8 @@ begin
                 sAxisClk        => pgpClk_s(i),
                 sAxisRst        => pgpClkRst_s(i),
                 sAxisMaster     => pgpRxMasters_s(i),
-                sAxisSlave      => pgpRxSlaves_s(i),
+--                sAxisSlave      => pgpRxSlaves_s(i),
+                sAxisCtrl       => pgpRxCtrl_s(i),
                 -- AXI-Lite clock domain is the main system AXI-Lite clock.
                 axiClk          => axilClk,
                 axiRst          => axilRst,
