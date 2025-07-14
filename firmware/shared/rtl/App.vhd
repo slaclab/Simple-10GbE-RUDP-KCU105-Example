@@ -274,6 +274,7 @@ begin
             generic map (
                 TPD_G                       => TPD_G,
                 PRBS_SEED_SIZE_G            => 64,
+                SLAVE_READY_EN_G            => false,
                 SLAVE_AXI_STREAM_CONFIG_G   => PGP4_AXIS_CONFIG_C
             )
             port map (
