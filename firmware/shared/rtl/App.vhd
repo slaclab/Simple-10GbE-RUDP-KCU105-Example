@@ -195,7 +195,7 @@ begin
          TPD_G             => TPD_G,
          NUM_LANES_G       => NUM_PGP_LANES_C,
          NUM_VC_G          => NUM_PGP_VCS_C,
-         RATE_G            => "6.25Gbps", -- Or "6.25Gbps", "3.125Gbps" CHANGED FROM 10.3125 for our case
+         RATE_G            => "10.3125Gbps", -- Or "6.25Gbps", "3.125Gbps" CHANGED FROM 10.3125 for our case
          REFCLK_FREQ_G     => 156.25E+6,
          AXIL_CLK_FREQ_G   => 125.0E+6, -- Assumes axilClk is 125MHz
          AXIL_BASE_ADDR_G  => XBAR_CONFIG_C(PGP_INDEX_C).baseAddr,
