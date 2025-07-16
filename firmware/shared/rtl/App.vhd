@@ -29,7 +29,8 @@ entity App is
       TPD_G        : time    := 1 ns;
       SIMULATION_G : boolean := false;
       EN_PGP_MON_G : boolean := true;
-      EN_GTH_DRP_G : boolean := true;
+      EN_GTH_DRP_G : boolean := false;
+      EN_GTH_IBERT_G: boolean := true;
       EN_QPLL_DRP_G : boolean := true);
    port (
       -- Clock and Reset
@@ -201,6 +202,7 @@ begin
          AXIL_BASE_ADDR_G  => XBAR_CONFIG_C(PGP_INDEX_C).baseAddr,
          EN_PGP_MON_G      => EN_PGP_MON_G,
          EN_GTH_DRP_G      => EN_GTH_DRP_G,
+         EN_GTH_IBERT_G    => EN_GTH_IBERT_G,
          EN_QPLL_DRP_G     => EN_QPLL_DRP_G)      
       port map(
          -- Stable Clock and Reset
