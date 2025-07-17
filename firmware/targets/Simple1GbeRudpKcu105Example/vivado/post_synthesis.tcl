@@ -45,6 +45,14 @@ set_property C_DATA_DEPTH 1024 [get_debug_cores ${ilaName}]
 #################################
 SetDebugCoreClk ${ilaName} {U_Core/GEN_REAL.U_XbarI2cMux/axilClk}
 
+
+##################################
+## JTAG commands for IBERT IP core
+##################################
+set_property BITSTREAM.GENERAL.DEBUGBITSTREAM Yes [current_design]
+set_property BITSTREAM.CONFIG.EN_BSCAN Yes [current_design]
+catch { set_property C_EN_VIO_REFRESH false [get_debug_cores -of_objects [get_cells *dbg_hub*]] }
+
 #######################
 ## Set the debug Probes
 #######################
