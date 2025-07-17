@@ -113,6 +113,11 @@ set_property CFGBVS GND                      [current_design]
 set_property CONFIG_MODE SPIx8               [current_design]
 set_property BITSTREAM.CONFIG.SPI_BUSWID TH 8 [current_design]
 
+# added for optional IBERT IP core (JTAG)
+set_property BITSTREAM.GENERAL.DEBUGBITSTREAM Yes [current_design]
+set_property BITSTREAM.CONFIG.EN_BSCAN Yes [current_design]
+catch { set_property C_EN_VIO_REFRESH false [get_debug_cores -of_objects [get_cells *dbg_hub*]] }
+
 set_property BITSTREAM.CONFIG.CONFIGRATE 12  [current_design]
 #set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN div-1 [current_design]
 #set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES [current_design]
