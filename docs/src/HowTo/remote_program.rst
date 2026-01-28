@@ -12,7 +12,7 @@ How to reprogram your KCU105 board's QSPI Boot Prom
 
         .. code-block::
 
-                $ cd /sdf/group/faders/tools/xilinx/2025.1/Vivado/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+                $ cd /sdf/group/faders/tools/xilinx/2025.2/Vivado/data/xicom/cable_drivers/lin64/install_script/install_drivers/
  
    #. Execute the “install drivers” scripts as “sudo”:
 
@@ -20,9 +20,11 @@ How to reprogram your KCU105 board's QSPI Boot Prom
         
                 $ sudo ./install_drivers
 
-   #. Follow the steps in the tutorial below for lab#5 and step#1~9 on page 47 ~ 53:
+   #. Follow this documentation to use the JTAG to either program the FPGA via .bit (or QSPI Boot Prom via .MCS files)
  
-        https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug936-vivado-tutorial-programming-debugging.pdf
+        https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging/Programming-the-Hardware-Device
+
+        https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging/Programming-Configuration-Memory-Devices
 
 #. Make sure SW15 is setup for QSPI booting (refer to :ref:`setup_hardware_setup`)
 
