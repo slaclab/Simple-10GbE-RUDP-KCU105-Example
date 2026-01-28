@@ -29,4 +29,4 @@ After doing the local Miniforge install, you will need to setup the conda enviro
    $ source /path/to/my/miniforge3/etc/profile.d/conda.sh
 
    # Activate Rogue conda Environment
-   $ conda activate rogue_v6.4.4
+   $ conda activate rogue_v6.8.0
