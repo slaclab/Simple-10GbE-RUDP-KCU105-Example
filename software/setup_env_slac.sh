@@ -6,4 +6,4 @@ source /sdf/group/faders/users/$USER/miniforge3/etc/profile.d/conda.sh
 ##################################
 # Activate Rogue conda Environment
 ##################################
-conda activate rogue_v6.8.0
+conda activate rogue_v6.9.0
