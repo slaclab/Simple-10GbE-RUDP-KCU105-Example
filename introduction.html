@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Introduction &mdash; Simple-10GbE-RUDP-KCU105-Example v2.17.0-3-g8bf1a25 documentation</title>
+  <title>Introduction &mdash; Simple-10GbE-RUDP-KCU105-Example v2.18.0-16-g35bcec2 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=03e43079" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=a26aa1fa"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/documentation_options.js?v=64d745ae"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -77,7 +77,7 @@
 <span id="id1"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Link to this heading"></a></h1>
 <p>The firmware structure for the present example is divided into two main blocks, <strong>Application</strong> and <strong>Core</strong>.</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="_images/fw_top.png"><img alt="Alternative text" src="_images/fw_top.png" style="width: 800px;" />
+<div><a class="reference internal image-reference" href="_images/fw_top.png"><img alt="Alternative text" src="_images/fw_top.png" width="800" />
 </a>
 </div></blockquote>
 <p>The interfaces between the <strong>Core</strong> and the <strong>Application</strong> are <strong>AXI-Lite</strong> and <strong>AXI stream</strong> buses.</p>
@@ -95,7 +95,7 @@ UdpEngineWrapper module contains the IPv4 and UDP layers.
 TenGigEth module contains the PHY and MAC layers.
 A block diagram on this stream path from the Application’s <strong>AppTx</strong> module to the PHY layer is shown below:</p>
 <blockquote>
-<div><a class="reference internal image-reference" href="_images/fileio_DataStreamFlow.png"><img alt="Alternative text" src="_images/fileio_DataStreamFlow.png" style="width: 800px;" />
+<div><a class="reference internal image-reference" href="_images/fileio_DataStreamFlow.png"><img alt="Alternative text" src="_images/fileio_DataStreamFlow.png" width="800" />
 </a>
 </div></blockquote>
 <p>The <strong>Application</strong> module is designed to be a “template” for developers.

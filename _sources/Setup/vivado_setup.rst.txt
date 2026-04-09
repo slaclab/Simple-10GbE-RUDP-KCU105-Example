@@ -4,7 +4,7 @@
 Vivado and VCS Setup
 ====================
 
-If you are on the SLAC AFS network
+If you are on the SLAC SDF network
 ==================================
 
 Here's how to setup the Xilinx tools and licensing
@@ -15,7 +15,7 @@ Here's how to setup the Xilinx tools and licensing
 
 This **setup_env_slac.sh** also includes the setup for VCS as well
 
-If you are NOT on the SLAC AFS network
+If you are NOT on the SLAC SDF network
 ======================================
 
 You will need to install Vivado and install the Xilinx Licensing

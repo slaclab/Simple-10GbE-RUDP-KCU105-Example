@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rogue Software Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v2.17.0-3-g8bf1a25 documentation</title>
+  <title>Rogue Software Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v2.18.0-16-g35bcec2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=a26aa1fa"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/documentation_options.js?v=64d745ae"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -51,8 +51,8 @@
 <li class="toctree-l2"><a class="reference internal" href="network_setup.html">Network Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vivado_setup.html">Vivado and VCS Setup</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Rogue Software Setup</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#if-you-are-on-the-slac-afs-network">If you are on the SLAC AFS network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#if-you-are-not-on-the-slac-afs-network">If you are NOT on the SLAC AFS network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#if-you-are-on-the-slac-sdf-network">If you are on the SLAC SDF network</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#if-you-are-not-on-the-slac-sdf-network">If you are NOT on the SLAC SDF network</a></li>
 </ul>
 </li>
 </ul>
@@ -87,16 +87,16 @@
              
   <section id="rogue-software-setup">
 <span id="setup-rogue-setup"></span><h1>Rogue Software Setup<a class="headerlink" href="#rogue-software-setup" title="Link to this heading"></a></h1>
-<section id="if-you-are-on-the-slac-afs-network">
-<h2>If you are on the SLAC AFS network<a class="headerlink" href="#if-you-are-on-the-slac-afs-network" title="Link to this heading"></a></h2>
-<p>Here’s how to setup the SLAC AFS conda build of rogue:</p>
+<section id="if-you-are-on-the-slac-sdf-network">
+<h2>If you are on the SLAC SDF network<a class="headerlink" href="#if-you-are-on-the-slac-sdf-network" title="Link to this heading"></a></h2>
+<p>Here’s how to setup the SLAC SDF conda build of rogue:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Simple-10GbE-RUDP-KCU105-Example/software
 $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>setup_env_slac.sh
 </pre></div>
 </div>
 </section>
-<section id="if-you-are-not-on-the-slac-afs-network">
-<h2>If you are NOT on the SLAC AFS network<a class="headerlink" href="#if-you-are-not-on-the-slac-afs-network" title="Link to this heading"></a></h2>
+<section id="if-you-are-not-on-the-slac-sdf-network">
+<h2>If you are NOT on the SLAC SDF network<a class="headerlink" href="#if-you-are-not-on-the-slac-sdf-network" title="Link to this heading"></a></h2>
 <p>Here is “How to install the Rogue With Miniforge”:</p>
 <blockquote>
 <div><p><a class="reference external" href="https://slaclab.github.io/rogue/installing/miniforge.html">https://slaclab.github.io/rogue/installing/miniforge.html</a></p>
@@ -106,7 +106,7 @@ $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>s
 $<span class="w"> </span><span class="nb">source</span><span class="w"> </span>/path/to/my/miniforge3/etc/profile.d/conda.sh
 
 <span class="c1"># Activate Rogue conda Environment</span>
-$<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> </span>rogue_v6.4.4
+$<span class="w"> </span>conda<span class="w"> </span>activate<span class="w"> </span>rogue_v6.8.0
 </pre></div>
 </div>
 </section>

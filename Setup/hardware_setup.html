@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hardware Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v2.17.0-3-g8bf1a25 documentation</title>
+  <title>Hardware Setup &mdash; Simple-10GbE-RUDP-KCU105-Example v2.18.0-16-g35bcec2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=a26aa1fa"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/documentation_options.js?v=64d745ae"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -47,7 +47,24 @@
 <li class="toctree-l1"><a class="reference internal" href="../introduction.html">Introduction</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Setup</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="supported_os.html">Supported Operating Systems</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Hardware Setup</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Hardware Setup</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#required-hardware">Required Hardware</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#kcu105-development-board">KCU105 Development Board</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#gbe-sfp-transceiver">10GbE SFP+ Transceiver</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#fiber-optic-cable">Fiber Optic Cable</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#host-system-10gbe-network-interface">Host System 10GbE Network Interface</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#micro-usb-cable">Micro USB Cable</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#board-configuration">Board Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#qspi-boot-mode-selection">QSPI Boot Mode Selection</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#kcu105-hardware-overview">KCU105 Hardware Overview</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#initial-firmware-programming">Initial Firmware Programming</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#host-system-configuration-for-sfp-transceivers">Host System Configuration for SFP+ Transceivers</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="network_setup.html">Network Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="vivado_setup.html">Vivado and VCS Setup</a></li>
 <li class="toctree-l2"><a class="reference internal" href="rogue_setup.html">Rogue Software Setup</a></li>
@@ -83,27 +100,103 @@
              
   <section id="hardware-setup">
 <span id="setup-hardware-setup"></span><h1>Hardware Setup<a class="headerlink" href="#hardware-setup" title="Link to this heading"></a></h1>
-<p>You will need one Xilinx KCU105 development board:</p>
+<p>This section describes the required hardware and host system configuration
+needed to bring up the KCU105 development platform.</p>
+<section id="required-hardware">
+<h2>Required Hardware<a class="headerlink" href="#required-hardware" title="Link to this heading"></a></h2>
+<p>You will need the following hardware components:</p>
+<section id="kcu105-development-board">
+<h3>KCU105 Development Board<a class="headerlink" href="#kcu105-development-board" title="Link to this heading"></a></h3>
+<p>One Xilinx KCU105 development board is required:</p>
 <blockquote>
 <div><p><a class="reference external" href="https://www.xilinx.com/products/boards-and-kits/kcu105.html">https://www.xilinx.com/products/boards-and-kits/kcu105.html</a></p>
 </div></blockquote>
-<p>You will need a 10GbE SFP+ transceiver for the KCU105 and
-fiber optic cable.  Here’s an example of a SFP+ transceiver:</p>
+</section>
+<section id="gbe-sfp-transceiver">
+<h3>10GbE SFP+ Transceiver<a class="headerlink" href="#gbe-sfp-transceiver" title="Link to this heading"></a></h3>
+<p>You will need a 10GbE SFP+ transceiver compatible with the KCU105 board.
+An example of a suitable transceiver is:</p>
 <blockquote>
 <div><p><a class="reference external" href="https://www.fs.com/products/74668.html">https://www.fs.com/products/74668.html</a></p>
 </div></blockquote>
-<p>You will also need a fiber optic cable as well.
-Here’s an example of a optical cable:</p>
+</section>
+<section id="fiber-optic-cable">
+<h3>Fiber Optic Cable<a class="headerlink" href="#fiber-optic-cable" title="Link to this heading"></a></h3>
+<p>A fiber optic cable compatible with the selected SFP+ transceivers is required.
+For example:</p>
 <blockquote>
 <div><p><a class="reference external" href="https://www.fs.com/products/40180.html">https://www.fs.com/products/40180.html</a></p>
 </div></blockquote>
-<a class="reference internal image-reference" href="../_images/kcu105_hw.png"><img alt="Alternative text" src="../_images/kcu105_hw.png" style="width: 800px;" />
+</section>
+<section id="host-system-10gbe-network-interface">
+<h3>Host System 10GbE Network Interface<a class="headerlink" href="#host-system-10gbe-network-interface" title="Link to this heading"></a></h3>
+<p>A host machine equipped with a 10GbE network interface card (NIC) is required
+to communicate with the KCU105 over the SFP+ link.</p>
+<p>A low-cost and commonly available option is a Broadcom BCM57810S–based dual-port
+10GbE SFP+ PCIe NIC, for example:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://www.amazon.com/Ethernet-Broadcom-BCM57810S-Controller-Interface/dp/B06X9T683K">https://www.amazon.com/Ethernet-Broadcom-BCM57810S-Controller-Interface/dp/B06X9T683K</a></p>
+</div></blockquote>
+<p>This NIC supports SFP+ transceivers and is widely supported by Linux kernel
+drivers, making it a good and inexpensive choice for development and testing.</p>
+</section>
+<section id="micro-usb-cable">
+<h3>Micro USB Cable<a class="headerlink" href="#micro-usb-cable" title="Link to this heading"></a></h3>
+<p>A micro USB cable is required for initial firmware programming using the
+JTAG-to-USB connector on the KCU105 board.</p>
+</section>
+</section>
+<section id="board-configuration">
+<h2>Board Configuration<a class="headerlink" href="#board-configuration" title="Link to this heading"></a></h2>
+<section id="qspi-boot-mode-selection">
+<h3>QSPI Boot Mode Selection<a class="headerlink" href="#qspi-boot-mode-selection" title="Link to this heading"></a></h3>
+<p>For booting the KCU105 via the QSPI PROM, configure the SW15 switch with
+position #1 set in the arrow direction.</p>
+<a class="reference internal image-reference" href="../_images/SW15.png"><img alt="SW15 boot mode switch configuration" src="../_images/SW15.png" width="800" />
 </a>
-<p>For booting up the KCU105 via the QSPI PROM, you will need to setup the SW15 switch
-with position#1 in the arrow direction:</p>
-<a class="reference internal image-reference" href="../_images/SW15.png"><img alt="Alternative text" src="../_images/SW15.png" style="width: 800px;" />
+</section>
+<section id="kcu105-hardware-overview">
+<h3>KCU105 Hardware Overview<a class="headerlink" href="#kcu105-hardware-overview" title="Link to this heading"></a></h3>
+<p>The following image shows the KCU105 hardware layout:</p>
+<a class="reference internal image-reference" href="../_images/kcu105_hw.png"><img alt="KCU105 hardware overview" src="../_images/kcu105_hw.png" width="800" />
 </a>
-<p>You will also need a micro USB cable to load the firmware for the first time, using the JTAG-to-USB connector on the board (<a class="reference external" href="https://docs.google.com/presentation/d/1ANiM92PP5BN3exUhUnahFOepXYiiALVsTczf8t8YVJ0/edit?usp=sharing">here are the instructions for programming the KCU105 for the 1st time with SLAC firmware</a>).</p>
+</section>
+</section>
+<section id="initial-firmware-programming">
+<h2>Initial Firmware Programming<a class="headerlink" href="#initial-firmware-programming" title="Link to this heading"></a></h2>
+<p>The KCU105 must be programmed via JTAG the first time before it can boot
+from the QSPI PROM.</p>
+<p>Use the JTAG-to-USB connector on the board and follow the instructions
+provided in the SLAC firmware programming guide:</p>
+<blockquote>
+<div><p><a class="reference external" href="https://docs.google.com/presentation/d/1ANiM92PP5BN3exUhUnahFOepXYiiALVsTczf8t8YVJ0/edit?usp=sharing">https://docs.google.com/presentation/d/1ANiM92PP5BN3exUhUnahFOepXYiiALVsTczf8t8YVJ0/edit?usp=sharing</a></p>
+</div></blockquote>
+</section>
+<section id="host-system-configuration-for-sfp-transceivers">
+<h2>Host System Configuration for SFP+ Transceivers<a class="headerlink" href="#host-system-configuration-for-sfp-transceivers" title="Link to this heading"></a></h2>
+<p>Some 10GbE NICs may restrict the use of non-vendor-qualified SFP+ transceivers
+by default. On Linux systems, this restriction can be overridden by updating
+the GRUB configuration.</p>
+<p>Edit the GRUB configuration file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@ubuntu:~#<span class="w"> </span>nano<span class="w"> </span>/etc/default/grub
+</pre></div>
+</div>
+<p>Update the kernel command line parameters as follows:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">GRUB_CMDLINE_LINUX_DEFAULT</span><span class="o">=</span><span class="s2">&quot;&quot;</span>
+<span class="nv">GRUB_CMDLINE_LINUX</span><span class="o">=</span><span class="s2">&quot;ixgbe.allow_unsupported_sfp=1&quot;</span>
+</pre></div>
+</div>
+<p>Apply the updated GRUB configuration:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@ubuntu:~#<span class="w"> </span>update-grub
+</pre></div>
+</div>
+<p>Reboot the system for the changes to take effect:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>root@ubuntu:~#<span class="w"> </span>reboot
+</pre></div>
+</div>
+<p>After rebooting, verify that the SFP+ transceiver is detected correctly by
+the network interface before proceeding with further setup.</p>
+</section>
 </section>
 
 

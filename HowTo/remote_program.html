@@ -6,16 +6,16 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to reprogram your KCU105 board’s QSPI Boot Prom &mdash; Simple-10GbE-RUDP-KCU105-Example v2.17.0-3-g8bf1a25 documentation</title>
+  <title>How to reprogram your KCU105 board’s QSPI Boot Prom &mdash; Simple-10GbE-RUDP-KCU105-Example v2.18.0-16-g35bcec2 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=a26aa1fa"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/documentation_options.js?v=64d745ae"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -95,7 +95,7 @@
 <li><p>Disconnect the USB from the JTAG.</p></li>
 <li><p>If you are at SLAC, go to the cable driver directory:</p>
 <blockquote>
-<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /afs/slac.stanford.edu/g/reseng/vol37/xilinx/2022.2/Vivado/2022.2/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd /sdf/group/faders/tools/xilinx/2025.2/Vivado/data/xicom/cable_drivers/lin64/install_script/install_drivers/
 </pre></div>
 </div>
 </div></blockquote>
@@ -107,9 +107,10 @@
 </div>
 </div></blockquote>
 </li>
-<li><p>Follow the steps in the tutorial below for lab#5 and step#1~9 on page 47 ~ 53:</p>
+<li><p>Follow this documentation to use the JTAG to either program the FPGA via .bit (or QSPI Boot Prom via .MCS files)</p>
 <blockquote>
-<div><p><a class="reference external" href="https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug936-vivado-tutorial-programming-debugging.pdf">https://www.xilinx.com/support/documentation/sw_manuals/xilinx2021_1/ug936-vivado-tutorial-programming-debugging.pdf</a></p>
+<div><p><a class="reference external" href="https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging/Programming-the-Hardware-Device">https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging/Programming-the-Hardware-Device</a></p>
+<p><a class="reference external" href="https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging/Programming-Configuration-Memory-Devices">https://docs.amd.com/r/en-US/ug908-vivado-programming-debugging/Programming-Configuration-Memory-Devices</a></p>
 </div></blockquote>
 </li>
 </ol>
