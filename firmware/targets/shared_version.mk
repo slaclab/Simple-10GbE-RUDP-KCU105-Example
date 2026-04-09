@@ -1,5 +1,5 @@
-# Define Firmware Version: v2.18.0.0
-export PRJ_VERSION = 0x02180000
+# Define Firmware Version: v2.19.0.0
+export PRJ_VERSION = 0x02190000
 
 # Define target output
 target: prom
