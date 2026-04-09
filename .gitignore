@@ -15,6 +15,12 @@
 *.bin
 *.ld
 *.dat
+*.htm
+*.log
+
+# Matlab
+*.autosave
+*.slxc
 
 # OS files
 .DS_Store
@@ -24,14 +30,21 @@
 .Trashes
 ehthumbs.db
 Thumps.db
+*.swp
 build.info
 
-# Build directories 
+# Build directories
 build*
+docs/_build/
+# Exception: documentation files whose names start with "build"
+!docs/**/build_*.rst
 images*
 bin*
 .Xil*
 .obj*
+.ipynb_checkpoints*
+*.jou
+slprj*
 
 # Only .bit.gz and .mcs.gz should be committed to git
 *.bit
@@ -45,4 +58,11 @@ bin*
 *.pdi
 *.bif
 *.elf
-.ipynb_checkpoints*
+
+# AI Agents
+.vscode/
+.cursor/
+.claude/
+.planning/
+planning/
+CLAUDE.md
