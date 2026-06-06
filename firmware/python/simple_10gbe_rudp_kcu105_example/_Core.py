@@ -17,11 +17,14 @@ import surf.ethernet.udp         as udp
 import surf.ethernet.ten_gig     as mac
 import surf.protocols.rssi       as rssi
 import surf.xilinx               as xil
+import surf.ethernet.roce        as roce
 
 class Core(pr.Device):
     def __init__( self,
             sim      = False,
             promProg = False,
+            rocev2   = False,
+            dcqcn    = True,
         **kwargs):
         super().__init__(**kwargs)
 
@@ -52,8 +55,17 @@ class Core(pr.Device):
             self.add(udp.UdpEngine(
                 offset  = 0x0011_0000,
                 numSrv  = 2,
+                numClt  = 1 if rocev2 else 0,
                 enabled = not sim,
             ))
+
+            if rocev2:
+                self.add(roce.RoceEngine(
+                    offset  = 0x0015_0000,
+                    dcqcn   = dcqcn,
+                    expand  = False,
+                    enabled = not sim,
+                ))
 
             for i in range(2):
                 self.add(rssi.RssiCore(

@@ -19,7 +19,7 @@ library surf;
 use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
-use surf.RocePkg.all;
+use surf.RoCEv2Pkg.all;
 
 library work;
 use work.CorePkg.all;
