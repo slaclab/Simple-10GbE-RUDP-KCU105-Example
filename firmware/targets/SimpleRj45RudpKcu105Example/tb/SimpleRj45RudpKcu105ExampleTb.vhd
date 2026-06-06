@@ -29,6 +29,8 @@ entity SimpleRj45RudpKcu105ExampleTb is end SimpleRj45RudpKcu105ExampleTb;
 
 architecture testbed of SimpleRj45RudpKcu105ExampleTb is
 
+   constant TPD_C : time := 1 ns;
+
    constant GET_BUILD_INFO_C : BuildInfoRetType := toBuildInfo(BUILD_INFO_C);
    constant MOD_BUILD_INFO_C : BuildInfoRetType := (
       buildString => GET_BUILD_INFO_C.buildString,
@@ -40,6 +42,7 @@ begin
 
    U_Fpga : entity work.SimpleRj45RudpKcu105Example
       generic map (
+         TPD_G        => TPD_C,
          SIMULATION_G => true,
          BUILD_INFO_G => SIM_BUILD_INFO_C)
       port map (
