@@ -60,7 +60,7 @@ class Core(pr.Device):
             ))
 
             if rocev2:
-                self.add(roce.RoceEngine(
+                self.add(roce.RoCEv2Engine(
                     offset  = 0x0015_0000,
                     dcqcn   = dcqcn,
                     expand  = False,

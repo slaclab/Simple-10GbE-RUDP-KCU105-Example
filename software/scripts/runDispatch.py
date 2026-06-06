@@ -108,9 +108,13 @@ if __name__ == "__main__":
 
         # ----------------------------------------------------------------
         # Set UDP engine destination
+        # Derive the host IP from the IPv4-mapped HostGid (last 4 bytes)
         # ----------------------------------------------------------------
+        gidWords = rx.HostGid.get().split(':')
+        hostIp   = '.'.join(str(b) for b in bytes.fromhex(gidWords[-2] + gidWords[-1]))
+        log.info(f'Setting UDP engine destination to {hostIp}:4791')
         root.Core.UdpEngine.ClientRemotePort[0].set(4791)
-        root.Core.UdpEngine.ClientRemoteIp[0].set("192.168.2.100")
+        root.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
 
         # ----------------------------------------------------------------
         # Reset checker counters

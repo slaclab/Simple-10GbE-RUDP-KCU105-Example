@@ -124,7 +124,7 @@ class Root(pr.Root):
 
             # ---- RoCEv2 receive channel (additive, alongside RUDP) ----
             if self.useRoce:
-                # Core must be added first so we can reference Core.RoceEngine.
+                # Core must be added first so we can reference Core.RoCEv2Engine.
                 # We add it here early; the block below skips re-adding it.
                 self.add(baseBoard.Core(
                     offset   = 0x0000_0000,
@@ -151,7 +151,7 @@ class Root(pr.Root):
                     retryCount       = roceRetryCount,
                     roceEngineOffset = roceOffset,
                     roceMemBase      = self.srp,
-                    roceEngine       = self.Core.RoceEngine,
+                    roceEngine       = self.Core.RoCEv2Engine,
                     expand           = False,
                 )
                 self.add(_rdmaRx)
@@ -202,7 +202,6 @@ class Root(pr.Root):
                 offset   = 0x8000_0000,
                 memBase  = self.srp,
                 sim      = self.sim,
-                rocev2   = self.useRoce,
                 expand   = True,
             ))
 

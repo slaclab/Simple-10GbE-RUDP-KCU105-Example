@@ -3,7 +3,7 @@ import argparse
 import pyrogue as pr
 import pyrogue.pydm
 import logging
-import simple_10gbe_rudp_kcu105_example as devBoard
+import rocev2_10gbe_rudp_kcu105_example as devBoard
 
 # IBV_MTU constants for the --rocePmtu argument
 IBV_MTU_256  = 1
