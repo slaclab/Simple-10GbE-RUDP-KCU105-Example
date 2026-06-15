@@ -18,8 +18,10 @@ use ieee.std_logic_1164.all;
 library surf;
 use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
+use surf.SsiPkg.all;
 use surf.AxiLitePkg.all;
 use surf.RoCEv2Pkg.all;
+use surf.RssiPkg.all;
 
 entity App is
    generic (
@@ -54,10 +56,10 @@ end App;
 
 architecture mapping of App is
 
-   constant TX_INDEX_C              : natural := 0;
-   constant MEM_INDEX_C             : natural := 1;
-   constant ROCE_DISPATCHER_INDEX_C : natural := 2;
-   constant ROCE_CHECKER_INDEX_C    : natural := 3;
+   constant TX_INDEX_C       : natural := 0;
+   constant MEM_INDEX_C      : natural := 1;
+   constant PRBS_INDEX_C     : natural := 2;
+   constant ROCE_DMA_INDEX_C : natural := 3;
 
    constant NUM_AXIL_MASTERS_C : positive := 4;
 
@@ -68,7 +70,8 @@ architecture mapping of App is
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
 
-   signal startingDispatch : sl;
+   signal prbsAxisMaster : AxiStreamMasterType;
+   signal prbsAxisSlave  : AxiStreamSlaveType;
 
 begin
 
@@ -140,53 +143,67 @@ begin
    GEN_ROCEV2_APP_LOGIC : if ROCEV2_EN_G generate
 
       --------------------------------
-      -- DmaTestPatternServer
+      -- PRBS payload source (host/AXI-Lite-controlled)
       --------------------------------
-      U_DmaTestPatternServer : entity work.DmaTestPatternServer
+      U_SsiPrbsTx : entity surf.SsiPrbsTx
          generic map (
-            TPD_G => TPD_G)
+            TPD_G                      => TPD_G,
+            AXI_EN_G                   => '1',
+            GEN_SYNC_FIFO_G            => true,
+            PRBS_SEED_SIZE_G           => 64,   -- match the 64-bit RSSI word
+            PRBS_INCREMENT_G           => false,
+            MASTER_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
+         port map (
+            -- Master Port (mAxisClk domain)
+            mAxisClk        => axilClk,
+            mAxisRst        => axilRst,
+            mAxisMaster     => prbsAxisMaster,
+            mAxisSlave      => prbsAxisSlave,
+            -- Trigger Signal (locClk domain); AXI_EN_G='1' -> host owns trig/length
+            locClk          => axilClk,
+            locRst          => axilRst,
+            -- AXI-Lite Interface
+            axilReadMaster  => axilReadMasters(PRBS_INDEX_C),
+            axilReadSlave   => axilReadSlaves(PRBS_INDEX_C),
+            axilWriteMaster => axilWriteMasters(PRBS_INDEX_C),
+            axilWriteSlave  => axilWriteSlaves(PRBS_INDEX_C));
+
+      --------------------------------
+      -- Consolidated RoCEv2 AXI-Stream DMA
+      --------------------------------
+      U_RoCEv2AxiStreamRdma : entity work.RoCEv2AxiStreamRdma
+         generic map (
+            TPD_G         => TPD_G,
+            AXIS_CONFIG_G => RSSI_AXIS_CONFIG_C)
          port map (
             roceClk           => axilClk,
             roceRst           => axilRst,
+            -- Inbound PRBS payload
+            sAxisMaster       => prbsAxisMaster,
+            sAxisSlave        => prbsAxisSlave,
+            -- RoCEv2 DMA read req/resp
             dmaReadReqMaster  => dmaReadReqMaster,
             dmaReadReqSlave   => dmaReadReqSlave,
             dmaReadRespMaster => dmaReadRespMaster,
-            dmaReadRespSlave  => dmaReadRespSlave);
-
-      --------------------------------
-      -- WorkReqDispatcher
-      --------------------------------
-      U_WorkReqDispatcher : entity work.WorkReqDispatcher
-         generic map (
-            TPD_G => TPD_G)
-         port map (
-            roceClk          => axilClk,
-            roceRst          => axilRst,
-            workReqMaster    => workReqMaster,
-            workReqSlave     => workReqSlave,
-            startingDispatch => startingDispatch,
-            axilReadMaster   => axilReadMasters(ROCE_DISPATCHER_INDEX_C),
-            axilReadSlave    => axilReadSlaves(ROCE_DISPATCHER_INDEX_C),
-            axilWriteMaster  => axilWriteMasters(ROCE_DISPATCHER_INDEX_C),
-            axilWriteSlave   => axilWriteSlaves(ROCE_DISPATCHER_INDEX_C));
-
-      --------------------------------
-      -- WorkCompChecker
-      --------------------------------
-      U_WorkCompChecker : entity work.WorkCompChecker
-         generic map (
-            TPD_G => TPD_G)
-         port map (
-            roceClk          => axilClk,
-            roceRst          => axilRst,
-            workCompMaster   => workCompMaster,
-            workCompSlave    => workCompSlave,
-            startingDispatch => startingDispatch,
-            axilReadMaster   => axilReadMasters(ROCE_CHECKER_INDEX_C),
-            axilReadSlave    => axilReadSlaves(ROCE_CHECKER_INDEX_C),
-            axilWriteMaster  => axilWriteMasters(ROCE_CHECKER_INDEX_C),
-            axilWriteSlave   => axilWriteSlaves(ROCE_CHECKER_INDEX_C));
+            dmaReadRespSlave  => dmaReadRespSlave,
+            -- RoCEv2 work request/completion
+            workReqMaster     => workReqMaster,
+            workReqSlave      => workReqSlave,
+            workCompMaster    => workCompMaster,
+            workCompSlave     => workCompSlave,
+            -- AXI-Lite Interface
+            axilReadMaster    => axilReadMasters(ROCE_DMA_INDEX_C),
+            axilReadSlave     => axilReadSlaves(ROCE_DMA_INDEX_C),
+            axilWriteMaster   => axilWriteMasters(ROCE_DMA_INDEX_C),
+            axilWriteSlave    => axilWriteSlaves(ROCE_DMA_INDEX_C));
 
    end generate GEN_ROCEV2_APP_LOGIC;
+
+   GEN_ROCEV2_TIEOFF : if (not ROCEV2_EN_G) generate
+      workReqMaster     <= ROCE_WORK_REQ_MASTER_INIT_C;
+      dmaReadRespMaster <= ROCE_DMA_READ_RESP_MASTER_INIT_C;
+      workCompSlave     <= ROCE_WORK_COMP_SLAVE_INIT_C;
+      dmaReadReqSlave   <= ROCE_DMA_READ_REQ_SLAVE_INIT_C;
+   end generate GEN_ROCEV2_TIEOFF;
 
 end mapping;

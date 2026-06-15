@@ -8,6 +8,8 @@
 # contained in the LICENSE.txt file.
 #-----------------------------------------------------------------------------
 
+import surf.protocols.ssi as ssi
+
 import simple_10gbe_rudp_kcu105_example as baseBoard
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
@@ -15,13 +17,13 @@ class App(baseBoard.App):
     def __init__( self, dispatchBits=24, **kwargs):
         super().__init__(**kwargs)
 
-        self.add(roceBoard.RoceDispatcher(
-            offset       = 0x0002_0000,
-            dispatchBits = dispatchBits,
-            expand       = False,
+        self.add(ssi.SsiPrbsTx(
+            offset     = 0x0002_0000,
+            clock_freq = 156.25e6,
+            expand     = False,
         ))
 
-        self.add(roceBoard.RoceChecker(
+        self.add(roceBoard.RoCEv2AxiStreamRdma(
             offset       = 0x0003_0000,
             dispatchBits = dispatchBits,
             expand       = False,
