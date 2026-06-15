@@ -13,6 +13,7 @@ import time
 import pyrogue  as pr
 import pyrogue.protocols
 import pyrogue.utilities.fileio
+import pyrogue.utilities.prbs
 import pyrogue.interfaces.simulation
 
 import rogue
@@ -158,6 +159,20 @@ class Root(pr.Root):
                 # rdmaRx.stream is the RDMA receive endpoint;
                 # self.stream remains the RUDP streaming endpoint
                 self.rdmaStream = self.rdmaRx.stream
+
+                # Host-side PRBS data-integrity check on the RDMA receive stream.
+                # Inside useRoce (not enSwRx) so it works independent of the SW
+                # receiver. width=64 matches the FW PRBS seed width
+                # (SsiPrbsTx PRBS_SEED_SIZE_G); default taps already match surf.
+                self.prbsRx = pr.utilities.prbs.PrbsRx(
+                    name         = 'PrbsRx',
+                    width        = 64,
+                    checkPayload = True,
+                    expand       = False,
+                )
+                self.add(self.prbsRx)
+                # Additive fan-out — coexists with dataWriter.getChannel(1)
+                self.rdmaStream >> self.prbsRx
 
             # XVC server (unchanged from upstream)
             if not self.promProg and xvcSrvEn:
