@@ -184,13 +184,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--trigRate",
         required = False,
-        default  = 1e4,
+        default  = 2.5e4,
         type     = float,
-        help     = "PRBS packet rate in Hz (SsiPrbsTx.TrigRate). Default 1e4 keeps "
-                   "the host PrbsRx consumer from overrunning for clean continuous "
-                   "validation. Above ~tens of kHz the rogue zero-copy recv-slot "
-                   "re-post races the consumer and PRBS errors appear (host-stack "
-                   "limited, not a FW issue). Set 0 to free-run at full line rate",
+        help     = "PRBS packet rate in Hz (SsiPrbsTx.TrigRate). Default 2.5e4 is the "
+                   "measured clean-validation ceiling on this host: the Python PrbsRx "
+                   "consumer (and the rogue zero-copy recv-slot re-post) saturates near "
+                   "25-30 kHz (~100 MB/s), well below 10GbE line rate, so above it PRBS "
+                   "errors appear -- host-stack limited, NOT a FW issue (the FW reports "
+                   "successful completions far beyond this rate). Set 0 to free-run the "
+                   "FW at full line rate; the link streams at line rate but the PrbsRx "
+                   "validator cannot keep up and will report errors. Full-rate per-frame "
+                   "validation needs a faster (non-Python) host consumer.",
     )
 
     parser.add_argument(
