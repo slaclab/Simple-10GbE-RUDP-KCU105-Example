@@ -39,6 +39,10 @@ entity RoCEv2AxiStreamRdma is
    generic (
       TPD_G                   : time                   := 1 ns;
       RST_ASYNC_G             : boolean                := false;
+      -- Repack FIFO clocking. Default false => async FIFO (the slave/PRBS side may
+      -- run in its own sAxisClk domain). App.vhd sets true when the PRBS source and
+      -- the RoCEv2 engine share a clock (no CDC).
+      GEN_SYNC_FIFO_G         : boolean                := false;
       -- Inbound payload stream config (FIFO slave side). The internal FIFO
       -- converts it to the 32-byte RoCEv2 width; passing a narrower / TKEEP_COMP_C
       -- config (e.g. RSSI_AXIS_CONFIG_C) exercises the tKeep/byteEn repack path.
@@ -49,7 +53,10 @@ entity RoCEv2AxiStreamRdma is
    port (
       roceClk           : in  sl;
       roceRst           : in  sl;
-      -- Inbound AXI-Stream payload (the PRBS stream from App, wired in Phase 2)
+      -- Inbound AXI-Stream payload (the PRBS stream from App). Timed by sAxisClk;
+      -- the repack FIFO crosses it into the roceClk (engine/master) domain.
+      sAxisClk          : in  sl;
+      sAxisRst          : in  sl;
       sAxisMaster       : in  AxiStreamMasterType;
       sAxisSlave        : out AxiStreamSlaveType;
       -- RoCEv2 DMA read request / response (surf RoCEv2Engine interface)
@@ -178,13 +185,12 @@ architecture rtl of RoCEv2AxiStreamRdma is
    -- DISPATCH FSM register record (Block C). Separate from the AXI-Lite RegType;
    -- drives workReqMaster.
    ----------------------------------------------------------------------------
-   type DispStateType is (ST0_IDLE, ST1_SENDING);
+   type DispStateType is (ST0_IDLE, ST1_SENDING, ST2_DRAIN);
 
    type DispRegType is record
       state     : DispStateType;
       idCnt     : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
       addrCount : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
-      pktsAvail : unsigned(FIFO_ADDR_WIDTH_G downto 0);
       txMaster  : RoceWorkReqMasterType;
    end record DispRegType;
 
@@ -192,16 +198,10 @@ architecture rtl of RoCEv2AxiStreamRdma is
       state     => ST0_IDLE,
       idCnt     => (others => '0'),
       addrCount => (others => '0'),
-      pktsAvail => (others => '0'),
       txMaster  => ROCE_WORK_REQ_MASTER_INIT_C);
 
    signal dispR   : DispRegType := DISP_INIT_C;
    signal dispRin : DispRegType;
-
-   -- Internal FIFO slave (backpressure to the PRBS source). Exposed on the
-   -- sAxisSlave port AND read by the dispatch FSM to detect packet boundaries
-   -- (the tLast handshake increments pktsAvail).
-   signal sAxisSlaveInt : AxiStreamSlaveType;
 
    -- Track previous rAddr to detect a new MR (startZmq restart). Initialised to
    -- all-ones so the very first rAddr write always triggers an addrCount reset.
@@ -210,29 +210,34 @@ architecture rtl of RoCEv2AxiStreamRdma is
 begin  -- architecture rtl
 
    ----------------------------------------------------------------------------
-   -- Block A: internal repack FIFO. GEN_SYNC_FIFO_G=true (single roceClk domain,
-   -- no CDC); FIFO_ADDR_WIDTH_G default 9 holds >=2 packets for len<=8191.
-   -- Backpressures the free-running PRBS source via sAxisSlave (bounded depth).
+   -- Block A: internal repack FIFO. Store-and-forward (VALID_THOLD_G=0): the
+   -- master side only asserts tValid once a COMPLETE tLast-delimited packet is
+   -- buffered, so fifoMaster.tValid is the dispatch FSM's "packet ready" signal
+   -- and no slave-side packet counting is needed. GEN_SYNC_FIFO_G is a generic
+   -- (App sets true for the single-clock case; default false crosses sAxisClk ->
+   -- roceClk). Custom internal width = 32-byte RoCEv2 word. FIFO_ADDR_WIDTH_G
+   -- default 9 holds >=2 packets for len<=8191. Backpressures the PRBS source via
+   -- sAxisSlave (bounded depth) — the flow-control hook for unthrottled PRBS.
    ----------------------------------------------------------------------------
    U_RepackFifo : entity surf.AxiStreamFifoV2
       generic map (
          TPD_G               => TPD_G,
-         GEN_SYNC_FIFO_G     => true,
+         GEN_SYNC_FIFO_G     => GEN_SYNC_FIFO_G,
+         VALID_THOLD_G       => 0,                       -- store-and-forward (whole packet)
+         INT_WIDTH_SELECT_G  => "CUSTOM",
+         INT_DATA_WIDTH_G    => TDATA_ROCE_NUM_BYTES_C,  -- 32-byte RoCEv2 internal width
          FIFO_ADDR_WIDTH_G   => FIFO_ADDR_WIDTH_G,
          SLAVE_AXI_CONFIG_G  => AXIS_CONFIG_G,
          MASTER_AXI_CONFIG_G => AXIS_CONFIG_C)
       port map (
-         sAxisClk    => roceClk,
-         sAxisRst    => roceRst,
-         sAxisMaster => sAxisMaster,    -- external inbound PRBS port
-         sAxisSlave  => sAxisSlaveInt,  -- backpressure to PRBS (also read by dispatch FSM)
+         sAxisClk    => sAxisClk,
+         sAxisRst    => sAxisRst,
+         sAxisMaster => sAxisMaster,   -- external inbound PRBS port
+         sAxisSlave  => sAxisSlave,    -- backpressure to PRBS (direct to entity port)
          mAxisClk    => roceClk,
          mAxisRst    => roceRst,
          mAxisMaster => fifoMaster,    -- internal drain master
          mAxisSlave  => fifoSlave);    -- internal drain slave (REPACK FSM drives tReady)
-
-   -- Drive the external backpressure port from the internal FIFO slave signal.
-   sAxisSlave <= sAxisSlaveInt;
 
    ----------------------------------------------------------------------------
    -- Single merged AXI-Lite register file (Block E).
@@ -490,24 +495,26 @@ begin  -- architecture rtl
    --
    -- DispatchEnable (0x00) is a level register that ARMS continuous dispatch.
    -- While it is asserted, the FSM issues exactly one RDMA-WRITE-with-immediate
-   -- work request per COMPLETE PRBS packet buffered in the repack FIFO: pktsAvail
-   -- counts packets that have fully entered the FIFO (the sAxis tLast handshake)
-   -- minus those already claimed by an issued work request. Gating issuance on a
-   -- buffered packet guarantees the engine's subsequent DMA-read finds a full
-   -- packet, so the REPACK FSM never stalls mid-packet. There is NO software
-   -- trigger and NO burst count: a free-running PRBS source (TxEn=1) drives a
-   -- continuous, self-sustaining work-request stream.
+   -- work request per COMPLETE PRBS packet buffered in the repack FIFO. The FIFO
+   -- is store-and-forward (VALID_THOLD_G=0), so fifoMaster.tValid asserts only
+   -- when a whole tLast-delimited packet is buffered and drainable — that is the
+   -- "packet ready" signal (no slave-side counter needed). To guarantee EXACTLY
+   -- one WR per packet, the FSM is lockstep: after issuing a WR it waits in
+   -- ST2_DRAIN until that packet's tLast leaves the FIFO master side, then
+   -- re-arms. fifoMaster.tValid in the next IDLE therefore reflects the NEXT
+   -- packet, so it cannot double-dispatch the one still in flight. There is NO
+   -- software trigger and NO burst count: a free-running PRBS source (TxEn=1)
+   -- drives a continuous, self-sustaining work-request stream, throttled only by
+   -- the WR->read->drain round-trip and FIFO backpressure to the source.
    --
    -- dQpn is driven from register 0x14 (DQpn). It is a UD-datagram field; the
    -- RC RDMA-WRITE path routes via sQpn + the connection QP context, so dQpn is
    -- normally left 0 and does not affect the WRITE.
    ----------------------------------------------------------------------------
-   dispComb : process (dispR, prevRAddr, r, sAxisMaster, sAxisSlaveInt, workReqSlave) is
+   dispComb : process (dispR, prevRAddr, r, fifoMaster, fifoSlave, workReqSlave) is
       variable v         : DispRegType;
       variable idPadding : slv(63 downto DISPATCH_COUNTER_BITS_G) := (others => '0');
       variable nextAddr  : unsigned(DISPATCH_COUNTER_BITS_G-1 downto 0);
-      variable pktEnter  : sl;
-      variable pktClaim  : sl;
    begin
       -- Latch current state
       v := dispR;
@@ -516,11 +523,6 @@ begin  -- architecture rtl
       if workReqSlave.ready = '1' then
          v.txMaster.valid := '0';
       end if;
-
-      -- A complete PRBS packet finishes entering the repack FIFO when a tLast
-      -- beat is accepted on the FIFO slave handshake.
-      pktEnter := sAxisMaster.tValid and sAxisSlaveInt.tReady and sAxisMaster.tLast;
-      pktClaim := '0';
 
       case dispR.state is
 
@@ -531,10 +533,9 @@ begin  -- architecture rtl
             if r.rAddr /= prevRAddr then
                v.addrCount := (others => '0');
             end if;
-            -- Event-driven launch: armed AND a complete packet is buffered. The
-            -- IDLE re-check re-fires immediately while more packets remain, so a
-            -- continuous PRBS stream produces continuous work requests.
-            if (r.dispatchEnable = '1') and (dispR.pktsAvail /= 0) then
+            -- Event-driven launch: armed AND a complete packet is buffered
+            -- (store-and-forward asserts fifoMaster.tValid only on a full packet).
+            if (r.dispatchEnable = '1') and (fifoMaster.tValid = '1') then
                v.state := ST1_SENDING;
             end if;
 
@@ -577,12 +578,22 @@ begin  -- architecture rtl
                   v.addrCount := std_logic_vector(nextAddr);
                end if;
 
-               -- Advance the free-running work-request id and claim one buffered
-               -- packet. Return to IDLE, which re-fires next cycle if more packets
-               -- remain buffered and dispatch is still armed.
+               -- Advance the free-running work-request id and hand off to the
+               -- drain-wait state so this packet is dispatched exactly once.
                v.idCnt  := std_logic_vector(unsigned(dispR.idCnt) + 1);
-               pktClaim := '1';
-               v.state  := ST0_IDLE;
+               v.state  := ST2_DRAIN;
+            end if;
+
+         ---------------------------------------------------------------------
+         when ST2_DRAIN =>
+            -- Lockstep: hold until the just-dispatched packet's tLast drains out
+            -- the FIFO master side, then re-arm. The engine cannot issue the
+            -- DMA-read that causes this drain until it has accepted the WR, so
+            -- this implicitly waits for WR acceptance and guarantees the next
+            -- IDLE sees the NEXT packet (no double-dispatch).
+            if (fifoMaster.tValid = '1') and (fifoSlave.tReady = '1') and
+               (fifoMaster.tLast = '1') then
+               v.state := ST0_IDLE;
             end if;
 
          ---------------------------------------------------------------------
@@ -590,17 +601,6 @@ begin  -- architecture rtl
             v := DISP_INIT_C;
 
       end case;
-
-      -- Net update of the packet-available counter. Increment when a packet
-      -- enters the FIFO, decrement when one is claimed by an issued work request;
-      -- simultaneous enter+claim is a no-op (avoids a lost count). pktsAvail never
-      -- goes negative (a claim only happens while pktsAvail /= 0) and is bounded by
-      -- the FIFO packet capacity.
-      if (pktEnter = '1') and (pktClaim = '0') then
-         v.pktsAvail := dispR.pktsAvail + 1;
-      elsif (pktEnter = '0') and (pktClaim = '1') then
-         v.pktsAvail := dispR.pktsAvail - 1;
-      end if;
 
       -- Registered work-request master output.
       workReqMaster <= dispR.txMaster;
