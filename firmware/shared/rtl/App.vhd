@@ -171,7 +171,7 @@ begin
       --------------------------------
       -- Consolidated RoCEv2 AXI-Stream DMA
       --------------------------------
-      U_RoCEv2AxiStreamRdma : entity work.RoCEv2AxiStreamRdma
+      U_RoCEv2AxiStreamRdma : entity surf.RoCEv2AxiStreamRdma
          generic map (
             TPD_G           => TPD_G,
             GEN_SYNC_FIFO_G => true,             -- PRBS source and engine share axilClk
