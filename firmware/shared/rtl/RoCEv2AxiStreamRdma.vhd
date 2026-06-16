@@ -8,7 +8,8 @@
 --     * REPACK      : drain an inbound AXI-Stream (PRBS) payload into the surf
 --                     290-bit RoceDmaReadResp record, one tLast-packet per
 --                     DMA-read request.
---     * DISPATCH    : issue RDMA-WRITE-with-immediate work requests.
+--     * DISPATCH    : event-driven — issue one RDMA-WRITE-with-immediate work
+--                     request per complete buffered packet while DispatchEnable=1.
 --     * COMPLETION  : count success/unsuccess work completions.
 --     * REG FILE    : ONE merged AXI-Lite slave exposing the union register map.
 -------------------------------------------------------------------------------
@@ -90,8 +91,8 @@ architecture rtl of RoCEv2AxiStreamRdma is
    type CompStateType is (ST0_IDLE, ST1_RECEIVED);
 
    type RegType is record
-      -- Dispatch control (from old WorkReqDispatcher AxilRegType)
-      startDispatching : sl;
+      -- Dispatch control
+      dispatchEnable   : sl;
       len              : slv(31 downto 0);
       rKey             : slv(31 downto 0);
       lKey             : slv(31 downto 0);
@@ -99,7 +100,6 @@ architecture rtl of RoCEv2AxiStreamRdma is
       dQpn             : slv(24 downto 0);
       rAddr            : slv(63 downto 0);
       addrWrapCount    : slv(31 downto 0);
-      dispatchCounter  : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
       -- Completion control / status (from old WorkCompChecker)
       resetCounters    : sl;
       successCounter   : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
@@ -114,7 +114,7 @@ architecture rtl of RoCEv2AxiStreamRdma is
    end record RegType;
 
    constant REG_INIT_C : RegType := (
-      startDispatching => '0',
+      dispatchEnable   => '0',
       len              => (others => '0'),
       rKey             => (others => '0'),
       lKey             => (others => '0'),
@@ -122,7 +122,6 @@ architecture rtl of RoCEv2AxiStreamRdma is
       dQpn             => (others => '0'),
       rAddr            => (others => '0'),
       addrWrapCount    => (others => '0'),
-      dispatchCounter  => (others => '0'),
       resetCounters    => '0',
       successCounter   => (others => '0'),
       unsuccessCounter => (others => '0'),
@@ -183,22 +182,26 @@ architecture rtl of RoCEv2AxiStreamRdma is
 
    type DispRegType is record
       state     : DispStateType;
-      count     : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
+      idCnt     : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
       addrCount : slv(DISPATCH_COUNTER_BITS_G-1 downto 0);
+      pktsAvail : unsigned(FIFO_ADDR_WIDTH_G downto 0);
       txMaster  : RoceWorkReqMasterType;
    end record DispRegType;
 
    constant DISP_INIT_C : DispRegType := (
       state     => ST0_IDLE,
-      count     => (others => '0'),
+      idCnt     => (others => '0'),
       addrCount => (others => '0'),
+      pktsAvail => (others => '0'),
       txMaster  => ROCE_WORK_REQ_MASTER_INIT_C);
 
    signal dispR   : DispRegType := DISP_INIT_C;
    signal dispRin : DispRegType;
 
-   -- StartDispatching rising-edge one-shot (surf.SynchronizerEdge output).
-   signal startDispatching : sl;
+   -- Internal FIFO slave (backpressure to the PRBS source). Exposed on the
+   -- sAxisSlave port AND read by the dispatch FSM to detect packet boundaries
+   -- (the tLast handshake increments pktsAvail).
+   signal sAxisSlaveInt : AxiStreamSlaveType;
 
    -- Track previous rAddr to detect a new MR (startZmq restart). Initialised to
    -- all-ones so the very first rAddr write always triggers an addrCount reset.
@@ -221,12 +224,15 @@ begin  -- architecture rtl
       port map (
          sAxisClk    => roceClk,
          sAxisRst    => roceRst,
-         sAxisMaster => sAxisMaster,   -- external inbound PRBS port
-         sAxisSlave  => sAxisSlave,    -- external backpressure to PRBS
+         sAxisMaster => sAxisMaster,    -- external inbound PRBS port
+         sAxisSlave  => sAxisSlaveInt,  -- backpressure to PRBS (also read by dispatch FSM)
          mAxisClk    => roceClk,
          mAxisRst    => roceRst,
          mAxisMaster => fifoMaster,    -- internal drain master
          mAxisSlave  => fifoSlave);    -- internal drain slave (REPACK FSM drives tReady)
+
+   -- Drive the external backpressure port from the internal FIFO slave signal.
+   sAxisSlave <= sAxisSlaveInt;
 
    ----------------------------------------------------------------------------
    -- Single merged AXI-Lite register file (Block E).
@@ -235,7 +241,7 @@ begin  -- architecture rtl
    -- offsets must match these exactly):
    --
    --   Offset  Bits    Access  Name              Field
-   --   0x00    [0]     RW      StartDispatching  startDispatching (edge-detected)
+   --   0x00    [0]     RW      DispatchEnable    dispatchEnable (level; arms auto-dispatch)
    --   0x04    [31:0]  RW      Len               len
    --   0x08    [31:0]  RW      RKey              rKey
    --   0x0C    [31:0]  RW      LKey              lKey
@@ -243,7 +249,6 @@ begin  -- architecture rtl
    --   0x14    [24:0]  RW      DQpn              dQpn   (UD field; unused by RC WRITE)
    --   0x18    [63:0]  RW      RemAddr           rAddr  (occupies 0x18/0x1C)
    --   0x20    [31:0]  RW      AddrWrapCount     addrWrapCount
-   --   0x24    [N:0]   RW      DispatchCounter   dispatchCounter
    --   0x100   [N:0]   RO      SuccessCounter    successCounter
    --   0x104   [N:0]   RO      UnsuccessCounter  unsuccessCounter
    --   0x108   [0]     RW      ResetCounters     resetCounters
@@ -262,7 +267,7 @@ begin  -- architecture rtl
       axiSlaveWaitTxn(regCon, axilWriteMaster, axilReadMaster, v.axilWriteSlave, v.axilReadSlave);
 
       -- RW dispatch block
-      axiSlaveRegister (regCon, x"000", 0, v.startDispatching);
+      axiSlaveRegister (regCon, x"000", 0, v.dispatchEnable);
       axiSlaveRegister (regCon, x"004", 0, v.len);
       axiSlaveRegister (regCon, x"008", 0, v.rKey);
       axiSlaveRegister (regCon, x"00C", 0, v.lKey);
@@ -272,7 +277,6 @@ begin  -- architecture rtl
       axiSlaveRegister (regCon, x"014", 0, v.dQpn);
       axiSlaveRegister (regCon, x"018", 0, v.rAddr);  -- 64-bit: occupies 0x18/0x1C
       axiSlaveRegister (regCon, x"020", 0, v.addrWrapCount);
-      axiSlaveRegister (regCon, x"024", 0, v.dispatchCounter);
 
       -- RO status block (based at 0x100, disjoint from the RW block)
       axiSlaveRegisterR(regCon, x"100", 0, r.successCounter);
@@ -482,31 +486,28 @@ begin  -- architecture rtl
    end process repSeq;
 
    ----------------------------------------------------------------------------
-   -- Block C: dispatch FSM + work-request issue.
+   -- Block C: event-driven dispatch FSM + work-request issue.
    --
-   -- StartDispatching (0x00) is a level register; the dispatch FSM triggers on
-   -- its RISING EDGE via surf.SynchronizerEdge (single roceClk domain). On the
-   -- edge the FSM issues exactly DispatchCounter (0x24) RDMA-WRITE-with-immediate
-   -- work requests, one per accepted workReqSlave handshake, reading the dispatch
-   -- fields from the register file.
+   -- DispatchEnable (0x00) is a level register that ARMS continuous dispatch.
+   -- While it is asserted, the FSM issues exactly one RDMA-WRITE-with-immediate
+   -- work request per COMPLETE PRBS packet buffered in the repack FIFO: pktsAvail
+   -- counts packets that have fully entered the FIFO (the sAxis tLast handshake)
+   -- minus those already claimed by an issued work request. Gating issuance on a
+   -- buffered packet guarantees the engine's subsequent DMA-read finds a full
+   -- packet, so the REPACK FSM never stalls mid-packet. There is NO software
+   -- trigger and NO burst count: a free-running PRBS source (TxEn=1) drives a
+   -- continuous, self-sustaining work-request stream.
    --
    -- dQpn is driven from register 0x14 (DQpn). It is a UD-datagram field; the
    -- RC RDMA-WRITE path routes via sQpn + the connection QP context, so dQpn is
    -- normally left 0 and does not affect the WRITE.
    ----------------------------------------------------------------------------
-   U_StartEdge : entity surf.SynchronizerEdge
-      generic map (
-         TPD_G         => TPD_G,
-         BYPASS_SYNC_G => true)         -- single roceClk domain, no CDC
-      port map (
-         clk        => roceClk,
-         dataIn     => r.startDispatching,
-         risingEdge => startDispatching);
-
-   dispComb : process (dispR, prevRAddr, r, startDispatching, workReqSlave) is
+   dispComb : process (dispR, prevRAddr, r, sAxisMaster, sAxisSlaveInt, workReqSlave) is
       variable v         : DispRegType;
       variable idPadding : slv(63 downto DISPATCH_COUNTER_BITS_G) := (others => '0');
       variable nextAddr  : unsigned(DISPATCH_COUNTER_BITS_G-1 downto 0);
+      variable pktEnter  : sl;
+      variable pktClaim  : sl;
    begin
       -- Latch current state
       v := dispR;
@@ -516,25 +517,32 @@ begin  -- architecture rtl
          v.txMaster.valid := '0';
       end if;
 
+      -- A complete PRBS packet finishes entering the repack FIFO when a tLast
+      -- beat is accepted on the FIFO slave handshake.
+      pktEnter := sAxisMaster.tValid and sAxisSlaveInt.tReady and sAxisMaster.tLast;
+      pktClaim := '0';
+
       case dispR.state is
 
          ---------------------------------------------------------------------
          when ST0_IDLE =>
             -- Reset addrCount when rAddr changes (new MR after startZmq restart);
-            -- addrCount persists across bursts within a session.
+            -- addrCount persists across the session.
             if r.rAddr /= prevRAddr then
                v.addrCount := (others => '0');
             end if;
-            -- The StartDispatching rising-edge one-shot launches the burst.
-            if startDispatching = '1' then
+            -- Event-driven launch: armed AND a complete packet is buffered. The
+            -- IDLE re-check re-fires immediately while more packets remain, so a
+            -- continuous PRBS stream produces continuous work requests.
+            if (r.dispatchEnable = '1') and (dispR.pktsAvail /= 0) then
                v.state := ST1_SENDING;
             end if;
 
          ---------------------------------------------------------------------
          when ST1_SENDING =>
             if v.txMaster.valid = '0' then
-               -- id = zero-pad & (count + 1).
-               v.txMaster.id     := idPadding & std_logic_vector(unsigned(dispR.count) + 1);
+               -- id = zero-pad & free-running work-request counter (wraps).
+               v.txMaster.id     := idPadding & dispR.idCnt;
                v.txMaster.opCode := x"1";
                v.txMaster.flags  := "00010";  -- RDMA Write with Immediate
                -- rAddr = rAddr + addrCount*len (product resized to 64 bits).
@@ -569,15 +577,12 @@ begin  -- architecture rtl
                   v.addrCount := std_logic_vector(nextAddr);
                end if;
 
-               -- Advance the dispatch counter; issue exactly DispatchCounter
-               -- work requests (one per accepted handshake) then return to idle.
-               if unsigned(dispR.count) < unsigned(r.dispatchCounter) - 1 then
-                  v.count := std_logic_vector(unsigned(v.count) + 1);
-                  v.state := ST1_SENDING;
-               else
-                  v.count := (others => '0');
-                  v.state := ST0_IDLE;
-               end if;
+               -- Advance the free-running work-request id and claim one buffered
+               -- packet. Return to IDLE, which re-fires next cycle if more packets
+               -- remain buffered and dispatch is still armed.
+               v.idCnt  := std_logic_vector(unsigned(dispR.idCnt) + 1);
+               pktClaim := '1';
+               v.state  := ST0_IDLE;
             end if;
 
          ---------------------------------------------------------------------
@@ -585,6 +590,17 @@ begin  -- architecture rtl
             v := DISP_INIT_C;
 
       end case;
+
+      -- Net update of the packet-available counter. Increment when a packet
+      -- enters the FIFO, decrement when one is claimed by an issued work request;
+      -- simultaneous enter+claim is a no-op (avoids a lost count). pktsAvail never
+      -- goes negative (a claim only happens while pktsAvail /= 0) and is bounded by
+      -- the FIFO packet capacity.
+      if (pktEnter = '1') and (pktClaim = '0') then
+         v.pktsAvail := dispR.pktsAvail + 1;
+      elsif (pktEnter = '0') and (pktClaim = '1') then
+         v.pktsAvail := dispR.pktsAvail - 1;
+      end if;
 
       -- Registered work-request master output.
       workReqMaster <= dispR.txMaster;

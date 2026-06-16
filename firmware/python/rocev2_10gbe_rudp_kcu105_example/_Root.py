@@ -24,8 +24,7 @@ import rogue.utilities.fileio
 import simple_10gbe_rudp_kcu105_example as baseBoard
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
-# TODO: Uncomment this after the rogue v6.14.0 tag release
-#rogue.Version.minVersion('6.14.0')
+rogue.Version.minVersion('6.14.0')
 
 # IBV_MTU enum values — mirrors libibverbs ibv_mtu
 IBV_MTU_256  = 1
@@ -246,8 +245,21 @@ class Root(pr.Root):
 
     def stop(self) -> None:
         """Tear down FPGA QP before transport is stopped."""
-        if self.useRoce and hasattr(self, 'rdmaRx') and hasattr(self.rdmaRx, 'teardownFpgaQp'):
-            self.rdmaRx.teardownFpgaQp()
+        if self.useRoce and hasattr(self, 'rdmaRx'):
+            # Disarm the PRBS source + RDMA dispatcher BEFORE tearing down the QP.
+            # Otherwise the FPGA is left free-running RDMA WRITEs at a destroyed QP,
+            # flooding the link and wedging the App datapath until an FPGA reload —
+            # the 0xF50 softRst only resets the Core transport, not the App. This
+            # leaked TxEn/DispatchEnable is what makes a software reconnect fail
+            # (rxCount stays 0) after the GUI/stream path leaves the source armed.
+            try:
+                self.App.SsiPrbsTx.TxEn.set(False)
+                self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
+                time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
+            except AttributeError:
+                pass
+            if hasattr(self.rdmaRx, 'teardownFpgaQp'):
+                self.rdmaRx.teardownFpgaQp()
         super().stop()
 
     @staticmethod

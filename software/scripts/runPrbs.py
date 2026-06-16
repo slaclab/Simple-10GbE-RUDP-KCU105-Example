@@ -162,11 +162,24 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--cases",
+        "--target",
         required = False,
-        default  = 1,
+        default  = 1000,
         type     = int,
-        help     = "Number of dispatch bursts (DispatchCounter) to send",
+        help     = "Number of PRBS frames to receive before declaring PASS "
+                   "(continuous event-driven dispatch)",
+    )
+
+    parser.add_argument(
+        "--trigRate",
+        required = False,
+        default  = 1e4,
+        type     = float,
+        help     = "PRBS packet rate in Hz (SsiPrbsTx.TrigRate). Default 1e4 keeps "
+                   "the host PrbsRx consumer from overrunning for clean continuous "
+                   "validation. Above ~tens of kHz the rogue zero-copy recv-slot "
+                   "re-post races the consumer and PRBS errors appear (host-stack "
+                   "limited, not a FW issue). Set 0 to free-run at full line rate",
     )
 
     parser.add_argument(
@@ -237,15 +250,9 @@ if __name__ == "__main__":
     pmtu_enum  = _PMTU_ENUM[args.pmtu]
     pmtu_bytes = args.pmtu
 
-    # Pre-flight --cases bounds: DispatchCounter is a 24-bit field; out-of-range
-    # counts can never pass the triple-assert, so reject them up front.
-    _CASES_MAX = (1 << 24) - 1
-    if not (1 <= args.cases <= _CASES_MAX):
-        print(
-            f"ERROR: --cases={args.cases} out of range — must be 1..{_CASES_MAX} "
-            f"(24-bit DispatchCounter).",
-            file=sys.stderr,
-        )
+    # --target is the number of frames to receive before PASS; must be positive.
+    if args.target < 1:
+        print(f"ERROR: --target={args.target} must be >= 1.", file=sys.stderr)
         sys.exit(1)
 
     # Resolve the RoCEv2 GID index: explicit --roceGidIndex overrides; otherwise
@@ -266,6 +273,43 @@ if __name__ == "__main__":
         print(f"Auto-detected --roceGidIndex {gidIndex} "
               f"(RoCE v2 IPv4 GID on {args.roceDevice})")
 
+    # ----------------------------------------------------------------
+    # Resolve the per-frame Len (bytes per RDMA WRITE) up front, BEFORE building
+    # the Root, because the host receive MR must be sized to match it.
+    #
+    # The host posts rxQueueDepth recv-WR slots, each exactly maxPayload bytes, at
+    # mrAddr + slot*maxPayload. The FW writes frame N to mrAddr + (N mod
+    # addrWrapCount)*Len. For every frame to land in its recv-WR slot — and for RC
+    # RNR flow control to throttle the FW to the host's consumption rate — the
+    # slot stride MUST equal the write stride: maxPayload == Len and
+    # addrWrapCount == rxQueueDepth. So we choose Len here and pass it as the host
+    # maxPayload (roceMaxPay) below.
+    #
+    # The PRBS word is 64-bit (8 B) <= the 32-byte RoCEv2 beat, so the granularity
+    # is the beat. A frame is an integer number of 32-byte beats, >= 2 beats, and
+    # strictly below PMTU (Len == PMTU stalls the single-packet dispatch).
+    # ----------------------------------------------------------------
+    ROCE_BEAT_BYTES = 32
+    gran = ROCE_BEAT_BYTES
+    if args.len is None:
+        Len = ((pmtu_bytes - 1) // gran) * gran
+    else:
+        Len = args.len
+        if Len >= pmtu_bytes:
+            print(
+                f"WARNING: --len={Len} >= PMTU={pmtu_bytes} — known-unsupported: "
+                f"Len == PMTU stalls dispatch and Len > PMTU hits the surf 13-bit "
+                f"DMA-read cap / per-message PrbsRx framing. Proceeding anyway.",
+                file=sys.stderr,
+            )
+    if Len % gran != 0 or Len < 2 * gran:
+        print(
+            f"ERROR: Len={Len} is invalid — must be a multiple of {gran} bytes "
+            f"and >= {2 * gran} bytes.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     #################################################################
 
     with roceBoard.Root(
@@ -274,6 +318,7 @@ if __name__ == "__main__":
         roceDevice   = args.roceDevice,
         roceGidIndex = gidIndex,
         rocePmtu     = pmtu_enum,
+        roceMaxPay   = Len,                  # host slot stride == FW write stride
         pollEn       = args.pollEn,
         initRead     = args.initRead,
         zmqSrvPort   = args.zmqSrvPort,
@@ -308,11 +353,26 @@ if __name__ == "__main__":
         # host tracks the FW config instead of hard-coding the width.
         word_bytes = prbs.WordSize.get() // 8
 
-        # RoCEv2 payload beat width (TDATA_ROCE_NUM_BYTES_C). The engine packs the
-        # payload into 32-byte beats and rejects a partial final beat (isRespErr),
-        # so Len must be a whole number of BOTH PRBS words and 32-byte beats.
-        ROCE_BEAT_BYTES = 32
-        gran = max(ROCE_BEAT_BYTES, word_bytes)
+        # Len was chosen up front and passed as the host maxPayload; validate it
+        # against the FW's PRBS word size (PacketLength is counted in whole words).
+        if Len % word_bytes != 0:
+            print(
+                f"ERROR: Len={Len} is not a multiple of the {word_bytes}-byte PRBS "
+                f"word — adjust --len or --pmtu.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        # The host MR slot stride (maxPayload) MUST equal the FW write stride (Len)
+        # so each RDMA WRITE lands exactly in its recv-WR slot (otherwise only the
+        # first frame validates). roceMaxPay=Len was set at construction; assert it.
+        if max_payload != Len:
+            print(
+                f"ERROR: host maxPayload={max_payload} != Len={Len}; FW write ring "
+                f"and host recv-WR ring are misaligned.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
         # ----------------------------------------------------------------
         # Set UDP engine destination
@@ -323,36 +383,6 @@ if __name__ == "__main__":
         print(f"Setting UDP engine destination to {hostIp}:4791")
         root.Core.UdpEngine.ClientRemotePort[0].set(4791)
         root.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
-
-        # ----------------------------------------------------------------
-        # Resolve + validate the per-message Len (bytes per RDMA WRITE). A frame
-        # is an integer number of PRBS words (>= 2 words).
-        # ----------------------------------------------------------------
-        if args.len is None:
-            # Largest whole-granule Len STRICTLY below min(MaxPayload, PMTU).
-            # Strictly below PMTU because Len == PMTU stalls the single-packet
-            # dispatch (no work completion); floored to `gran` to avoid a partial
-            # final beat.
-            cap = min(max_payload, pmtu_bytes) - 1
-            Len = (cap // gran) * gran
-        else:
-            Len = args.len
-            if Len >= pmtu_bytes:
-                print(
-                    f"WARNING: --len={Len} >= PMTU={pmtu_bytes} — known-unsupported: "
-                    f"Len == PMTU stalls dispatch and Len > PMTU hits the surf 13-bit "
-                    f"DMA-read cap / per-message PrbsRx framing. Proceeding anyway.",
-                    file=sys.stderr,
-                )
-
-        if Len % gran != 0 or Len < 2 * gran:
-            print(
-                f"ERROR: Len={Len} is invalid — must be a multiple of {gran} bytes "
-                f"(max of the {ROCE_BEAT_BYTES}-byte RoCEv2 beat and the {word_bytes}-"
-                f"byte PRBS word) and >= {2 * gran} bytes.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
 
         print(
             f"--- RoCEv2 PRBS run parameters ---\n"
@@ -367,7 +397,7 @@ if __name__ == "__main__":
             f"  MrLen           : {mr_len}\n"
             f"  Len (per msg)   : {Len}\n"
             f"  PMTU            : {pmtu_bytes}\n"
-            f"  Cases           : {args.cases}\n"
+            f"  Target frames   : {args.target}\n"
             f"----------------------------------"
         )
 
@@ -388,6 +418,10 @@ if __name__ == "__main__":
 
             # Same register config as the PRBS path
             prbs.PacketLength.set(Len // word_bytes - 1)
+            if args.trigRate > 0:
+                prbs.TrigRate.set(args.trigRate)
+            else:
+                prbs.TrigDly.set(0)
             prbs.FwCnt.set(True)       # counter mode (runtime; 0x00[5])
             prbs.TxEn.set(True)        # enable the source (else it never free-runs)
 
@@ -397,25 +431,29 @@ if __name__ == "__main__":
             dma.SQpn.set(remQpn)
             dma.RemAddr.set(mrAddr)
             dma.AddrWrapCount.set(mr_len // Len)
-            dma.DispatchCounter.set(args.cases)
             # dma.DQpn left at default 0 — UD-datagram field, unused by the RC WRITE path.
 
             dma.ResetCounters()        # RemoteCommand toggle — zeroes FW counters
             root.CountReset()          # zeroes host PrbsRx counters
 
-            print(f"Counter-mode: dispatching {args.cases} burst(s) of {Len} bytes...")
-            dma.StartDispatching()
+            print(f"Counter-mode: capturing {args.target} frame(s) of {Len} bytes "
+                  f"(continuous dispatch)...")
+            dma.DispatchEnable.set(True)   # arm event-driven dispatch
 
-            # Poll to completion — fall through to assert on timeout, never raise
+            # Poll until enough frames captured — fall through to assert on timeout, never raise
             deadline = time.monotonic() + args.timeout
-            while dma.SuccessCounter.get() < args.cases and len(cap.frames) < args.cases:
+            while len(cap.frames) < args.target:
                 if time.monotonic() > deadline:
                     print(f"WARNING: timed out after {args.timeout}s waiting for "
-                          f"counter-mode completion (SuccessCounter="
+                          f"counter-mode capture (SuccessCounter="
                           f"{dma.SuccessCounter.get()}, frames={len(cap.frames)})",
                           file=sys.stderr)
                     break
                 time.sleep(0.05)
+
+            # Stop the stream before inspecting the captured frames.
+            dma.DispatchEnable.set(False)
+            prbs.TxEn.set(False)
 
             # ------------------------------------------------------------
             # Increment assertion — 32-bit counter ramp, one beat per PRBS word.
@@ -472,8 +510,8 @@ if __name__ == "__main__":
 
             print(
                 "--- counter-mode byte-order result ---\n"
-                f"  Frames captured        : {len(cap.frames)}\n"
-                f"  Dma.SuccessCounter     : {dma.SuccessCounter.get()} / {args.cases}\n"
+                f"  Frames captured        : {len(cap.frames)} (target {args.target})\n"
+                f"  Dma.SuccessCounter     : {dma.SuccessCounter.get()}\n"
                 f"  Beat layout            : {word_bytes}B/beat, beat0=seed beat1=len then +1 ramp\n"
                 "  Beat dump:\n" + "\n".join(dump_lines) + "\n"
                 f"  Failure                : {fail_reason if fail_reason else '(none)'}\n"
@@ -488,10 +526,13 @@ if __name__ == "__main__":
         # PacketLength is in PRBS words: (Len // word_bytes) - 1
         prbs.PacketLength.set(Len // word_bytes - 1)
 
-        # AXI_EN_G='1' means the host owns the trigger, so the SsiPrbsTx source
-        # never free-runs until TxEn is asserted. Without this the FIFO stays
-        # empty, REPACK stalls, and rxCount sticks at 0.
-        prbs.TxEn.set(True)
+        # PRBS packet rate. TrigDly=0 free-runs at full line rate; a positive
+        # --trigRate throttles the source so the host receive path keeps up
+        # (avoids overrun + PRBS continuity errors during a continuous run).
+        if args.trigRate > 0:
+            prbs.TrigRate.set(args.trigRate)
+        else:
+            prbs.TrigDly.set(0)
 
         dma.Len.set(Len)
         dma.RKey.set(mrRKey)
@@ -499,7 +540,6 @@ if __name__ == "__main__":
         dma.SQpn.set(remQpn)
         dma.RemAddr.set(mrAddr)
         dma.AddrWrapCount.set(mr_len // Len)
-        dma.DispatchCounter.set(args.cases)
         # dma.DQpn left at default 0 — UD-datagram field, unused by the RC WRITE path.
 
         # ----------------------------------------------------------------
@@ -509,35 +549,47 @@ if __name__ == "__main__":
         root.CountReset()          # zeroes host PrbsRx rxErrors/rxCount/rxBytes
 
         # ----------------------------------------------------------------
-        # Trigger the dispatch burst (rising-edge launch)
+        # Event-driven continuous run.
+        #
+        # DispatchEnable arms the FW dispatcher; TxEn free-runs the PRBS source
+        # (AXI_EN_G='1' means the host owns the trigger, so without TxEn the FIFO
+        # stays empty and nothing dispatches). With both set the FW issues one RDMA
+        # WRITE per complete buffered PRBS packet continuously — no per-frame poke.
         # ----------------------------------------------------------------
-        print(f"Dispatching {args.cases} burst(s) of {Len} bytes...")
-        dma.StartDispatching()
+        print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame)...")
+        dma.DispatchEnable.set(True)
+        prbs.TxEn.set(True)
 
         # ----------------------------------------------------------------
-        # Poll rxCount to completion
+        # Poll rxCount to the target — the receiver fills continuously
         # ----------------------------------------------------------------
         deadline = time.monotonic() + args.timeout
-        while root.PrbsRx.rxCount.get() < args.cases:
+        while root.PrbsRx.rxCount.get() < args.target:
             if time.monotonic() > deadline:
                 print(f"WARNING: timed out after {args.timeout}s waiting for "
-                      f"rxCount >= {args.cases}", file=sys.stderr)
+                      f"rxCount >= {args.target}", file=sys.stderr)
                 break                       # fall through to the assert; do NOT raise
             time.sleep(0.05)                # poll interval, NOT a completion sleep
 
         # ----------------------------------------------------------------
-        # Triple assert — cannot false-green on zero frames
+        # Stop the stream (disarm dispatch first, then quiesce the PRBS source)
+        # ----------------------------------------------------------------
+        dma.DispatchEnable.set(False)
+        prbs.TxEn.set(False)
+
+        # ----------------------------------------------------------------
+        # Assert — cannot false-green on zero frames
         # ----------------------------------------------------------------
         errs    = root.PrbsRx.rxErrors.get()
         rxCount = root.PrbsRx.rxCount.get()
         success = dma.SuccessCounter.get()
-        passed  = (errs == 0) and (rxCount > 0) and (success == args.cases)
+        passed  = (errs == 0) and (rxCount >= args.target)
 
         print(
             f"--- PRBS result ---\n"
             f"  PrbsRx.rxErrors        : {errs}\n"
-            f"  PrbsRx.rxCount         : {rxCount}\n"
-            f"  Dma.SuccessCounter     : {success} / {args.cases}\n"
+            f"  PrbsRx.rxCount         : {rxCount} (target {args.target})\n"
+            f"  Dma.SuccessCounter     : {success}\n"
             f"  RESULT                 : {'PASS' if passed else 'FAIL'}\n"
             f"-------------------"
         )
@@ -546,6 +598,11 @@ if __name__ == "__main__":
         # Development PyDM GUI
         ######################
         if (args.guiType == 'PyDM'):
+            # Re-arm the stream so the operator sees rxCount climbing live in the
+            # GUI. Toggle App.SsiPrbsTx.TxEn (or App.RoCEv2AxiStreamRdma.DispatchEnable)
+            # to start/stop continuous reception.
+            dma.DispatchEnable.set(True)
+            prbs.TxEn.set(True)
             pyrogue.pydm.runPyDM(
                 serverList = root.zmqServer.address,
                 sizeX      = 800,
