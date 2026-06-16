@@ -104,6 +104,17 @@ def detect_roce_gid_index(device, ip, port=1):
 
 if __name__ == "__main__":
 
+    # Best-effort graceful teardown on SIGTERM (e.g. terminal/window-manager close):
+    # convert it to KeyboardInterrupt so the `with Root(...)` block unwinds into
+    # Root.stop(), which disarms the FPGA. SIGINT/exceptions already unwind; the
+    # FW auto-reset + clean-slate-on-start are the ultimate backstop for SIGKILL.
+    import signal as _signal
+
+    def _sigterm(_signum, _frame):
+        raise KeyboardInterrupt
+
+    _signal.signal(_signal.SIGTERM, _sigterm)
+
     # Convert str to bool
     argBool = lambda s: s.lower() in ['true', 't', 'yes', '1']
 

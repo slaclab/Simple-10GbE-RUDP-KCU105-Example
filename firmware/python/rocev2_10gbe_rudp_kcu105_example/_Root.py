@@ -225,6 +225,17 @@ class Root(pr.Root):
             appTx = self.find(typ=baseBoard.AppTx)
             for devPtr in appTx:
                 devPtr.ContinuousMode.set(False)
+            # Clean slate: clear any stale armed state left by a prior process
+            # (e.g. an abrupt GUI kill that skipped stop()). Clearing DispatchEnable
+            # triggers the FW auto-reset (dispatch/REPACK FSM reset + repack FIFO
+            # flush), so a wedged or free-running App datapath recovers on launch
+            # without an FPGA reload.
+            if self.useRoce:
+                try:
+                    self.App.SsiPrbsTx.TxEn.set(False)
+                    self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
+                except AttributeError:
+                    pass
             self.CountReset()
 
     def _start(self) -> None:
