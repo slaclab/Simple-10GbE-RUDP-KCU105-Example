@@ -16,14 +16,17 @@ class RoCEv2AxiStreamRdma(pr.Device):
                   **kwargs):
         super().__init__(**kwargs)
 
-        self.add(pr.RemoteCommand(
-            name        = 'StartDispatching',
-            description = 'Rising-edge launch of the dispatch burst. toggle (1->0) re-arms the FW SynchronizerEdge',
-            offset      = 0x00,
-            bitSize     = 1,
-            bitOffset   = 0,
-            base        = pr.UInt,
-            function    = pr.RemoteCommand.toggle,
+        self.add(pr.RemoteVariable(
+            name         = 'DispatchEnable',
+            description  = 'Arm continuous event-driven dispatch: while set, the FW issues '
+                           'one RDMA WRITE-with-immediate per complete PRBS packet buffered '
+                           'in the repack FIFO. Set with SsiPrbsTx.TxEn=True for a '
+                           'self-sustaining stream; clear to stop',
+            offset       = 0x00,
+            bitSize      = 1,
+            bitOffset    = 0,
+            base         = pr.Bool,
+            mode         = 'RW',
         ))
 
         self.add(pr.RemoteVariable(
@@ -82,15 +85,6 @@ class RoCEv2AxiStreamRdma(pr.Device):
             description  = 'Number of RemAddr increments before wrapping back to base',
             offset       = 0x20,
             bitSize      = 32,
-            mode         = 'RW',
-        ))
-
-        self.add(pr.RemoteVariable(
-            name         = 'DispatchCounter',
-            description  = 'Number of dispatch bursts to issue',
-            offset       = 0x24,
-            bitSize      = dispatchBits,
-            disp         = '{:d}',
             mode         = 'RW',
         ))
 
