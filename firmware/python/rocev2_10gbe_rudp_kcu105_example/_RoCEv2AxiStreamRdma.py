@@ -128,3 +128,63 @@ class RoCEv2AxiStreamRdma(pr.Device):
             base        = pr.UInt,
             function    = pr.RemoteCommand.toggle,
         ))
+
+        # AxiStreamMon status (RO, based at 0x200) — throughput of the FIFO drain
+        # stream (PRBS packets drained into the replay ring). Cumulative since the
+        # last ResetCounters (or roceRst); rate/bandwidth refresh at 1 Hz in the FW.
+        for name, off, bits, units in [
+            ('MonFrameCnt',     0x200, 64, 'frames'),
+            ('MonFrameRate',    0x208, 32, 'Hz'),
+            ('MonFrameRateMax', 0x20C, 32, 'Hz'),
+            ('MonFrameRateMin', 0x210, 32, 'Hz'),
+            ('MonFrameSize',    0x22C, 32, 'B'),
+            ('MonFrameSizeMax', 0x230, 32, 'B'),
+            ('MonFrameSizeMin', 0x234, 32, 'B'),
+        ]:
+            self.add(pr.RemoteVariable(
+                name         = name,
+                description  = f'AxiStreamMon: {name[3:]} of the FIFO drain stream',
+                offset       = off,
+                bitSize      = bits,
+                mode         = 'RO',
+                units        = units,
+                disp         = '{:d}',
+                pollInterval = 1,
+            ))
+
+        # Bandwidth: the FW reports Byte/s; expose it as Gb/s (giga BITS/s) for
+        # display. Keep the raw Byte/s register hidden and convert via a LinkVariable
+        # (Gb/s = Byte/s * 8 / 1e9).
+        for name, off in [
+            ('MonBandwidth',    0x214),
+            ('MonBandwidthMax', 0x21C),
+            ('MonBandwidthMin', 0x224),
+        ]:
+            raw = pr.RemoteVariable(
+                name         = f'{name}Bytes',
+                description  = f'AxiStreamMon: {name[3:]} of the FIFO drain stream (raw Byte/s)',
+                offset       = off,
+                bitSize      = 64,
+                mode         = 'RO',
+                units        = 'B/s',
+                disp         = '{:d}',
+                hidden       = True,
+                pollInterval = 1,
+            )
+            self.add(raw)
+            self.add(pr.LinkVariable(
+                name         = name,
+                description  = f'AxiStreamMon: {name[3:]} of the FIFO drain stream',
+                units        = 'Gb/s',
+                disp         = '{:0.3f}',
+                mode         = 'RO',
+                dependencies = [raw],
+                linkedGet    = lambda dev, var, read: var.dependencies[0].get(read=read) * 8.0 / 1.0e9,
+            ))
+
+    def countReset(self):
+        # Hook the standard pyrogue count-reset (root.CountReset / GUI "Count Reset")
+        # into the FW ResetCounters strobe. In the RTL monRst = roceRst or resetCounters,
+        # so this clears the FW Success/Unsuccess counters AND the AxiStreamMon
+        # statistics (frameCnt + all min/max) together.
+        self.ResetCounters()
