@@ -19,7 +19,7 @@ class RoCEv2AxiStreamRdma(pr.Device):
         self.add(pr.RemoteVariable(
             name         = 'DispatchEnable',
             description  = 'Arm continuous event-driven dispatch: while set, the FW issues '
-                           'one RDMA WRITE-with-immediate per complete PRBS packet buffered '
+                           'one RDMA SEND-with-immediate per complete PRBS packet buffered '
                            'in the repack FIFO. Set with SsiPrbsTx.TxEn=True for a '
                            'self-sustaining stream; clear to stop',
             offset       = 0x00,
@@ -31,7 +31,7 @@ class RoCEv2AxiStreamRdma(pr.Device):
 
         self.add(pr.RemoteVariable(
             name         = 'Len',
-            description  = 'Bytes per RDMA WRITE-with-immediate',
+            description  = 'Bytes per RDMA SEND-with-immediate',
             offset       = 0x04,
             bitSize      = 32,
             disp         = '{:d}',
@@ -40,7 +40,8 @@ class RoCEv2AxiStreamRdma(pr.Device):
 
         self.add(pr.RemoteVariable(
             name         = 'RKey',
-            description  = 'Remote key for the RDMA WRITE',
+            description  = 'Legacy RETH remote key — UNUSED by RDMA SEND (FW drives rKey=0); '
+                           'retained for register-map stability',
             offset       = 0x08,
             bitSize      = 32,
             mode         = 'RW',
@@ -48,7 +49,7 @@ class RoCEv2AxiStreamRdma(pr.Device):
 
         self.add(pr.RemoteVariable(
             name         = 'LKey',
-            description  = 'Local key for the RDMA WRITE',
+            description  = 'Local key for the RDMA SEND',
             offset       = 0x0C,
             bitSize      = 32,
             mode         = 'RW',
@@ -74,7 +75,8 @@ class RoCEv2AxiStreamRdma(pr.Device):
 
         self.add(pr.RemoteVariable(
             name         = 'RemAddr',
-            description  = 'Remote address for the RDMA WRITE (64-bit, occupies 0x18/0x1C)',
+            description  = 'Legacy RETH remote address (64-bit, 0x18/0x1C) — UNUSED by RDMA '
+                           'SEND (FW drives rAddr=0); retained for register-map stability',
             offset       = 0x18,
             bitSize      = 64,
             mode         = 'RW',
@@ -82,11 +84,18 @@ class RoCEv2AxiStreamRdma(pr.Device):
 
         self.add(pr.RemoteVariable(
             name         = 'AddrWrapCount',
-            description  = 'Number of RemAddr increments before wrapping back to base',
+            description  = 'Number of immDt slot increments before wrapping back to 0 (the '
+                           'free-running ring position stamped in the immediate)',
             offset       = 0x20,
             bitSize      = 32,
             mode         = 'RW',
         ))
+
+        # Flow control is native FW<->NIC: the FW dispatches RDMA-SEND-with-immediate
+        # (two-sided), so a full host recv queue makes the NIC RNR-NAK; the blue-rdma
+        # SQ stalls/retries (rnr_retry=7) and backpressures the dispatcher. There is
+        # NO software credit register in the real-time path (the legacy CreditWindow /
+        # CreditConsumed registers at 0x24/0x28 are removed).
 
         # RO status block (based at 0x100, disjoint from the RW block) ---------
 

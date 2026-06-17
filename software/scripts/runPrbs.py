@@ -198,6 +198,19 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--minRnrTimer",
+        required = False,
+        default  = 12,
+        type     = int,
+        help     = "IB min_rnr_timer code for native FW<->NIC flow control (12=0.64ms, "
+                   "1=0.01ms, 31=491ms). RDMA-SEND-with-immediate is two-sided, so when the "
+                   "host recv queue drains the NIC RNR-NAKs the FPGA, which backs off this long "
+                   "and retries — self-pacing the source to the host consume rate with NO "
+                   "software credit writes in the real-time path. Too small storms RNR NAKs; "
+                   "too large collapses throughput. Sweep 8..16 to find the knee.",
+    )
+
+    parser.add_argument(
         "--roceGidIndex",
         type     = int,
         required = False,
@@ -289,16 +302,15 @@ if __name__ == "__main__":
               f"(RoCE v2 IPv4 GID on {args.roceDevice})")
 
     # ----------------------------------------------------------------
-    # Resolve the per-frame Len (bytes per RDMA WRITE) up front, BEFORE building
-    # the Root, because the host receive MR must be sized to match it.
+    # Resolve the per-frame Len (bytes per RDMA SEND) up front, BEFORE building
+    # the Root, because each host recv-WR buffer must be sized to hold one frame.
     #
-    # The host posts rxQueueDepth recv-WR slots, each exactly maxPayload bytes, at
-    # mrAddr + slot*maxPayload. The FW writes frame N to mrAddr + (N mod
-    # addrWrapCount)*Len. For every frame to land in its recv-WR slot — and for RC
-    # RNR flow control to throttle the FW to the host's consumption rate — the
-    # slot stride MUST equal the write stride: maxPayload == Len and
-    # addrWrapCount == rxQueueDepth. So we choose Len here and pass it as the host
-    # maxPayload (roceMaxPay) below.
+    # RDMA-SEND is two-sided: each SEND consumes the next posted recv-WR and lands
+    # in THAT buffer (the NIC picks the slot, in order), so there is no FW write
+    # address and no stride-matching requirement — the host recv buffer only has to
+    # be large enough: maxPayload >= Len. Flow control is native: when the host
+    # recv queue drains the NIC RNR-NAKs the FPGA and it self-throttles. We choose
+    # Len here and pass it as the host recv-buffer size (roceMaxPay) below.
     #
     # The PRBS word is 64-bit (8 B) <= the 32-byte RoCEv2 beat, so the granularity
     # is the beat. A frame is an integer number of 32-byte beats, >= 2 beats, and
@@ -333,7 +345,8 @@ if __name__ == "__main__":
         roceDevice   = args.roceDevice,
         roceGidIndex = gidIndex,
         rocePmtu     = pmtu_enum,
-        roceMaxPay   = Len,                  # host slot stride == FW write stride
+        roceMaxPay   = Len,                  # host recv-buffer size (>= SEND payload)
+        roceMinRnrTimer = args.minRnrTimer,  # native RNR backoff (FW<->NIC flow control)
         pollEn       = args.pollEn,
         initRead     = args.initRead,
         zmqSrvPort   = args.zmqSrvPort,
@@ -378,13 +391,13 @@ if __name__ == "__main__":
             )
             sys.exit(1)
 
-        # The host MR slot stride (maxPayload) MUST equal the FW write stride (Len)
-        # so each RDMA WRITE lands exactly in its recv-WR slot (otherwise only the
-        # first frame validates). roceMaxPay=Len was set at construction; assert it.
-        if max_payload != Len:
+        # Each host recv-WR buffer (maxPayload) must hold one full SEND payload (Len).
+        # SEND lands in the next consumed recv-WR (no address stride), so maxPayload
+        # only has to be >= Len. roceMaxPay=Len was set at construction; assert the fit.
+        if max_payload < Len:
             print(
-                f"ERROR: host maxPayload={max_payload} != Len={Len}; FW write ring "
-                f"and host recv-WR ring are misaligned.",
+                f"ERROR: host maxPayload={max_payload} < Len={Len}; recv-WR buffer too "
+                f"small to hold a SEND payload.",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -550,12 +563,12 @@ if __name__ == "__main__":
             prbs.TrigDly.set(0)
 
         dma.Len.set(Len)
-        dma.RKey.set(mrRKey)
         dma.LKey.set(locKey)
         dma.SQpn.set(remQpn)
-        dma.RemAddr.set(mrAddr)
         dma.AddrWrapCount.set(mr_len // Len)
-        # dma.DQpn left at default 0 — UD-datagram field, unused by the RC WRITE path.
+        # dma.DQpn left at default 0 — UD-datagram field, unused by the RC SEND path.
+        # RKey/RemAddr are legacy RETH registers; RDMA-SEND drives rAddr/rKey to 0 in
+        # the FW, so they are intentionally not configured here.
 
         # ----------------------------------------------------------------
         # Dual counter reset (FW + host) — RemoteCommand toggles, never .set(0/1/0)
@@ -569,9 +582,17 @@ if __name__ == "__main__":
         # DispatchEnable arms the FW dispatcher; TxEn free-runs the PRBS source
         # (AXI_EN_G='1' means the host owns the trigger, so without TxEn the FIFO
         # stays empty and nothing dispatches). With both set the FW issues one RDMA
-        # WRITE per complete buffered PRBS packet continuously — no per-frame poke.
+        # SEND per complete buffered PRBS packet continuously — no per-frame poke.
+        #
+        # Flow control is entirely native FW<->NIC: there is NO software credit feed
+        # in the real-time path. RDMA-SEND is two-sided, so when the host recv queue
+        # drains the NIC RNR-NAKs the FPGA; the blue-rdma SQ stalls and retries
+        # (rnr_retry=7 infinite, min_rnr_timer=--minRnrTimer) and backpressures the
+        # dispatcher, which fills the repack FIFO and throttles the PRBS source. The
+        # host thread's only job is to post/consume recv-WRs at its own pace.
         # ----------------------------------------------------------------
-        print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame)...")
+        print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame, "
+              f"native RNR flow control, minRnrTimer={args.minRnrTimer})...")
         dma.DispatchEnable.set(True)
         prbs.TxEn.set(True)
 
@@ -615,7 +636,10 @@ if __name__ == "__main__":
         if (args.guiType == 'PyDM'):
             # Re-arm the stream so the operator sees rxCount climbing live in the
             # GUI. Toggle App.SsiPrbsTx.TxEn (or App.RoCEv2AxiStreamRdma.DispatchEnable)
-            # to start/stop continuous reception.
+            # to start/stop continuous reception. Flow control stays native FW<->NIC
+            # (RNR) — there is no credit feeder to restart.
+            dma.ResetCounters()        # zero FW SuccessCounter/UnsuccessCounter
+            root.CountReset()          # zero host rxErrors/rxCount/rxBytes
             dma.DispatchEnable.set(True)
             prbs.TxEn.set(True)
             pyrogue.pydm.runPyDM(

@@ -51,12 +51,16 @@ class Root(pr.Root):
             roceDevice      = 'rxe0',       # ibverbs device name (rxe0=softRoCE, mlx5_0=HW NIC)
             roceIbPort      = 1,            # ibverbs port number
             roceGidIndex    = -1,           # GID index (-1 = auto-detect from ip)
-            roceMaxPay      = None,         # Max payload bytes per RDMA WRITE (None = 9000)
+            roceMaxPay      = None,         # Max payload bytes per RDMA SEND (None = 9000)
             roceQDepth      = None,         # RX queue depth (None = 256)
             rocePmtu        = IBV_MTU_4096, # Path MTU: IBV_MTU_256/512/1024/2048/4096
             roceOffset      = 0x0000_0000,  # AXI-lite byte offset of RoCEv2 engine registers
-            roceMinRnrTimer = 1,            # IB min_rnr_timer (1=0.01ms, 31=491ms)
-            roceRnrRetry    = 7,            # FPGA RNR retry count (7=infinite)
+            roceMinRnrTimer = 12,           # IB min_rnr_timer code (12=0.64ms, 1=0.01ms, 31=491ms).
+                                            # Native FW<->NIC flow-control knob: how long the FPGA
+                                            # requester backs off after an RNR NAK (empty host RQ)
+                                            # before retrying the SEND. Small enough for throughput,
+                                            # large enough to avoid an RNR-NAK storm. Sweep 8..16.
+            roceRnrRetry    = 7,            # FPGA RNR retry count (7=infinite — never fault on RNR)
             roceRetryCount  = 3,            # FPGA retry count for non-RNR errors
             **kwargs):
         super().__init__(timeout=(5.0 if (ip != 'sim') else 100.0), **kwargs)
