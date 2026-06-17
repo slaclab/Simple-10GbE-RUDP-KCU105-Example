@@ -137,7 +137,7 @@ class Root(pr.Root):
                     promProg = promProg,
                     rocev2   = self.useRoce,
                     dcqcn    = self.useDcqcn,
-                    expand   = True,
+                    expand   = False,
                 ))
                 self._coreAlreadyAdded = True
 
@@ -171,7 +171,7 @@ class Root(pr.Root):
                     name         = 'PrbsRx',
                     width        = 64,
                     checkPayload = True,
-                    expand       = False,
+                    expand       = True,
                 )
                 self.add(self.prbsRx)
                 # Additive fan-out — coexists with dataWriter.getChannel(1)
@@ -192,11 +192,11 @@ class Root(pr.Root):
             self.dataWriter = pr.utilities.fileio.StreamWriter()
             self.add(self.dataWriter)
 
-            self.swRx = baseBoard.SwRx(expand=True)
-            self.add(self.swRx)
+            # self.swRx = baseBoard.SwRx(expand=True)
+            # self.add(self.swRx)
 
-            self.stream >> self.swRx
-            self.stream >> self.dataWriter.getChannel(0)
+            # self.stream >> self.swRx
+            # self.stream >> self.dataWriter.getChannel(0)
 
             # If RoCEv2 is enabled, also write RDMA frames to a separate channel
             if self.useRoce:
@@ -212,14 +212,14 @@ class Root(pr.Root):
                 memBase  = self.srp,
                 sim      = self.sim,
                 promProg = promProg,
-                expand   = True,
+                expand   = False,
             ))
 
         if not promProg:
             self.add(roceBoard.App(
                 offset   = 0x8000_0000,
                 memBase  = self.srp,
-                sim      = self.sim,
+                # sim      = self.sim,
                 expand   = True,
             ))
 
