@@ -302,19 +302,23 @@ if __name__ == "__main__":
               f"(RoCE v2 IPv4 GID on {args.roceDevice})")
 
     # ----------------------------------------------------------------
-    # Resolve the per-frame Len (bytes per RDMA SEND) up front, BEFORE building
-    # the Root, because each host recv-WR buffer must be sized to hold one frame.
+    # Resolve the INITIAL per-frame Len (bytes per RDMA SEND) up front. Len only sets
+    # the STARTING SsiPrbsTx.PacketLength; the FW frames each SEND dynamically from the
+    # inbound tLast, so PacketLength may be changed LIVE up to the FW per-SEND cap
+    # (MaxSize = one PMTU = 4096 B).
     #
-    # RDMA-SEND is two-sided: each SEND consumes the next posted recv-WR and lands
-    # in THAT buffer (the NIC picks the slot, in order), so there is no FW write
-    # address and no stride-matching requirement — the host recv buffer only has to
-    # be large enough: maxPayload >= Len. Flow control is native: when the host
-    # recv queue drains the NIC RNR-NAKs the FPGA and it self-throttles. We choose
-    # Len here and pass it as the host recv-buffer size (roceMaxPay) below.
+    # Therefore the host recv-WR buffer is sized to the FULL PMTU (roceMaxPay =
+    # pmtu_bytes), NOT Len. If it were only Len (e.g. 4064), a larger live PacketLength
+    # (e.g. 4072 B) would overflow the recv buffer -> receiver Local Length Error ->
+    # the NIC NAKs -> the FW SEND completes with an error -> UnsuccessCounter++. Sizing
+    # the buffer to the PMTU lets the host receive any frame up to the FW cap.
     #
-    # The PRBS word is 64-bit (8 B) <= the 32-byte RoCEv2 beat, so the granularity
-    # is the beat. A frame is an integer number of 32-byte beats, >= 2 beats, and
-    # strictly below PMTU (Len == PMTU stalls the single-packet dispatch).
+    # RDMA-SEND is two-sided: each SEND consumes the next posted recv-WR and lands in
+    # THAT buffer; flow control is native (recv queue drains -> NIC RNR-NAKs the FPGA).
+    #
+    # The PRBS word is 64-bit (8 B) <= the 32-byte RoCEv2 beat. The initial Len is a
+    # multiple of 32 (validated below), but a LIVE PacketLength may be any 8-byte-word
+    # size up to the cap -- the FW replays a partial final 32-byte beat correctly.
     # ----------------------------------------------------------------
     ROCE_BEAT_BYTES = 32
     gran = ROCE_BEAT_BYTES
@@ -345,7 +349,7 @@ if __name__ == "__main__":
         roceDevice   = args.roceDevice,
         roceGidIndex = gidIndex,
         rocePmtu     = pmtu_enum,
-        roceMaxPay   = Len,                  # host recv-buffer size (>= SEND payload)
+        roceMaxPay   = pmtu_bytes,           # host recv buffer = full PMTU = FW MaxSize cap
         roceMinRnrTimer = args.minRnrTimer,  # native RNR backoff (FW<->NIC flow control)
         pollEn       = args.pollEn,
         initRead     = args.initRead,
@@ -391,13 +395,23 @@ if __name__ == "__main__":
             )
             sys.exit(1)
 
-        # Each host recv-WR buffer (maxPayload) must hold one full SEND payload (Len).
-        # SEND lands in the next consumed recv-WR (no address stride), so maxPayload
-        # only has to be >= Len. roceMaxPay=Len was set at construction; assert the fit.
-        if max_payload < Len:
+        # The host recv-WR buffer (maxPayload = full PMTU) must hold the LARGEST SEND the
+        # FW can dispatch, so that ANY live SsiPrbsTx.PacketLength up to the FW cap is
+        # received without a Local Length Error (recv buffer overflow -> receiver NAK ->
+        # UnsuccessCounter). The FW per-SEND cap is the hardware constant 0x04 MaxSize
+        # (RO = MAX_BEATS_C*32 = one PMTU). SEND lands in the next consumed recv-WR.
+        fw_max_send = dma.MaxSize.get()
+        if max_payload < fw_max_send:
             print(
-                f"ERROR: host maxPayload={max_payload} < Len={Len}; recv-WR buffer too "
-                f"small to hold a SEND payload.",
+                f"ERROR: host maxPayload={max_payload} < FW MaxSize={fw_max_send}; recv-WR "
+                f"buffer cannot hold the largest SEND (raise --pmtu).",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        if Len > fw_max_send:
+            print(
+                f"ERROR: initial Len={Len} exceeds the FW per-SEND cap MaxSize={fw_max_send} "
+                f"(MAX_BEATS_C*32) — reduce --len/--pmtu.",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -424,6 +438,7 @@ if __name__ == "__main__":
             f"  RxQueueDepth    : {rx_queue_depth}\n"
             f"  MrLen           : {mr_len}\n"
             f"  Len (per msg)   : {Len}\n"
+            f"  FW MaxSize cap  : {fw_max_send}\n"
             f"  PMTU            : {pmtu_bytes}\n"
             f"  Target frames   : {args.target}\n"
             f"----------------------------------"
@@ -453,7 +468,8 @@ if __name__ == "__main__":
             prbs.FwCnt.set(True)       # counter mode (runtime; 0x00[5])
             prbs.TxEn.set(True)        # enable the source (else it never free-runs)
 
-            dma.Len.set(Len)
+            # No frame-size register to program: the FW derives each SEND's length
+            # per-packet from the inbound tLast (0x04 MaxSize is a read-only cap).
             dma.RKey.set(mrRKey)
             dma.LKey.set(locKey)
             dma.SQpn.set(remQpn)
@@ -551,7 +567,12 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
         # Configure the PRBS source + DMA dispatch registers
         # ----------------------------------------------------------------
-        # PacketLength is in PRBS words: (Len // word_bytes) - 1
+        # PacketLength is in PRBS words: (Len // word_bytes) - 1. This may be changed
+        # LIVE in the GUI: the FW frames each SEND from the inbound tLast (no Len
+        # register) and handles a partial final 32-byte beat, so the RDMA path tracks
+        # ANY dynamic PacketLength up to the FW cap (MaxSize = one PMTU) without a
+        # restart and with no 32-byte-multiple requirement. The host recv buffer is the
+        # full PMTU, so every such frame is received.
         prbs.PacketLength.set(Len // word_bytes - 1)
 
         # PRBS packet rate. TrigDly=0 free-runs at full line rate; a positive
@@ -562,7 +583,6 @@ if __name__ == "__main__":
         else:
             prbs.TrigDly.set(0)
 
-        dma.Len.set(Len)
         dma.LKey.set(locKey)
         dma.SQpn.set(remQpn)
         dma.AddrWrapCount.set(mr_len // Len)
