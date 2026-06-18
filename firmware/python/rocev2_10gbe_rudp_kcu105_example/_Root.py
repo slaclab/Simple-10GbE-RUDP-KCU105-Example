@@ -165,11 +165,11 @@ class Root(pr.Root):
 
                 # Host-side PRBS data-integrity check on the RDMA receive stream.
                 # Inside useRoce (not enSwRx) so it works independent of the SW
-                # receiver. width=64 matches the FW PRBS seed width
+                # receiver. width=128 matches the FW PRBS seed width
                 # (SsiPrbsTx PRBS_SEED_SIZE_G); default taps already match surf.
                 self.prbsRx = pr.utilities.prbs.PrbsRx(
                     name         = 'PrbsRx',
-                    width        = 64,
+                    width        = 128,
                     checkPayload = True,
                     expand       = True,
                 )

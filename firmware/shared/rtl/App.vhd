@@ -56,6 +56,8 @@ end App;
 
 architecture mapping of App is
 
+   constant RDMA_AXIS_CONFIG_C : AxiStreamConfigType := ssiAxiStreamConfig(dataBytes => (128/8));
+
    constant TX_INDEX_C       : natural := 0;
    constant MEM_INDEX_C      : natural := 1;
    constant PRBS_INDEX_C     : natural := 2;
@@ -150,9 +152,9 @@ begin
             TPD_G                      => TPD_G,
             AXI_EN_G                   => '1',
             GEN_SYNC_FIFO_G            => true,
-            PRBS_SEED_SIZE_G           => 64,   -- match the 64-bit RSSI word
+            PRBS_SEED_SIZE_G           => 8*RDMA_AXIS_CONFIG_C.TDATA_BYTES_C,
             PRBS_INCREMENT_G           => false,
-            MASTER_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
+            MASTER_AXI_STREAM_CONFIG_G => RDMA_AXIS_CONFIG_C)
          port map (
             -- Master Port (mAxisClk domain)
             mAxisClk        => axilClk,
@@ -175,7 +177,7 @@ begin
          generic map (
             TPD_G           => TPD_G,
             GEN_SYNC_FIFO_G => true,             -- PRBS source and engine share axilClk
-            AXIS_CONFIG_G   => RSSI_AXIS_CONFIG_C)
+            AXIS_CONFIG_G   => RDMA_AXIS_CONFIG_C)
          port map (
             roceClk           => axilClk,
             roceRst           => axilRst,
