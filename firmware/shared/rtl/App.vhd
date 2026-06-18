@@ -171,14 +171,17 @@ begin
       --------------------------------
       -- Consolidated RoCEv2 AXI-Stream DMA
       --------------------------------
-      U_RoCEv2AxiStreamRdma : entity work.RoCEv2AxiStreamRdma
+      U_RoCEv2AxiStreamRdma : entity surf.RoCEv2AxiStreamRdma
          generic map (
-            TPD_G         => TPD_G,
-            AXIS_CONFIG_G => RSSI_AXIS_CONFIG_C)
+            TPD_G           => TPD_G,
+            GEN_SYNC_FIFO_G => true,             -- PRBS source and engine share axilClk
+            AXIS_CONFIG_G   => RSSI_AXIS_CONFIG_C)
          port map (
             roceClk           => axilClk,
             roceRst           => axilRst,
-            -- Inbound PRBS payload
+            -- Inbound PRBS payload (slave-side clock; same domain as roceClk here)
+            sAxisClk          => axilClk,
+            sAxisRst          => axilRst,
             sAxisMaster       => prbsAxisMaster,
             sAxisSlave        => prbsAxisSlave,
             -- RoCEv2 DMA read req/resp
