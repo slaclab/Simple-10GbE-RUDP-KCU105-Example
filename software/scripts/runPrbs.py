@@ -323,14 +323,17 @@ if __name__ == "__main__":
     ROCE_BEAT_BYTES = 32
     gran = ROCE_BEAT_BYTES
     if args.len is None:
-        Len = ((pmtu_bytes - 1) // gran) * gran
+        # Default to the full PMTU (= FW MaxSize cap) -> SsiPrbsTx.PacketLength 0x1ff
+        # (511 words). 4096 B = 128 full 32-byte replay beats; the dynamic-length FW
+        # handles it as a normal SEND.
+        Len = pmtu_bytes
     else:
         Len = args.len
-        if Len >= pmtu_bytes:
+        if Len > pmtu_bytes:
             print(
-                f"WARNING: --len={Len} >= PMTU={pmtu_bytes} — known-unsupported: "
-                f"Len == PMTU stalls dispatch and Len > PMTU hits the surf 13-bit "
-                f"DMA-read cap / per-message PrbsRx framing. Proceeding anyway.",
+                f"WARNING: --len={Len} > PMTU={pmtu_bytes} — a frame larger than the FW "
+                f"per-SEND cap (MaxSize) is DROPPED in FW (OversizeCount) and exceeds one "
+                f"RC packet. Proceeding anyway.",
                 file=sys.stderr,
             )
     if Len % gran != 0 or Len < 2 * gran:
@@ -662,6 +665,11 @@ if __name__ == "__main__":
             root.CountReset()          # zero host rxErrors/rxCount/rxBytes
             dma.DispatchEnable.set(True)
             prbs.TxEn.set(True)
+            # Zero the counters again right before the GUI opens so the operator starts
+            # from a clean slate (the re-arm above streamed frames during setup).
+            # root.CountReset() cascades to the FW counters too (RoCEv2AxiStreamRdma
+            # overrides countReset() -> ResetCounters).
+            root.CountReset()
             pyrogue.pydm.runPyDM(
                 serverList = root.zmqServer.address,
                 sizeX      = 800,
