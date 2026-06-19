@@ -24,34 +24,25 @@ import rogue.utilities.fileio
 import simple_10gbe_rudp_kcu105_example as baseBoard
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
-rogue.Version.minVersion('6.14.1')
-
-# Path MTU is fixed at 4096 bytes (libibverbs ibv_mtu enum value 5).
-IBV_MTU_4096 = 5
+# Currently using rogue@rocev2-soft-reset-on-reconnect branch
+#rogue.Version.minVersion('6.15.0')
 
 class Root(pr.Root):
     def __init__(self,
-            ip          = '192.168.2.10',
+            ip          = '192.168.2.10',  # FPGA IP address (RUDP transport + default cfg seed)
             zmqSrvPort  = 9099,   # Set to zero if dynamic (instead of static)
-            # ----------------------------------------------------------------
-            # RoCEv2 options (meta mode only)
-            # ----------------------------------------------------------------
-            useDcqcn        = True,
-            roceDevice      = 'rxe0',       # ibverbs device name (rxe0=softRoCE, mlx5_0=HW NIC)
-            roceIbPort      = 1,            # ibverbs port number
-            roceGidIndex    = -1,           # GID index (-1 = auto-detect from ip)
-            roceMaxPay      = None,         # Max payload bytes per RDMA SEND (None = 9000)
-            roceQDepth      = None,         # RX queue depth (None = 256)
-            roceOffset      = 0x0000_0000,  # AXI-lite byte offset of RoCEv2 engine registers
-            roceMinRnrTimer = 12,           # IB min_rnr_timer code (12=0.64ms, 1=0.01ms, 31=491ms).
-                                            # Native FW<->NIC flow-control knob: how long the FPGA
-                                            # requester backs off after an RNR NAK (empty host RQ)
-                                            # before retrying the SEND. Small enough for throughput,
-                                            # large enough to avoid an RNR-NAK storm. Sweep 8..16.
-            roceRnrRetry    = 7,            # FPGA RNR retry count (7=infinite — never fault on RNR)
-            roceRetryCount  = 3,            # FPGA retry count for non-RNR errors
+            useDcqcn    = True,   # Enable DCQCN congestion control in the Core
+            rocev2Cfg   = None,   # RoCEv2ServerCfg; None = default fixed-4096 cfg targeting `ip`
             **kwargs):
         super().__init__(timeout=5.0, **kwargs)
+
+        # Default cfg when none supplied (seeded from `ip`).
+        if rocev2Cfg is None:
+            rocev2Cfg = pr.protocols.RoCEv2ServerCfg(
+                ip         = ip,
+                deviceName = 'rxe0',                            # rxe0=softRoCE, mlx5_0=HW NIC
+                pmtu       = pr.protocols.RoCEv2Mtu.MTU_4096,   # fixed 4096B framing
+            )
 
         #################################################################
 
@@ -96,25 +87,12 @@ class Root(pr.Root):
 
         #################################################################
 
-        # RoCEv2Server resolves its own defaults (maxPayload/rxQueueDepth None
-        # -> C++ Default*, gidIndex -1 -> auto-detect from ip) and logs the
-        # streaming configuration, so pass the raw options straight through.
+        # RoCEv2 receive server (resolves cfg sentinels + auto-detects GID internally).
         self._rdmaRx = self.add(pr.protocols.RoCEv2Server(
-            name             = 'rdmaRx',
-            ip               = ip,
-            deviceName       = roceDevice,
-            ibPort           = roceIbPort,
-            gidIndex         = roceGidIndex,
-            maxPayload       = roceMaxPay,
-            rxQueueDepth     = roceQDepth,
-            pmtu             = IBV_MTU_4096,
-            minRnrTimer      = roceMinRnrTimer,
-            rnrRetry         = roceRnrRetry,
-            retryCount       = roceRetryCount,
-            roceEngineOffset = roceOffset,
-            roceMemBase      = self.srp,
-            roceEngine       = self.Core.RoCEv2Engine,
-            expand           = False,
+            name         = 'rdmaRx',
+            rocev2Cfg    = rocev2Cfg,
+            rocev2Engine = self.Core.RoCEv2Engine,
+            expand       = False,
         ))
 
         # Host-side PRBS data-integrity check on the RDMA receive stream.
@@ -130,10 +108,7 @@ class Root(pr.Root):
     def start(self, **kwargs):
         super().start(**kwargs)
 
-        # Validate the RoCEv2 RC connection came up (RoCEv2Server._start drives
-        # the FPGA QP to RTS). Raise here so the caller's `with Root(...)` block
-        # unwinds into stop() for a clean teardown instead of leaving a
-        # half-connected engine.
+        # Fail fast (and unwind into stop()) if the RC connection did not reach RTS.
         state = self.rdmaRx.ConnectionState.get()
         if state != 'Connected':
             raise rogue.GeneralError('Root.start', f"RoCEv2 not connected (state={state})")
@@ -151,26 +126,14 @@ class Root(pr.Root):
 
     def stop(self) -> None:
         """Tear down FPGA QP before transport is stopped."""
-        # Disarm the PRBS source + RDMA dispatcher BEFORE tearing down the QP.
-        # Otherwise the FPGA is left free-running RDMA WRITEs at a destroyed QP,
-        # flooding the link and wedging the App datapath until an FPGA reload —
-        # the 0xF50 softRst only resets the Core transport, not the App. This
-        # leaked TxEn/DispatchEnable is what makes a software reconnect fail
-        # (rxCount stays 0) after the GUI/stream path leaves the source armed.
+        # Disarm PRBS source + RDMA dispatcher first, else the FPGA floods a destroyed QP.
         try:
             self.App.SsiPrbsTx.TxEn.set(False)
             self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
         except AttributeError:
             pass
-        # Tear down the FPGA QP here, BEFORE super().stop(). The metadata-bus
-        # teardown drives SendMetaData over SRP-over-RUDP, so it must run while
-        # the RUDP transport is still alive. super().stop() -> Device._stop()
-        # tears down sibling interfaces/protocols (the RUDP transport) before it
-        # ever recurses into rdmaRx._stop(), so relying on that traversal to
-        # tear down the QP races the transport shutdown and the SendMetaData
-        # write times out. teardownFpgaQp() is idempotent, so rdmaRx._stop()
-        # safely no-ops on the now-zero FPGA QPN.
+        # Tear down the FPGA QP before super().stop() — needs the RUDP transport still up.
         if hasattr(self.rdmaRx, 'teardownFpgaQp'):
             self.rdmaRx.teardownFpgaQp()
         super().stop()

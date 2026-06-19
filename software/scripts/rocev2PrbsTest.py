@@ -203,18 +203,25 @@ if __name__ == "__main__":
     # Per-frame Len sets the STARTING SsiPrbsTx.PacketLength; the FW frames each
     # SEND dynamically from the inbound tLast, so PacketLength may be changed LIVE
     # in the GUI up to the FW per-SEND cap (MaxSize = one PMTU = RDMA_LEN). The host
-    # recv-WR buffer is sized to the full PMTU (roceMaxPay = RDMA_LEN) so any live
+    # recv-WR buffer is sized to the full PMTU (maxPayload = RDMA_LEN) so any live
     # PacketLength up to the cap is received without a recv-buffer overflow.
     Len = RDMA_LEN
+
+    # Build the RoCEv2 transport config from the CLI args. The cfg defaults
+    # (maxPayload=4096, pmtu=MTU_4096) already match RDMA_LEN's fixed 4096B
+    # framing — host recv buffer = full PMTU = FW MaxSize cap — so only the
+    # device/GID/RNR knobs need to be supplied here.
+    rocev2Cfg = pyrogue.protocols.RoCEv2ServerCfg(
+        ip          = args.ip,
+        deviceName  = args.roceDevice,
+        gidIndex    = gidIndex,
+        minRnrTimer = args.minRnrTimer,   # native RNR backoff (FW<->NIC flow control)
+    )
 
     #################################################################
 
     with roceBoard.Root(
-        ip           = args.ip,
-        roceDevice   = args.roceDevice,
-        roceGidIndex = gidIndex,
-        roceMaxPay   = RDMA_LEN,             # host recv buffer = full PMTU = FW MaxSize cap
-        roceMinRnrTimer = args.minRnrTimer,  # native RNR backoff (FW<->NIC flow control)
+        rocev2Cfg    = rocev2Cfg,
         pollEn       = args.pollEn,
         initRead     = args.initRead,
         zmqSrvPort   = args.zmqSrvPort,
