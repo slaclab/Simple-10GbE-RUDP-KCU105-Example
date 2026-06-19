@@ -107,6 +107,12 @@ class Root(pr.Root):
         if state != 'Connected':
             raise rogue.GeneralError('Root.start', f"RoCEv2 not connected (state={state})")
 
+        # Point the FW UDP engine at the host NIC (RoCEv2 UDP port 4791).
+        hostIp = self.rdmaRx.HostIp.get()
+        self.Core.UdpEngine.ClientRemotePort[0].set(4791)
+        self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
+        self.rdmaRx.printConnInfo()
+
         appTx = self.find(typ=baseBoard.AppTx)
         for devPtr in appTx:
             devPtr.ContinuousMode.set(False)
@@ -116,7 +122,6 @@ class Root(pr.Root):
             self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
         except AttributeError:
             pass
-        self.CountReset()
 
     def stop(self) -> None:
         """Tear down FPGA QP before transport is stopped."""

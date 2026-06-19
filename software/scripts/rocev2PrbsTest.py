@@ -20,29 +20,6 @@ import pyrogue.pydm
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
 #################################################################
-# Import smoke-test
-#
-# Touch the two pre-release rogue symbols this launcher relies on
-# (RoCEv2Server + PrbsRx). When the wrong rogue environment is sourced
-# (stock pyrogue without RoCEv2 support) the attribute access raises and
-# we fail loudly with a clear remediation message and a non-zero exit,
-# instead of dying with a confusing AttributeError deep inside Root().
-#################################################################
-try:
-    import pyrogue.protocols           # provides RoCEv2Server
-    pyrogue.protocols.RoCEv2Server     # attribute-touch to force the failure here
-    import pyrogue.utilities.prbs      # provides PrbsRx
-    pyrogue.utilities.prbs.PrbsRx
-except (ImportError, AttributeError) as e:
-    print(
-        f"ERROR: pre-release rogue with RoCEv2/PrbsRx not found ({e}).\n"
-        f"       source ~/project/rogue/setup_rogue.sh "
-        f"(or software/setup_env_slac.sh) before running this script.",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-
-#################################################################
 
 if __name__ == "__main__":
 
@@ -214,8 +191,7 @@ if __name__ == "__main__":
 
         # Root.start() already validated the RoCEv2 RC connection is 'Connected'
         # (it raises otherwise), so the engine is up by the time we reach here.
-        rx    = root.rdmaRx
-        state = rx.ConnectionState.get()
+        rx = root.rdmaRx
 
         # ----------------------------------------------------------------
         # Retrieve MR parameters from the RoCEv2Server local variables
@@ -228,8 +204,6 @@ if __name__ == "__main__":
         # tLast, so it may be changed LIVE in the GUI up to the FW per-SEND cap.
         Len            = max_payload
         remQpn         = rx.HostQpn.get()
-        mrRKey         = rx.MrRkey.get()
-        mrAddr         = rx.MrAddr.get()
         locKey         = rx.FpgaLkey.get()
 
         prbs = root.App.SsiPrbsTx
@@ -270,31 +244,6 @@ if __name__ == "__main__":
                 file=sys.stderr,
             )
             sys.exit(1)
-
-        # ----------------------------------------------------------------
-        # Set UDP engine destination (host IP from RoCEv2Server.HostIp)
-        # ----------------------------------------------------------------
-        hostIp = rx.HostIp.get()
-        print(f"Setting UDP engine destination to {hostIp}:4791")
-        root.Core.UdpEngine.ClientRemotePort[0].set(4791)
-        root.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
-
-        print(
-            f"--- RoCEv2 PRBS run parameters ---\n"
-            f"  ConnectionState : {state}\n"
-            f"  Host QPN        : {hex(remQpn)}\n"
-            f"  Host GID        : {rx.HostGid.get()}\n"
-            f"  MR addr         : {hex(mrAddr)}\n"
-            f"  MR rkey         : {hex(mrRKey)}\n"
-            f"  FPGA lkey       : {hex(locKey)}\n"
-            f"  MaxPayload      : {max_payload}\n"
-            f"  RxQueueDepth    : {rx_queue_depth}\n"
-            f"  MrLen           : {mr_len}\n"
-            f"  Len (per msg)   : {Len}\n"
-            f"  FW MaxSize cap  : {fw_max_send}\n"
-            f"  Target frames   : {args.target}\n"
-            f"----------------------------------"
-        )
 
         # ----------------------------------------------------------------
         # Configure the PRBS source + DMA dispatch registers
