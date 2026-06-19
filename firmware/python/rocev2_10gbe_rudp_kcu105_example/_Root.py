@@ -36,14 +36,6 @@ class Root(pr.Root):
             **kwargs):
         super().__init__(timeout=5.0, **kwargs)
 
-        # Default cfg when none supplied (seeded from `ip`).
-        if rocev2Cfg is None:
-            rocev2Cfg = pr.protocols.RoCEv2ServerCfg(
-                ip         = ip,
-                deviceName = 'rxe0',                            # rxe0=softRoCE, mlx5_0=HW NIC
-                pmtu       = pr.protocols.RoCEv2Mtu.MTU_4096,   # fixed 4096B framing
-            )
-
         #################################################################
 
         self.zmqServer = pyrogue.interfaces.ZmqServer(root=self, addr='127.0.0.1', port=zmqSrvPort)
@@ -51,7 +43,7 @@ class Root(pr.Root):
 
         #################################################################
 
-        # UDP/RSSI clients — both always present
+        # UDP/RSSI client
         self.rudp = [None for i in range(1)]
         for i in range(1):
             self.rudp[i] = pr.protocols.UdpRssiPack(
@@ -104,6 +96,8 @@ class Root(pr.Root):
         )
         self.add(self.prbsRx)
         self.rdmaRx.stream >> self.prbsRx
+
+        #################################################################
 
     def start(self, **kwargs):
         super().start(**kwargs)
