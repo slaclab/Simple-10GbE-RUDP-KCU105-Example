@@ -43,13 +43,6 @@ except (ImportError, AttributeError) as e:
     sys.exit(1)
 
 #################################################################
-# Fixed RDMA framing: 4096-byte path MTU / per-SEND length. PMTU and the
-# per-frame Len are coupled to this single value (host recv buffer = full
-# PMTU = FW MaxSize cap), so it is not configurable.
-#################################################################
-RDMA_LEN = 4096
-
-#################################################################
 
 if __name__ == "__main__":
 
@@ -200,17 +193,9 @@ if __name__ == "__main__":
     # FPGA reloads, so it is detected fresh each run).
     gidIndex = args.roceGidIndex if args.roceGidIndex is not None else -1
 
-    # Per-frame Len sets the STARTING SsiPrbsTx.PacketLength; the FW frames each
-    # SEND dynamically from the inbound tLast, so PacketLength may be changed LIVE
-    # in the GUI up to the FW per-SEND cap (MaxSize = one PMTU = RDMA_LEN). The host
-    # recv-WR buffer is sized to the full PMTU (maxPayload = RDMA_LEN) so any live
-    # PacketLength up to the cap is received without a recv-buffer overflow.
-    Len = RDMA_LEN
-
     # Build the RoCEv2 transport config from the CLI args. The cfg defaults
-    # (maxPayload=4096, pmtu=MTU_4096) already match RDMA_LEN's fixed 4096B
-    # framing — host recv buffer = full PMTU = FW MaxSize cap — so only the
-    # device/GID/RNR knobs need to be supplied here.
+    # (maxPayload=4096, pmtu=MTU_4096) fix the 4096B framing — host recv buffer
+    # = full PMTU = FW MaxSize cap — so only the device/GID/RNR knobs are set here.
     rocev2Cfg = pyrogue.protocols.RoCEv2ServerCfg(
         ip          = args.ip,
         deviceName  = args.roceDevice,
@@ -238,6 +223,10 @@ if __name__ == "__main__":
         rx_queue_depth = rx.RxQueueDepth.get()
         max_payload    = rx.MaxPayload.get()
         mr_len         = rx_queue_depth * max_payload
+        # Per-frame length = host maxPayload (full PMTU = FW MaxSize cap). Sets the
+        # STARTING SsiPrbsTx.PacketLength; the FW frames each SEND from the inbound
+        # tLast, so it may be changed LIVE in the GUI up to the FW per-SEND cap.
+        Len            = max_payload
         remQpn         = rx.HostQpn.get()
         mrRKey         = rx.MrRkey.get()
         mrAddr         = rx.MrAddr.get()
@@ -251,11 +240,11 @@ if __name__ == "__main__":
         # host tracks the FW config instead of hard-coding the width.
         word_bytes = prbs.WordSize.get() // 8
 
-        # RDMA_LEN is the host maxPayload; validate it against the FW's PRBS word
-        # size (PacketLength is counted in whole words).
+        # Validate the per-frame length against the FW's PRBS word size
+        # (PacketLength is counted in whole words).
         if Len % word_bytes != 0:
             print(
-                f"ERROR: RDMA_LEN={Len} is not a multiple of the {word_bytes}-byte PRBS "
+                f"ERROR: maxPayload={Len} is not a multiple of the {word_bytes}-byte PRBS "
                 f"word — incompatible FW PRBS_SEED_SIZE_G.",
                 file=sys.stderr,
             )
@@ -270,13 +259,13 @@ if __name__ == "__main__":
         if max_payload < fw_max_send:
             print(
                 f"ERROR: host maxPayload={max_payload} < FW MaxSize={fw_max_send}; recv-WR "
-                f"buffer cannot hold the largest SEND (FW MaxSize exceeds RDMA_LEN).",
+                f"buffer cannot hold the largest SEND (FW MaxSize exceeds maxPayload).",
                 file=sys.stderr,
             )
             sys.exit(1)
         if Len > fw_max_send:
             print(
-                f"ERROR: RDMA_LEN={Len} exceeds the FW per-SEND cap MaxSize={fw_max_send} "
+                f"ERROR: maxPayload={Len} exceeds the FW per-SEND cap MaxSize={fw_max_send} "
                 f"(MAX_BEATS_C*32).",
                 file=sys.stderr,
             )
