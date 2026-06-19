@@ -66,8 +66,8 @@ class Root(pr.Root):
         #################################################################
 
         # UDP/RSSI clients — both always present
-        self.rudp = [None for i in range(2)]
-        for i in range(2):
+        self.rudp = [None for i in range(1)]
+        for i in range(1):
             self.rudp[i] = pr.protocols.UdpRssiPack(
                 name    = f'SwRudpClient[{i}]',
                 host    = ip,
@@ -82,8 +82,7 @@ class Root(pr.Root):
         self.srp = rogue.protocols.srp.SrpV3()
         self.srp == self.rudp[0].application(0)
 
-        # Streaming path — RUDP[1] always connected as upstream
-        self.stream = self.rudp[1].application(0)
+        #################################################################
 
         # ---- RoCEv2 receive channel (additive, alongside RUDP) ----
         self.add(baseBoard.Core(
@@ -123,10 +122,6 @@ class Root(pr.Root):
             expand           = False,
         ))
 
-        # rdmaRx.stream is the RDMA receive endpoint;
-        # self.stream remains the RUDP streaming endpoint
-        self.rdmaStream = self.rdmaRx.stream
-
         # Host-side PRBS data-integrity check on the RDMA receive stream.
         self.prbsRx = pr.utilities.prbs.PrbsRx(
             name         = 'PrbsRx',
@@ -135,7 +130,7 @@ class Root(pr.Root):
             expand       = True,
         )
         self.add(self.prbsRx)
-        self.rdmaStream >> self.prbsRx
+        self.rdmaRx.stream >> self.prbsRx
 
     def start(self, **kwargs):
         super().start(**kwargs)
