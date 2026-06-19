@@ -49,25 +49,6 @@ except (ImportError, AttributeError) as e:
 _PMTU_ENUM = {256: 1, 512: 2, 1024: 3, 2048: 4, 4096: 5}
 
 #################################################################
-# Capturing stream Slave (counter-mode byte-order check)
-#
-# Taps root.rdmaStream additively (coexists with PrbsRx + dataWriter ch1)
-# and records the raw RDMA payload bytes of every received frame so the
-# counter-mode byte-order check can assert the per-beat 32-bit increment.
-# Mirrors the fileReader.py ContiguityChecker/HexDumper _acceptFrame idiom.
-#################################################################
-class _MrCapture(ris.Slave):
-    def __init__(self):
-        super().__init__()
-        self.frames = []
-
-    def _acceptFrame(self, frame):
-        with frame.lock():
-            ba = bytearray(frame.getPayload())
-            frame.read(ba, 0)
-            self.frames.append(bytes(ba))
-
-#################################################################
 
 if __name__ == "__main__":
 
@@ -104,15 +85,6 @@ if __name__ == "__main__":
         required = False,
         default  = True,
         help     = "Enable auto-polling",
-    )
-
-    parser.add_argument(
-        "--counterMode",
-        type     = argBool,
-        required = False,
-        default  = False,
-        help     = "run the pre-PRBS counter-mode byte-order check "
-                   "(FwCnt=True, tap rdmaStream, assert per-beat 32-bit increment)",
     )
 
     parser.add_argument(
@@ -397,126 +369,6 @@ if __name__ == "__main__":
             f"  Target frames   : {args.target}\n"
             f"----------------------------------"
         )
-
-        # ----------------------------------------------------------------
-        # Counter-mode byte-order check (pre-PRBS).
-        #
-        # Toggle SsiPrbsTx.FwCnt (runtime counter mode), tap root.rdmaStream
-        # with a capturing Slave, dispatch the same burst as the PRBS path, and
-        # assert the per-beat 32-bit-WORD increment with a zeroed upper-224b
-        # lane-swap detector. The ramp is a 32-bit count word in tData(31:0),
-        # NOT a per-byte ramp.
-        # ----------------------------------------------------------------
-        if args.counterMode:
-
-            # Additive tap — coexists with the already-wired PrbsRx / dataWriter ch1
-            cap = _MrCapture()
-            root.rdmaStream >> cap
-
-            # Same register config as the PRBS path
-            prbs.PacketLength.set(Len // word_bytes - 1)
-            if args.trigRate > 0:
-                prbs.TrigRate.set(args.trigRate)
-            else:
-                prbs.TrigDly.set(0)
-            prbs.FwCnt.set(True)       # counter mode (runtime; 0x00[5])
-            prbs.TxEn.set(True)        # enable the source (else it never free-runs)
-
-            # No frame-size register to program: the FW derives each SEND's length
-            # per-packet from the inbound tLast (0x04 MaxSize is a read-only cap).
-            dma.RKey.set(mrRKey)
-            dma.LKey.set(locKey)
-            dma.SQpn.set(remQpn)
-            dma.RemAddr.set(mrAddr)
-            dma.AddrWrapCount.set(mr_len // Len)
-            # dma.DQpn left at default 0 — UD-datagram field, unused by the RC WRITE path.
-
-            dma.ResetCounters()        # RemoteCommand toggle — zeroes FW counters
-            root.CountReset()          # zeroes host PrbsRx counters
-
-            print(f"Counter-mode: capturing {args.target} frame(s) of {Len} bytes "
-                  f"(continuous dispatch)...")
-            dma.DispatchEnable.set(True)   # arm event-driven dispatch
-
-            # Poll until enough frames captured — fall through to assert on timeout, never raise
-            deadline = time.monotonic() + args.timeout
-            while len(cap.frames) < args.target:
-                if time.monotonic() > deadline:
-                    print(f"WARNING: timed out after {args.timeout}s waiting for "
-                          f"counter-mode capture (SuccessCounter="
-                          f"{dma.SuccessCounter.get()}, frames={len(cap.frames)})",
-                          file=sys.stderr)
-                    break
-                time.sleep(0.05)
-
-            # Stop the stream before inspecting the captured frames.
-            dma.DispatchEnable.set(False)
-            prbs.TxEn.set(False)
-
-            # ------------------------------------------------------------
-            # Increment assertion — 32-bit counter ramp, one beat per PRBS word.
-            #  - beat = one PRBS word (word_bytes). beat0 = eventCnt/seed,
-            #    beat1 = packetLength, then data beats hold a strictly +1 32-bit
-            #    count in the low 4 bytes with the upper bytes zero.
-            #  - upper bytes non-zero => a REPACK byte-lane swap.
-            # ------------------------------------------------------------
-            passed = len(cap.frames) > 0       # zero-frame guard (cannot false-green)
-            fail_reason = None if passed else "no frames captured"
-            dump_lines = []
-
-            for fi, fr in enumerate(cap.frames):
-                beats = [fr[i:i + word_bytes] for i in range(0, len(fr), word_bytes)]
-                prev = None
-                for n, b in enumerate(beats):
-                    valid    = len(b)
-                    # Each PRBS word arrives little-endian on the RDMA payload
-                    # (the surf/rogue tData convention, after the FW endianSwap):
-                    # the counter is the FIRST 4 bytes and the remaining upper
-                    # bytes must be zero for a clean ramp.
-                    word     = int.from_bytes(b, 'little')
-                    low32    = word & 0xFFFFFFFF
-                    upper    = word >> 32
-                    upper_nz = (upper != 0)
-                    role     = 'seed' if n == 0 else ('len ' if n == 1 else 'data')
-                    dump_lines.append(f"    f{fi} beat{n:<2} [{role}] valid={valid:<2} "
-                                      f"low32=0x{low32:08x} "
-                                      f"upper={'NONZERO' if upper_nz else 'zero'} "
-                                      f"hex={b.hex()}")
-
-                    # Keep dumping all beats even after a failure, but stop checking.
-                    if fail_reason is not None:
-                        continue
-
-                    # Lane-swap detector + increment check apply to DATA beats only
-                    # (n >= 2); beat0 (seed/eventCnt) and beat1 (packetLength) are
-                    # framing words. Len is a whole number of PRBS words, so every
-                    # captured beat is a full word_bytes.
-                    if n >= 2:
-                        if upper_nz:
-                            passed = False
-                            fail_reason = f"frame {fi} beat {n}: upper bytes not zero (lane swap!)"
-                            continue
-                        if prev is not None and low32 != prev + 1:
-                            passed = False
-                            fail_reason = (f"frame {fi} beat {n}: counter not +1 "
-                                           f"({prev} -> {low32})")
-                            continue
-                        prev = low32
-
-            # Restore PRBS mode (the PRBS path runs next)
-            prbs.FwCnt.set(False)
-
-            print(
-                "--- counter-mode byte-order result ---\n"
-                f"  Frames captured        : {len(cap.frames)} (target {args.target})\n"
-                f"  Dma.SuccessCounter     : {dma.SuccessCounter.get()}\n"
-                f"  Beat layout            : {word_bytes}B/beat, beat0=seed beat1=len then +1 ramp\n"
-                "  Beat dump:\n" + "\n".join(dump_lines) + "\n"
-                f"  Failure                : {fail_reason if fail_reason else '(none)'}\n"
-                f"  RESULT                 : {'PASS' if passed else 'FAIL'}\n"
-                "--------------------------------------"
-            )
-            sys.exit(0 if passed else 1)
 
         # ----------------------------------------------------------------
         # Configure the PRBS source + DMA dispatch registers
