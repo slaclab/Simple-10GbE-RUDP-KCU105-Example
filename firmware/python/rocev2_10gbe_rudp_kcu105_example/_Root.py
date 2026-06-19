@@ -26,11 +26,7 @@ import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
 rogue.Version.minVersion('6.14.1')
 
-# IBV_MTU enum values — mirrors libibverbs ibv_mtu
-IBV_MTU_256  = 1
-IBV_MTU_512  = 2
-IBV_MTU_1024 = 3
-IBV_MTU_2048 = 4
+# Path MTU is fixed at 4096 bytes (libibverbs ibv_mtu enum value 5).
 IBV_MTU_4096 = 5
 
 class Root(pr.Root):
@@ -46,7 +42,6 @@ class Root(pr.Root):
             roceGidIndex    = -1,           # GID index (-1 = auto-detect from ip)
             roceMaxPay      = None,         # Max payload bytes per RDMA SEND (None = 9000)
             roceQDepth      = None,         # RX queue depth (None = 256)
-            rocePmtu        = IBV_MTU_4096, # Path MTU: IBV_MTU_256/512/1024/2048/4096
             roceOffset      = 0x0000_0000,  # AXI-lite byte offset of RoCEv2 engine registers
             roceMinRnrTimer = 12,           # IB min_rnr_timer code (12=0.64ms, 1=0.01ms, 31=491ms).
                                             # Native FW<->NIC flow-control knob: how long the FPGA
@@ -112,7 +107,7 @@ class Root(pr.Root):
             gidIndex         = roceGidIndex,
             maxPayload       = roceMaxPay,
             rxQueueDepth     = roceQDepth,
-            pmtu             = rocePmtu,
+            pmtu             = IBV_MTU_4096,
             minRnrTimer      = roceMinRnrTimer,
             rnrRetry         = roceRnrRetry,
             retryCount       = roceRetryCount,

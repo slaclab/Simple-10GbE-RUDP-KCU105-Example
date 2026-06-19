@@ -16,7 +16,6 @@ import argparse
 
 import pyrogue
 import pyrogue.pydm
-import rogue.interfaces.stream as ris
 
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
@@ -44,9 +43,11 @@ except (ImportError, AttributeError) as e:
     sys.exit(1)
 
 #################################################################
-# Path MTU byte-size -> IBV_MTU enum
+# Fixed RDMA framing: 4096-byte path MTU / per-SEND length. PMTU and the
+# per-frame Len are coupled to this single value (host recv buffer = full
+# PMTU = FW MaxSize cap), so it is not configurable.
 #################################################################
-_PMTU_ENUM = {256: 1, 512: 2, 1024: 3, 2048: 4, 4096: 5}
+RDMA_LEN = 4096
 
 #################################################################
 
@@ -167,23 +168,6 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--len",
-        type     = int,
-        required = False,
-        default  = None,
-        help     = "Bytes per RDMA WRITE (default: min(MaxPayload, PMTU) "
-                   "floored to a multiple of 32)",
-    )
-
-    parser.add_argument(
-        "--pmtu",
-        type     = int,
-        required = False,
-        default  = 4096,
-        help     = "Path MTU in bytes (256/512/1024/2048/4096)",
-    )
-
-    parser.add_argument(
         "--timeout",
         type     = float,
         required = False,
@@ -206,17 +190,6 @@ if __name__ == "__main__":
             file=sys.stderr,
         )
 
-    # Map --pmtu bytes -> IBV_MTU enum
-    if args.pmtu not in _PMTU_ENUM:
-        print(
-            f"ERROR: --pmtu={args.pmtu} is not a valid Path MTU "
-            f"(choose one of {sorted(_PMTU_ENUM)}).",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    pmtu_enum  = _PMTU_ENUM[args.pmtu]
-    pmtu_bytes = args.pmtu
-
     # --target is the number of frames to receive before PASS; must be positive.
     if args.target < 1:
         print(f"ERROR: --target={args.target} must be >= 1.", file=sys.stderr)
@@ -227,48 +200,12 @@ if __name__ == "__main__":
     # FPGA reloads, so it is detected fresh each run).
     gidIndex = args.roceGidIndex if args.roceGidIndex is not None else -1
 
-    # ----------------------------------------------------------------
-    # Resolve the INITIAL per-frame Len (bytes per RDMA SEND) up front. Len only sets
-    # the STARTING SsiPrbsTx.PacketLength; the FW frames each SEND dynamically from the
-    # inbound tLast, so PacketLength may be changed LIVE up to the FW per-SEND cap
-    # (MaxSize = one PMTU = 4096 B).
-    #
-    # Therefore the host recv-WR buffer is sized to the FULL PMTU (roceMaxPay =
-    # pmtu_bytes), NOT Len. If it were only Len (e.g. 4064), a larger live PacketLength
-    # (e.g. 4072 B) would overflow the recv buffer -> receiver Local Length Error ->
-    # the NIC NAKs -> the FW SEND completes with an error -> UnsuccessCounter++. Sizing
-    # the buffer to the PMTU lets the host receive any frame up to the FW cap.
-    #
-    # RDMA-SEND is two-sided: each SEND consumes the next posted recv-WR and lands in
-    # THAT buffer; flow control is native (recv queue drains -> NIC RNR-NAKs the FPGA).
-    #
-    # The PRBS word is 64-bit (8 B) <= the 32-byte RoCEv2 beat. The initial Len is a
-    # multiple of 32 (validated below), but a LIVE PacketLength may be any 8-byte-word
-    # size up to the cap -- the FW replays a partial final 32-byte beat correctly.
-    # ----------------------------------------------------------------
-    ROCE_BEAT_BYTES = 32
-    gran = ROCE_BEAT_BYTES
-    if args.len is None:
-        # Default to the full PMTU (= FW MaxSize cap) -> SsiPrbsTx.PacketLength 0x1ff
-        # (511 words). 4096 B = 128 full 32-byte replay beats; the dynamic-length FW
-        # handles it as a normal SEND.
-        Len = pmtu_bytes
-    else:
-        Len = args.len
-        if Len > pmtu_bytes:
-            print(
-                f"WARNING: --len={Len} > PMTU={pmtu_bytes} — a frame larger than the FW "
-                f"per-SEND cap (MaxSize) is DROPPED in FW (OversizeCount) and exceeds one "
-                f"RC packet. Proceeding anyway.",
-                file=sys.stderr,
-            )
-    if Len % gran != 0 or Len < 2 * gran:
-        print(
-            f"ERROR: Len={Len} is invalid — must be a multiple of {gran} bytes "
-            f"and >= {2 * gran} bytes.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    # Per-frame Len sets the STARTING SsiPrbsTx.PacketLength; the FW frames each
+    # SEND dynamically from the inbound tLast, so PacketLength may be changed LIVE
+    # in the GUI up to the FW per-SEND cap (MaxSize = one PMTU = RDMA_LEN). The host
+    # recv-WR buffer is sized to the full PMTU (roceMaxPay = RDMA_LEN) so any live
+    # PacketLength up to the cap is received without a recv-buffer overflow.
+    Len = RDMA_LEN
 
     #################################################################
 
@@ -276,8 +213,7 @@ if __name__ == "__main__":
         ip           = args.ip,
         roceDevice   = args.roceDevice,
         roceGidIndex = gidIndex,
-        rocePmtu     = pmtu_enum,
-        roceMaxPay   = pmtu_bytes,           # host recv buffer = full PMTU = FW MaxSize cap
+        roceMaxPay   = RDMA_LEN,             # host recv buffer = full PMTU = FW MaxSize cap
         roceMinRnrTimer = args.minRnrTimer,  # native RNR backoff (FW<->NIC flow control)
         pollEn       = args.pollEn,
         initRead     = args.initRead,
@@ -308,12 +244,12 @@ if __name__ == "__main__":
         # host tracks the FW config instead of hard-coding the width.
         word_bytes = prbs.WordSize.get() // 8
 
-        # Len was chosen up front and passed as the host maxPayload; validate it
-        # against the FW's PRBS word size (PacketLength is counted in whole words).
+        # RDMA_LEN is the host maxPayload; validate it against the FW's PRBS word
+        # size (PacketLength is counted in whole words).
         if Len % word_bytes != 0:
             print(
-                f"ERROR: Len={Len} is not a multiple of the {word_bytes}-byte PRBS "
-                f"word — adjust --len or --pmtu.",
+                f"ERROR: RDMA_LEN={Len} is not a multiple of the {word_bytes}-byte PRBS "
+                f"word — incompatible FW PRBS_SEED_SIZE_G.",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -327,14 +263,14 @@ if __name__ == "__main__":
         if max_payload < fw_max_send:
             print(
                 f"ERROR: host maxPayload={max_payload} < FW MaxSize={fw_max_send}; recv-WR "
-                f"buffer cannot hold the largest SEND (raise --pmtu).",
+                f"buffer cannot hold the largest SEND (FW MaxSize exceeds RDMA_LEN).",
                 file=sys.stderr,
             )
             sys.exit(1)
         if Len > fw_max_send:
             print(
-                f"ERROR: initial Len={Len} exceeds the FW per-SEND cap MaxSize={fw_max_send} "
-                f"(MAX_BEATS_C*32) — reduce --len/--pmtu.",
+                f"ERROR: RDMA_LEN={Len} exceeds the FW per-SEND cap MaxSize={fw_max_send} "
+                f"(MAX_BEATS_C*32).",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -360,7 +296,6 @@ if __name__ == "__main__":
             f"  MrLen           : {mr_len}\n"
             f"  Len (per msg)   : {Len}\n"
             f"  FW MaxSize cap  : {fw_max_send}\n"
-            f"  PMTU            : {pmtu_bytes}\n"
             f"  Target frames   : {args.target}\n"
             f"----------------------------------"
         )
