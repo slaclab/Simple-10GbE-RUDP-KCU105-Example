@@ -44,7 +44,7 @@ except (ImportError, AttributeError) as e:
     sys.exit(1)
 
 #################################################################
-# Path MTU byte-size -> IBV_MTU enum (inverse of _Root._MTU_BYTES)
+# Path MTU byte-size -> IBV_MTU enum
 #################################################################
 _PMTU_ENUM = {256: 1, 512: 2, 1024: 3, 2048: 4, 4096: 5}
 
@@ -66,39 +66,6 @@ class _MrCapture(ris.Slave):
             ba = bytearray(frame.getPayload())
             frame.read(ba, 0)
             self.frames.append(bytes(ba))
-
-#################################################################
-# RoCE v2 GID-index auto-detect
-#
-# The mlx5 GID-table index of the RoCE v2 IPv4 GID drifts across FPGA reloads,
-# so resolve it fresh from sysfs each run (pre-connect, no Root needed). Match
-# the entry whose type is RoCE v2 AND whose IPv4-mapped GID (::ffff:a.b.c.d) is
-# on the same /24 as --ip — this skips the RoCE v1 slot that shares the same IP.
-#################################################################
-def detect_roce_gid_index(device, ip, port=1):
-    import glob, os
-    subnet  = ip.rsplit('.', 1)[0] + '.'
-    typ_dir = f'/sys/class/infiniband/{device}/ports/{port}/gid_attrs/types'
-    gid_dir = f'/sys/class/infiniband/{device}/ports/{port}/gids'
-    for tpath in sorted(glob.glob(f'{typ_dir}/*'),
-                        key=lambda p: int(os.path.basename(p))):
-        idx = int(os.path.basename(tpath))
-        try:
-            with open(tpath) as f:
-                if f.read().strip() != 'RoCE v2':
-                    continue
-            with open(f'{gid_dir}/{idx}') as f:
-                groups = f.read().strip().split(':')
-        except OSError:
-            continue
-        # IPv4-mapped GID: 0000:0000:0000:0000:0000:ffff:HHHH:LLLL
-        if len(groups) != 8 or groups[5].lower() != 'ffff':
-            continue
-        hi, lo = int(groups[6], 16), int(groups[7], 16)
-        ipv4 = f'{hi >> 8}.{hi & 0xff}.{lo >> 8}.{lo & 0xff}'
-        if ipv4.startswith(subnet):
-            return idx
-    return None
 
 #################################################################
 
@@ -283,23 +250,10 @@ if __name__ == "__main__":
         print(f"ERROR: --target={args.target} must be >= 1.", file=sys.stderr)
         sys.exit(1)
 
-    # Resolve the RoCEv2 GID index: explicit --roceGidIndex overrides; otherwise
+    # RoCEv2 GID index: explicit --roceGidIndex overrides; -1 lets RoCEv2Server
     # auto-detect the RoCE v2 IPv4 GID on --ip's subnet (the index drifts across
-    # FPGA reloads, so detect it fresh each run).
-    if args.roceGidIndex is not None:
-        gidIndex = args.roceGidIndex
-    else:
-        gidIndex = detect_roce_gid_index(args.roceDevice, args.ip)
-        if gidIndex is None:
-            print(
-                f"ERROR: could not auto-detect a RoCE v2 IPv4 GID on "
-                f"{args.roceDevice} matching {args.ip}'s subnet — pass "
-                f"--roceGidIndex explicitly (see: ibv_devinfo -v -d {args.roceDevice}).",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        print(f"Auto-detected --roceGidIndex {gidIndex} "
-              f"(RoCE v2 IPv4 GID on {args.roceDevice})")
+    # FPGA reloads, so it is detected fresh each run).
+    gidIndex = args.roceGidIndex if args.roceGidIndex is not None else -1
 
     # ----------------------------------------------------------------
     # Resolve the INITIAL per-frame Len (bytes per RDMA SEND) up front. Len only sets
@@ -419,11 +373,9 @@ if __name__ == "__main__":
             sys.exit(1)
 
         # ----------------------------------------------------------------
-        # Set UDP engine destination
-        # Derive the host IP from the IPv4-mapped HostGid (last 4 bytes)
+        # Set UDP engine destination (host IP from RoCEv2Server.HostIp)
         # ----------------------------------------------------------------
-        gidWords = rx.HostGid.get().split(':')
-        hostIp   = '.'.join(str(b) for b in bytes.fromhex(gidWords[-2] + gidWords[-1]))
+        hostIp = rx.HostIp.get()
         print(f"Setting UDP engine destination to {hostIp}:4791")
         root.Core.UdpEngine.ClientRemotePort[0].set(4791)
         root.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)

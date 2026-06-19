@@ -33,8 +33,6 @@ IBV_MTU_1024 = 3
 IBV_MTU_2048 = 4
 IBV_MTU_4096 = 5
 
-_MTU_BYTES = {1: 256, 2: 512, 3: 1024, 4: 2048, 5: 4096}
-
 class Root(pr.Root):
     def __init__(self,
             ip          = '192.168.2.10',
@@ -104,26 +102,17 @@ class Root(pr.Root):
 
         #################################################################
 
-        # Resolve RoCEv2 defaults
-        import rogue.protocols.rocev2 as _rv2
-        _maxPay   = roceMaxPay   if roceMaxPay   is not None else _rv2.DefaultMaxPayload
-        _qDepth   = roceQDepth   if roceQDepth   is not None else _rv2.DefaultRxQueueDepth
-        _gidIndex = roceGidIndex if roceGidIndex >= 0 else self._autoGidIndex(roceDevice, ip)
-        _mtu_b    = _MTU_BYTES.get(rocePmtu, '?')
-        self._log.info(
-            f"RoCEv2 streaming enabled: device={roceDevice}  "
-            f"gidIndex={_gidIndex}  pmtu={_mtu_b} bytes  "
-            f"maxPayload={_maxPay}  queueDepth={_qDepth}"
-        )
-
+        # RoCEv2Server resolves its own defaults (maxPayload/rxQueueDepth None
+        # -> C++ Default*, gidIndex -1 -> auto-detect from ip) and logs the
+        # streaming configuration, so pass the raw options straight through.
         self._rdmaRx = self.add(pr.protocols.RoCEv2Server(
             name             = 'rdmaRx',
             ip               = ip,
             deviceName       = roceDevice,
             ibPort           = roceIbPort,
-            gidIndex         = _gidIndex,
-            maxPayload       = _maxPay,
-            rxQueueDepth     = _qDepth,
+            gidIndex         = roceGidIndex,
+            maxPayload       = roceMaxPay,
+            rxQueueDepth     = roceQDepth,
             pmtu             = rocePmtu,
             minRnrTimer      = roceMinRnrTimer,
             rnrRetry         = roceRnrRetry,
@@ -175,24 +164,14 @@ class Root(pr.Root):
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
         except AttributeError:
             pass
+        # Tear down the FPGA QP here, BEFORE super().stop(). The metadata-bus
+        # teardown drives SendMetaData over SRP-over-RUDP, so it must run while
+        # the RUDP transport is still alive. super().stop() -> Device._stop()
+        # tears down sibling interfaces/protocols (the RUDP transport) before it
+        # ever recurses into rdmaRx._stop(), so relying on that traversal to
+        # tear down the QP races the transport shutdown and the SendMetaData
+        # write times out. teardownFpgaQp() is idempotent, so rdmaRx._stop()
+        # safely no-ops on the now-zero FPGA QPN.
         if hasattr(self.rdmaRx, 'teardownFpgaQp'):
             self.rdmaRx.teardownFpgaQp()
         super().stop()
-
-    @staticmethod
-    def _autoGidIndex(device: str, ip: str) -> int:
-        """Find the GID index matching ip on the given ibverbs device."""
-        import subprocess
-        try:
-            out = subprocess.check_output(
-                ['ibv_devinfo', '-v', '-d', device],
-                stderr=subprocess.DEVNULL,
-                text=True,
-            )
-            for line in out.splitlines():
-                line = line.strip()
-                if 'GID[' in line and ip in line:
-                    return int(line.split('[')[1].split(']')[0])
-        except Exception:
-            pass
-        return 1  # safe default for softRoCE
