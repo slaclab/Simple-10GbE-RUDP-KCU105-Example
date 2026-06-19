@@ -348,7 +348,6 @@ if __name__ == "__main__":
 
     with roceBoard.Root(
         ip           = args.ip,
-        useRoce      = True,                 # mandatory for rdmaRx + PrbsRx
         roceDevice   = args.roceDevice,
         roceGidIndex = gidIndex,
         rocePmtu     = pmtu_enum,

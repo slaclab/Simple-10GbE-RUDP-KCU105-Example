@@ -24,7 +24,7 @@ import rogue.utilities.fileio
 import simple_10gbe_rudp_kcu105_example as baseBoard
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
-rogue.Version.minVersion('6.14.0')
+rogue.Version.minVersion('6.14.1')
 
 # IBV_MTU enum values — mirrors libibverbs ibv_mtu
 IBV_MTU_256  = 1
@@ -35,18 +35,13 @@ IBV_MTU_4096 = 5
 
 _MTU_BYTES = {1: 256, 2: 512, 3: 1024, 4: 2048, 5: 4096}
 
-
 class Root(pr.Root):
     def __init__(self,
             ip          = '192.168.2.10',
-            promProg    = False,  # Flag to disable all devices not related to PROM programming
-            enSwRx      = True,   # Flag to enable the software stream receiver
-            xvcSrvEn    = True,   # Flag to include the XVC server
             zmqSrvPort  = 9099,   # Set to zero if dynamic (instead of static)
             # ----------------------------------------------------------------
             # RoCEv2 options (meta mode only)
             # ----------------------------------------------------------------
-            useRoce         = False,        # Add RoCEv2 RDMA receive channel alongside UDP/RSSI
             useDcqcn        = True,
             roceDevice      = 'rxe0',       # ibverbs device name (rxe0=softRoCE, mlx5_0=HW NIC)
             roceIbPort      = 1,            # ibverbs port number
@@ -63,7 +58,7 @@ class Root(pr.Root):
             roceRnrRetry    = 7,            # FPGA RNR retry count (7=infinite — never fault on RNR)
             roceRetryCount  = 3,            # FPGA retry count for non-RNR errors
             **kwargs):
-        super().__init__(timeout=(5.0 if (ip != 'sim') else 100.0), **kwargs)
+        super().__init__(timeout=5.0, **kwargs)
 
         #################################################################
 
@@ -72,209 +67,116 @@ class Root(pr.Root):
 
         #################################################################
 
-        self.enSwRx   = not promProg and enSwRx
-        self.promProg = promProg
-        self.sim      = (ip == 'sim')
-        self.useRoce  = useRoce and not promProg and not self.sim
-        self.useDcqcn = useDcqcn and not promProg and not self.sim
+        # UDP/RSSI clients — both always present
+        self.rudp = [None for i in range(2)]
+        for i in range(2):
+            self.rudp[i] = pr.protocols.UdpRssiPack(
+                name    = f'SwRudpClient[{i}]',
+                host    = ip,
+                port    = 8192 + i,
+                packVer = 2,
+                jumbo   = (i > 0),
+                expand  = False,
+            )
+            self.add(self.rudp[i])
+
+        # SRPv3 for register access
+        self.srp = rogue.protocols.srp.SrpV3()
+        self.srp == self.rudp[0].application(0)
+
+        # Streaming path — RUDP[1] always connected as upstream
+        self.stream = self.rudp[1].application(0)
+
+        # ---- RoCEv2 receive channel (additive, alongside RUDP) ----
+        self.add(baseBoard.Core(
+            offset   = 0x0000_0000,
+            memBase  = self.srp,
+            rocev2   = True,
+            dcqcn    = useDcqcn,
+            expand   = False,
+        ))
+
+        self.add(roceBoard.App(
+            offset   = 0x8000_0000,
+            memBase  = self.srp,
+            expand   = True,
+        ))
+
+        #################################################################
 
         # Resolve RoCEv2 defaults
-        if self.useRoce:
-            import rogue.protocols.rocev2 as _rv2
-            _maxPay   = roceMaxPay   if roceMaxPay   is not None else _rv2.DefaultMaxPayload
-            _qDepth   = roceQDepth   if roceQDepth   is not None else _rv2.DefaultRxQueueDepth
-            _gidIndex = roceGidIndex if roceGidIndex >= 0 else self._autoGidIndex(roceDevice, ip)
-            _mtu_b    = _MTU_BYTES.get(rocePmtu, '?')
-            self._log.info(
-                f"RoCEv2 streaming enabled: device={roceDevice}  "
-                f"gidIndex={_gidIndex}  pmtu={_mtu_b} bytes  "
-                f"maxPayload={_maxPay}  queueDepth={_qDepth}"
-            )
+        import rogue.protocols.rocev2 as _rv2
+        _maxPay   = roceMaxPay   if roceMaxPay   is not None else _rv2.DefaultMaxPayload
+        _qDepth   = roceQDepth   if roceQDepth   is not None else _rv2.DefaultRxQueueDepth
+        _gidIndex = roceGidIndex if roceGidIndex >= 0 else self._autoGidIndex(roceDevice, ip)
+        _mtu_b    = _MTU_BYTES.get(rocePmtu, '?')
+        self._log.info(
+            f"RoCEv2 streaming enabled: device={roceDevice}  "
+            f"gidIndex={_gidIndex}  pmtu={_mtu_b} bytes  "
+            f"maxPayload={_maxPay}  queueDepth={_qDepth}"
+        )
 
-        #################################################################
-        # Transport / memory path  (unchanged from upstream)
-        #################################################################
+        self._rdmaRx = self.add(pr.protocols.RoCEv2Server(
+            name             = 'rdmaRx',
+            ip               = ip,
+            deviceName       = roceDevice,
+            ibPort           = roceIbPort,
+            gidIndex         = _gidIndex,
+            maxPayload       = _maxPay,
+            rxQueueDepth     = _qDepth,
+            pmtu             = rocePmtu,
+            minRnrTimer      = roceMinRnrTimer,
+            rnrRetry         = roceRnrRetry,
+            retryCount       = roceRetryCount,
+            roceEngineOffset = roceOffset,
+            roceMemBase      = self.srp,
+            roceEngine       = self.Core.RoCEv2Engine,
+            expand           = False,
+        ))
 
-        if ip == 'emu':
-            self.srp    = pr.interfaces.simulation.MemEmulate()
-            self.stream = rogue.interfaces.stream.Master()
+        # rdmaRx.stream is the RDMA receive endpoint;
+        # self.stream remains the RUDP streaming endpoint
+        self.rdmaStream = self.rdmaRx.stream
 
-        elif ip == 'sim':
-            self._pollEn   = False
-            self._initRead = False
-            self.srp    = rogue.interfaces.memory.TcpClient('localhost', 10000)
-            self.stream = rogue.interfaces.stream.TcpClient('localhost', 10002)
-
-        else:
-            # UDP/RSSI clients — both always present
-            self.rudp = [None for i in range(2)]
-            for i in range(2):
-                self.rudp[i] = pr.protocols.UdpRssiPack(
-                    name    = f'SwRudpClient[{i}]',
-                    host    = ip,
-                    port    = 8192 + i,
-                    packVer = 2,
-                    jumbo   = (i > 0),
-                    expand  = False,
-                )
-                self.add(self.rudp[i])
-
-            # SRPv3 for register access
-            self.srp = rogue.protocols.srp.SrpV3()
-            self.srp == self.rudp[0].application(0)
-
-            # Streaming path — RUDP[1] always connected as upstream
-            self.stream = self.rudp[1].application(0)
-
-            # ---- RoCEv2 receive channel (additive, alongside RUDP) ----
-            if self.useRoce:
-                # Core must be added first so we can reference Core.RoCEv2Engine.
-                # We add it here early; the block below skips re-adding it.
-                self.add(baseBoard.Core(
-                    offset   = 0x0000_0000,
-                    memBase  = self.srp,
-                    sim      = self.sim,
-                    promProg = promProg,
-                    rocev2   = self.useRoce,
-                    dcqcn    = self.useDcqcn,
-                    expand   = False,
-                ))
-                self._coreAlreadyAdded = True
-
-                _rdmaRx = pr.protocols.RoCEv2Server(
-                    name             = 'rdmaRx',
-                    ip               = ip,
-                    deviceName       = roceDevice,
-                    ibPort           = roceIbPort,
-                    gidIndex         = _gidIndex,
-                    maxPayload       = _maxPay,
-                    rxQueueDepth     = _qDepth,
-                    pmtu             = rocePmtu,
-                    minRnrTimer      = roceMinRnrTimer,
-                    rnrRetry         = roceRnrRetry,
-                    retryCount       = roceRetryCount,
-                    roceEngineOffset = roceOffset,
-                    roceMemBase      = self.srp,
-                    roceEngine       = self.Core.RoCEv2Engine,
-                    expand           = False,
-                )
-                self.add(_rdmaRx)
-                # rdmaRx.stream is the RDMA receive endpoint;
-                # self.stream remains the RUDP streaming endpoint
-                self.rdmaStream = self.rdmaRx.stream
-
-                # Host-side PRBS data-integrity check on the RDMA receive stream.
-                # Inside useRoce (not enSwRx) so it works independent of the SW
-                # receiver. width=128 matches the FW PRBS seed width
-                # (SsiPrbsTx PRBS_SEED_SIZE_G); default taps already match surf.
-                self.prbsRx = pr.utilities.prbs.PrbsRx(
-                    name         = 'PrbsRx',
-                    width        = 128,
-                    checkPayload = True,
-                    expand       = True,
-                )
-                self.add(self.prbsRx)
-                # Additive fan-out — coexists with dataWriter.getChannel(1)
-                self.rdmaStream >> self.prbsRx
-
-            # XVC server (unchanged from upstream)
-            if not self.promProg and xvcSrvEn:
-                self.udpClient = rogue.protocols.udp.Client(ip, 2542, False)
-                self.xvc       = rogue.protocols.xilinx.Xvc(2542)
-                self.addProtocol(self.xvc)
-                self.udpClient == self.xvc
-
-        #################################################################
-        # Software receiver and file writer (unchanged from upstream)
-        #################################################################
-
-        if self.enSwRx:
-            self.dataWriter = pr.utilities.fileio.StreamWriter()
-            self.add(self.dataWriter)
-
-            # self.swRx = baseBoard.SwRx(expand=True)
-            # self.add(self.swRx)
-
-            # self.stream >> self.swRx
-            # self.stream >> self.dataWriter.getChannel(0)
-
-            # If RoCEv2 is enabled, also write RDMA frames to a separate channel
-            if self.useRoce:
-                self.rdmaStream >> self.dataWriter.getChannel(1)
-
-        #################################################################
-        # Devices (Core added early above if useRoce, otherwise add here)
-        #################################################################
-
-        if not getattr(self, '_coreAlreadyAdded', False):
-            self.add(baseBoard.Core(
-                offset   = 0x0000_0000,
-                memBase  = self.srp,
-                sim      = self.sim,
-                promProg = promProg,
-                expand   = False,
-            ))
-
-        if not promProg:
-            self.add(roceBoard.App(
-                offset   = 0x8000_0000,
-                memBase  = self.srp,
-                # sim      = self.sim,
-                expand   = True,
-            ))
+        # Host-side PRBS data-integrity check on the RDMA receive stream.
+        self.prbsRx = pr.utilities.prbs.PrbsRx(
+            name         = 'PrbsRx',
+            width        = 128,
+            checkPayload = True,
+            expand       = True,
+        )
+        self.add(self.prbsRx)
+        self.rdmaStream >> self.prbsRx
 
     def start(self, **kwargs):
         super().start(**kwargs)
-        if not self.sim:
-            appTx = self.find(typ=baseBoard.AppTx)
-            for devPtr in appTx:
-                devPtr.ContinuousMode.set(False)
-            # Clean slate: clear any stale armed state left by a prior process
-            # (e.g. an abrupt GUI kill that skipped stop()). Clearing DispatchEnable
-            # triggers the FW auto-reset (dispatch/REPACK FSM reset + repack FIFO
-            # flush), so a wedged or free-running App datapath recovers on launch
-            # without an FPGA reload.
-            if self.useRoce:
-                try:
-                    self.App.SsiPrbsTx.TxEn.set(False)
-                    self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
-                except AttributeError:
-                    pass
-            self.CountReset()
+        appTx = self.find(typ=baseBoard.AppTx)
+        for devPtr in appTx:
+            devPtr.ContinuousMode.set(False)
 
-    def _start(self) -> None:
-        """
-        Wait for SRP/RSSI link before starting RoCEv2 connection sequence.
-        """
-        if self.useRoce and hasattr(self, 'rudp'):
-            self._log.info("Waiting for SRP/RSSI link before RoCEv2 setup...")
-            deadline = time.monotonic() + 30.0
-            while not self.rudp[0]._rssi.getOpen():
-                if time.monotonic() > deadline:
-                    raise RuntimeError(
-                        "Timeout waiting for SRP/RSSI link to come up")
-                time.sleep(0.1)
-            self._log.info("SRP/RSSI link is up — proceeding with RoCEv2 setup")
-            time.sleep(0.5)
-        super()._start()
+        try:
+            self.App.SsiPrbsTx.TxEn.set(False)
+            self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
+        except AttributeError:
+            pass
+        self.CountReset()
 
     def stop(self) -> None:
         """Tear down FPGA QP before transport is stopped."""
-        if self.useRoce and hasattr(self, 'rdmaRx'):
-            # Disarm the PRBS source + RDMA dispatcher BEFORE tearing down the QP.
-            # Otherwise the FPGA is left free-running RDMA WRITEs at a destroyed QP,
-            # flooding the link and wedging the App datapath until an FPGA reload —
-            # the 0xF50 softRst only resets the Core transport, not the App. This
-            # leaked TxEn/DispatchEnable is what makes a software reconnect fail
-            # (rxCount stays 0) after the GUI/stream path leaves the source armed.
-            try:
-                self.App.SsiPrbsTx.TxEn.set(False)
-                self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
-                time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
-            except AttributeError:
-                pass
-            if hasattr(self.rdmaRx, 'teardownFpgaQp'):
-                self.rdmaRx.teardownFpgaQp()
+        # Disarm the PRBS source + RDMA dispatcher BEFORE tearing down the QP.
+        # Otherwise the FPGA is left free-running RDMA WRITEs at a destroyed QP,
+        # flooding the link and wedging the App datapath until an FPGA reload —
+        # the 0xF50 softRst only resets the Core transport, not the App. This
+        # leaked TxEn/DispatchEnable is what makes a software reconnect fail
+        # (rxCount stays 0) after the GUI/stream path leaves the source armed.
+        try:
+            self.App.SsiPrbsTx.TxEn.set(False)
+            self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
+            time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
+        except AttributeError:
+            pass
+        if hasattr(self.rdmaRx, 'teardownFpgaQp'):
+            self.rdmaRx.teardownFpgaQp()
         super().stop()
 
     @staticmethod
