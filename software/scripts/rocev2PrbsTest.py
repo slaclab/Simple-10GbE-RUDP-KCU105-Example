@@ -284,15 +284,10 @@ if __name__ == "__main__":
         zmqSrvPort   = args.zmqSrvPort,
     ) as root:
 
-        # ----------------------------------------------------------------
-        # Validate connection state
-        # ----------------------------------------------------------------
+        # Root.start() already validated the RoCEv2 RC connection is 'Connected'
+        # (it raises otherwise), so the engine is up by the time we reach here.
         rx    = root.rdmaRx
         state = rx.ConnectionState.get()
-        if state != 'Connected':
-            print(f"ERROR: RoCEv2 not connected (state={state}) — aborting",
-                  file=sys.stderr)
-            sys.exit(1)
 
         # ----------------------------------------------------------------
         # Retrieve MR parameters from the RoCEv2Server local variables

@@ -139,6 +139,15 @@ class Root(pr.Root):
 
     def start(self, **kwargs):
         super().start(**kwargs)
+
+        # Validate the RoCEv2 RC connection came up (RoCEv2Server._start drives
+        # the FPGA QP to RTS). Raise here so the caller's `with Root(...)` block
+        # unwinds into stop() for a clean teardown instead of leaving a
+        # half-connected engine.
+        state = self.rdmaRx.ConnectionState.get()
+        if state != 'Connected':
+            raise rogue.GeneralError('Root.start', f"RoCEv2 not connected (state={state})")
+
         appTx = self.find(typ=baseBoard.AppTx)
         for devPtr in appTx:
             devPtr.ContinuousMode.set(False)
