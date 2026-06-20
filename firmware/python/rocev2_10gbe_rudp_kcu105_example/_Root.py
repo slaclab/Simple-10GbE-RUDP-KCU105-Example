@@ -119,7 +119,7 @@ class Root(pr.Root):
 
         try:
             self.App.SsiPrbsTx.TxEn.set(False)
-            self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
+            self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
         except AttributeError:
             pass
 
@@ -128,7 +128,7 @@ class Root(pr.Root):
         # Disarm PRBS source + RDMA dispatcher first, else the FPGA floods a destroyed QP.
         try:
             self.App.SsiPrbsTx.TxEn.set(False)
-            self.App.RoCEv2AxiStreamRdma.DispatchEnable.set(False)
+            self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
         except AttributeError:
             pass
