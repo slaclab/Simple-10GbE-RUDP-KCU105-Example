@@ -207,7 +207,7 @@ if __name__ == "__main__":
         locKey         = rx.FpgaLkey.get()
 
         prbs = root.App.SsiPrbsTx
-        dma  = root.App.RoCEv2AxiStreamRdma
+        dma  = root.Core.RoCEv2Engine.Rdma
 
         # PRBS data word size in bytes, read from the FW (SsiPrbsTx.WordSize =
         # PRBS_SEED_SIZE_G in bits). PacketLength is counted in these words, so the
@@ -336,7 +336,7 @@ if __name__ == "__main__":
         ######################
         if (args.guiType == 'PyDM'):
             # Re-arm the stream so the operator sees rxCount climbing live in the
-            # GUI. Toggle App.SsiPrbsTx.TxEn (or App.RoCEv2AxiStreamRdma.DispatchEnable)
+            # GUI. Toggle App.SsiPrbsTx.TxEn (or Core.RoCEv2Engine.Rdma.DispatchEnable)
             # to start/stop continuous reception. Flow control stays native FW<->NIC
             # (RNR) — there is no credit feeder to restart.
             dma.ResetCounters()        # zero FW SuccessCounter/UnsuccessCounter
@@ -345,8 +345,8 @@ if __name__ == "__main__":
             prbs.TxEn.set(True)
             # Zero the counters again right before the GUI opens so the operator starts
             # from a clean slate (the re-arm above streamed frames during setup).
-            # root.CountReset() cascades to the FW counters too (RoCEv2AxiStreamRdma
-            # overrides countReset() -> ResetCounters).
+            # root.CountReset() cascades to the FW counters too (the Core.RoCEv2Engine.Rdma
+            # driver overrides countReset() -> ResetCounters).
             root.CountReset()
             pyrogue.pydm.runPyDM(
                 serverList = root.zmqServer.address,
