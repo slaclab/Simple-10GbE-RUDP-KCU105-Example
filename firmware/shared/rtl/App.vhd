@@ -20,8 +20,10 @@ use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.SsiPkg.all;
 use surf.AxiLitePkg.all;
-use surf.RoCEv2Pkg.all;
 use surf.RssiPkg.all;
+
+library work;
+use work.CorePkg.all;
 
 entity App is
    generic (
@@ -37,16 +39,9 @@ entity App is
       ibRudpSlave       : in  AxiStreamSlaveType;
       obRudpMaster      : in  AxiStreamMasterType;
       obRudpSlave       : out AxiStreamSlaveType;
-      -- RoCEv2 Work Request/Completion Interface
-      workReqMaster     : out RoceWorkReqMasterType;
-      workReqSlave      : in  RoceWorkReqSlaveType     := ROCE_WORK_REQ_SLAVE_INIT_C;
-      workCompMaster    : in  RoceWorkCompMasterType   := ROCE_WORK_COMP_MASTER_INIT_C;
-      workCompSlave     : out RoceWorkCompSlaveType;
-      -- RoCEv2 DMA Interface
-      dmaReadRespMaster : out RoceDmaReadRespMasterType;
-      dmaReadRespSlave  : in  RoceDmaReadRespSlaveType := ROCE_DMA_READ_RESP_SLAVE_INIT_C;
-      dmaReadReqMaster  : in  RoceDmaReadReqMasterType := ROCE_DMA_READ_REQ_MASTER_INIT_C;
-      dmaReadReqSlave   : out RoceDmaReadReqSlaveType;
+      -- RDMA AXI-Stream Interface (App = master, Rudp = slave)
+      rdmaMaster        : out AxiStreamMasterType;
+      rdmaSlave         : in  AxiStreamSlaveType := AXI_STREAM_SLAVE_FORCE_C;
       -- AXI-Lite Interface
       axilReadMaster    : in  AxiLiteReadMasterType;
       axilReadSlave     : out AxiLiteReadSlaveType;
@@ -56,14 +51,11 @@ end App;
 
 architecture mapping of App is
 
-   constant RDMA_AXIS_CONFIG_C : AxiStreamConfigType := ssiAxiStreamConfig(dataBytes => (128/8));
-
    constant TX_INDEX_C       : natural := 0;
    constant MEM_INDEX_C      : natural := 1;
    constant PRBS_INDEX_C     : natural := 2;
-   constant ROCE_DMA_INDEX_C : natural := 3;
 
-   constant NUM_AXIL_MASTERS_C : positive := 4;
+   constant NUM_AXIL_MASTERS_C : positive := 3;
 
    constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
 
@@ -171,44 +163,15 @@ begin
             axilWriteSlave  => axilWriteSlaves(PRBS_INDEX_C));
 
       --------------------------------
-      -- Consolidated RoCEv2 AXI-Stream DMA
+      -- Export the PRBS payload over the RDMA AXI-Stream pair
       --------------------------------
-      U_RoCEv2AxiStreamRdma : entity surf.RoCEv2AxiStreamRdma
-         generic map (
-            TPD_G           => TPD_G,
-            GEN_SYNC_FIFO_G => true,             -- PRBS source and engine share axilClk
-            AXIS_CONFIG_G   => RDMA_AXIS_CONFIG_C)
-         port map (
-            roceClk           => axilClk,
-            roceRst           => axilRst,
-            -- Inbound PRBS payload (slave-side clock; same domain as roceClk here)
-            sAxisClk          => axilClk,
-            sAxisRst          => axilRst,
-            sAxisMaster       => prbsAxisMaster,
-            sAxisSlave        => prbsAxisSlave,
-            -- RoCEv2 DMA read req/resp
-            dmaReadReqMaster  => dmaReadReqMaster,
-            dmaReadReqSlave   => dmaReadReqSlave,
-            dmaReadRespMaster => dmaReadRespMaster,
-            dmaReadRespSlave  => dmaReadRespSlave,
-            -- RoCEv2 work request/completion
-            workReqMaster     => workReqMaster,
-            workReqSlave      => workReqSlave,
-            workCompMaster    => workCompMaster,
-            workCompSlave     => workCompSlave,
-            -- AXI-Lite Interface
-            axilReadMaster    => axilReadMasters(ROCE_DMA_INDEX_C),
-            axilReadSlave     => axilReadSlaves(ROCE_DMA_INDEX_C),
-            axilWriteMaster   => axilWriteMasters(ROCE_DMA_INDEX_C),
-            axilWriteSlave    => axilWriteSlaves(ROCE_DMA_INDEX_C));
+      rdmaMaster    <= prbsAxisMaster;
+      prbsAxisSlave <= rdmaSlave;
 
    end generate GEN_ROCEV2_APP_LOGIC;
 
    GEN_ROCEV2_TIEOFF : if (not ROCEV2_EN_G) generate
-      workReqMaster     <= ROCE_WORK_REQ_MASTER_INIT_C;
-      dmaReadRespMaster <= ROCE_DMA_READ_RESP_MASTER_INIT_C;
-      workCompSlave     <= ROCE_WORK_COMP_SLAVE_INIT_C;
-      dmaReadReqSlave   <= ROCE_DMA_READ_REQ_SLAVE_INIT_C;
+      rdmaMaster <= AXI_STREAM_MASTER_INIT_C;
    end generate GEN_ROCEV2_TIEOFF;
 
 end mapping;
