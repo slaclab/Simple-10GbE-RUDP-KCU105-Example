@@ -29,12 +29,17 @@ import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
 class Root(pr.Root):
     def __init__(self,
-            ip          = '192.168.2.10',  # FPGA IP address (RUDP transport + default cfg seed)
+            rocev2Cfg,            # RoCEv2ServerCfg (required): host-NIC config (D-11)
+            ip          = '192.168.2.10',  # FPGA IP address (RUDP transport)
             zmqSrvPort  = 9099,   # Set to zero if dynamic (instead of static)
             useDcqcn    = True,   # Enable DCQCN congestion control in the Core
-            rocev2Cfg   = None,   # RoCEv2ServerCfg; None = default fixed-4096 cfg targeting `ip`
+            transportCfg = None,  # RoCEv2TransportCfg: transport/QP-tuning knobs (D-12)
             **kwargs):
         super().__init__(timeout=5.0, **kwargs)
+
+        # Single transport/QP-tuning cfg forwarded into BOTH engine.setupConnection()
+        # and server.completeConnection() so the FPGA and host sides cannot drift (D-02/D-12).
+        self._transportCfg = transportCfg if transportCfg is not None else pr.protocols.RoCEv2TransportCfg()
 
         #################################################################
 
@@ -83,7 +88,6 @@ class Root(pr.Root):
         self._rdmaRx = self.add(pr.protocols.RoCEv2Server(
             name         = 'rdmaRx',
             rocev2Cfg    = rocev2Cfg,
-            rocev2Engine = self.Core.RoCEv2Engine,
             expand       = False,
         ))
 
@@ -102,10 +106,28 @@ class Root(pr.Root):
     def start(self, **kwargs):
         super().start(**kwargs)
 
-        # Fail fast (and unwind into stop()) if the RC connection did not reach RTS.
-        state = self.rdmaRx.ConnectionState.get()
-        if state != 'Connected':
-            raise rogue.GeneralError('Root.start', f"RoCEv2 not connected (state={state})")
+        # Bring-up hand-off (D-03/D-04): super().start() has already brought up the
+        # RUDP/SRP transport and run the server's host-side _start(), so the metadata
+        # bus is reachable. Run the host↔FPGA hand-off, forwarding the single
+        # transportCfg into BOTH the engine and the server so they cannot drift.
+        # A failure here propagates and pyrogue unwinds into stop() (D-05).
+        cfg = self._transportCfg
+        params = self.rdmaRx.getHostParams()
+        fpga = self.Core.RoCEv2Engine.setupConnection(
+            **params._asdict(),
+            pmtu        = cfg.pmtu,
+            minRnrTimer = cfg.minRnrTimer,
+            rnrRetry    = cfg.rnrRetry,
+            retryCount  = cfg.retryCount,
+        )
+        self.rdmaRx.completeConnection(
+            fpga.fpgaQpn,
+            fpgaLkey    = fpga.lkey,
+            pmtu        = cfg.pmtu,
+            minRnrTimer = cfg.minRnrTimer,
+            rnrRetry    = cfg.rnrRetry,
+            retryCount  = cfg.retryCount,
+        )
 
         # Point the FW UDP engine at the host NIC (RoCEv2 UDP port 4791).
         hostIp = self.rdmaRx.HostIp.get()
@@ -113,26 +135,17 @@ class Root(pr.Root):
         self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
         self.rdmaRx.printConnInfo()
 
-        appTx = self.find(typ=baseBoard.AppTx)
-        for devPtr in appTx:
-            devPtr.ContinuousMode.set(False)
-
-        try:
-            self.App.SsiPrbsTx.TxEn.set(False)
-            self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
-        except AttributeError:
-            pass
-
     def stop(self) -> None:
-        """Tear down FPGA QP before transport is stopped."""
-        # Disarm PRBS source + RDMA dispatcher first, else the FPGA floods a destroyed QP.
+        """Tear down the FPGA QP before transport is stopped (D-08)."""
+        # Disarm the RDMA-engine dispatcher first, else the FPGA floods a destroyed QP.
+        # This is the engine-level gate (not the application stream), so it is disarmed
+        # regardless of streaming state to protect clean teardown.
         try:
-            self.App.SsiPrbsTx.TxEn.set(False)
             self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
         except AttributeError:
             pass
-        # Tear down the FPGA QP before super().stop() — needs the RUDP transport still up.
-        if hasattr(self.rdmaRx, 'teardownFpgaQp'):
-            self.rdmaRx.teardownFpgaQp()
+        # Tear down the FPGA QP before super().stop() — needs the RUDP transport still
+        # up so the metadata bus works. Safe no-op when no connection was established.
+        self.Core.RoCEv2Engine.teardownConnection()
         super().stop()
