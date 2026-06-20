@@ -9,24 +9,17 @@
 #-----------------------------------------------------------------------------
 
 import surf.protocols.ssi as ssi
-import surf.ethernet.roce as roce
 
 import pyrogue  as pr
 import simple_10gbe_rudp_kcu105_example as baseBoard
 
 # class App(baseBoard.App):
 class App(pr.Device):
-    def __init__( self, dispatchBits=24, **kwargs):
+    def __init__( self, **kwargs):
         super().__init__(**kwargs)
 
         self.add(ssi.SsiPrbsTx(
             offset     = 0x0002_0000,
             clock_freq = 156.25e6,
             expand     = True,
-        ))
-
-        self.add(roce.RoCEv2AxiStreamRdma(
-            offset       = 0x0003_0000,
-            dispatchBits = dispatchBits,
-            expand       = True,
         ))
