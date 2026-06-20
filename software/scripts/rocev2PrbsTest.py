@@ -170,27 +170,38 @@ if __name__ == "__main__":
     # FPGA reloads, so it is detected fresh each run).
     gidIndex = args.roceGidIndex if args.roceGidIndex is not None else -1
 
-    # Build the RoCEv2 transport config from the CLI args. The cfg defaults
+    # Build the host-NIC config from the CLI args. The cfg defaults
     # (maxPayload=4096, pmtu=MTU_4096) fix the 4096B framing — host recv buffer
-    # = full PMTU = FW MaxSize cap — so only the device/GID/RNR knobs are set here.
+    # = full PMTU = FW MaxSize cap — so only the device/GID knobs are set here.
     rocev2Cfg = pyrogue.protocols.RoCEv2ServerCfg(
         ip          = args.ip,
         deviceName  = args.roceDevice,
         gidIndex    = gidIndex,
-        minRnrTimer = args.minRnrTimer,   # native RNR backoff (FW<->NIC flow control)
+    )
+
+    # Transport / QP-tuning config. The single instance is forwarded by the Root
+    # into BOTH engine.setupConnection() and server.completeConnection() so the
+    # FPGA and host sides cannot drift. --minRnrTimer is the native RNR backoff
+    # (FW<->NIC flow control); the remaining knobs (pmtu/rnrRetry/retryCount)
+    # keep their proven acceptance-gate defaults.
+    transportCfg = pyrogue.protocols.RoCEv2TransportCfg(
+        minRnrTimer = args.minRnrTimer,
     )
 
     #################################################################
 
     with roceBoard.Root(
         rocev2Cfg    = rocev2Cfg,
+        transportCfg = transportCfg,
         pollEn       = args.pollEn,
         initRead     = args.initRead,
         zmqSrvPort   = args.zmqSrvPort,
     ) as root:
 
-        # Root.start() already validated the RoCEv2 RC connection is 'Connected'
-        # (it raises otherwise), so the engine is up by the time we reach here.
+        # Root.start() ran the host<->FPGA bring-up hand-off; completeConnection()
+        # raises on failure (pyrogue then unwinds into Root.stop()), so the RoCEv2
+        # engine is connected-but-idle by the time we reach here. Arming the source
+        # (DispatchEnable/TxEn) is this script's job, done below.
         rx = root.rdmaRx
 
         # ----------------------------------------------------------------
