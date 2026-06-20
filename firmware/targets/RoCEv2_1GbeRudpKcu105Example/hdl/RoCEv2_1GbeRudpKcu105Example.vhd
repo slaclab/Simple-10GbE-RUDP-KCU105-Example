@@ -19,7 +19,6 @@ library surf;
 use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
-use surf.RoCEv2Pkg.all;
 
 library work;
 use work.CorePkg.all;
@@ -95,15 +94,9 @@ architecture top_level of RoCEv2_1GbeRudpKcu105Example is
    signal axilWriteMaster : AxiLiteWriteMasterType;
    signal axilWriteSlave  : AxiLiteWriteSlaveType;
 
-   -- RoCE Engine
-   signal workReqMaster     : RoceWorkReqMasterType;
-   signal workReqSlave      : RoceWorkReqSlaveType;
-   signal workCompMaster    : RoceWorkCompMasterType;
-   signal workCompSlave     : RoceWorkCompSlaveType;
-   signal dmaReadRespMaster : RoceDmaReadRespMasterType;
-   signal dmaReadRespSlave  : RoceDmaReadRespSlaveType;
-   signal dmaReadReqMaster  : RoceDmaReadReqMasterType;
-   signal dmaReadReqSlave   : RoceDmaReadReqSlaveType;
+   -- RDMA AXI-Stream (App master -> Core -> Rudp slave)
+   signal rdmaMaster : AxiStreamMasterType;
+   signal rdmaSlave  : AxiStreamSlaveType;
 
 
 begin
@@ -143,16 +136,9 @@ begin
          axilReadSlave     => axilReadSlave,
          axilWriteMaster   => axilWriteMaster,
          axilWriteSlave    => axilWriteSlave,
-         -- RoCE Work Request/Completion Interface
-         workReqMaster     => workReqMaster,
-         workReqSlave      => workReqSlave,
-         workCompMaster    => workCompMaster,
-         workCompSlave     => workCompSlave,
-         -- RoCE DMA Interface
-         dmaReadRespMaster => dmaReadRespMaster,
-         dmaReadRespSlave  => dmaReadRespSlave,
-         dmaReadReqMaster  => dmaReadReqMaster,
-         dmaReadReqSlave   => dmaReadReqSlave,
+         -- RDMA AXI-Stream Interface
+         rdmaMaster        => rdmaMaster,
+         rdmaSlave         => rdmaSlave,
          -- I2C Ports
          sfpTxDisL         => sfpTxDisL,
          i2cRstL           => i2cRstL,
@@ -211,16 +197,9 @@ begin
          ibRudpSlave       => ibRudpSlave,
          obRudpMaster      => obRudpMaster,
          obRudpSlave       => obRudpSlave,
-         -- RoCE Work Request/Completion Interface
-         workReqMaster     => workReqMaster,
-         workReqSlave      => workReqSlave,
-         workCompMaster    => workCompMaster,
-         workCompSlave     => workCompSlave,
-         -- RoCE DMA Interface
-         dmaReadRespMaster => dmaReadRespMaster,
-         dmaReadRespSlave  => dmaReadRespSlave,
-         dmaReadReqMaster  => dmaReadReqMaster,
-         dmaReadReqSlave   => dmaReadReqSlave,
+         -- RDMA AXI-Stream Interface
+         rdmaMaster        => rdmaMaster,
+         rdmaSlave         => rdmaSlave,
          -- AXI-Lite Interface
          axilReadMaster    => axilReadMaster,
          axilReadSlave     => axilReadSlave,
