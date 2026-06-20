@@ -573,7 +573,6 @@ begin
          generic map (
             TPD_G            => TPD_G,
             DCQCN_EN_G       => DCQCN_EN_G,
-            GEN_SYNC_FIFO_G  => true,  -- D-03: single shared clock (sAxisClk = roceClk = ethClk)
             AXIS_CONFIG_G    => RDMA_AXIS_CONFIG_C,
             AXIL_BASE_ADDR_G => XBAR_CONFIG_C(ROCE_INDEX_C).baseAddr)
          port map (
@@ -597,7 +596,7 @@ begin
    end generate GEN_ROCE_ENGINE;
 
    GEN_ROCE_TIEOFF : if (not ROCEV2_EN_G) generate
-      rdmaSlave <= AXI_STREAM_SLAVE_FORCE_C;  -- D-04: force slave ready so every target elaborates
+      rdmaSlave <= AXI_STREAM_SLAVE_FORCE_C;  -- force slave ready so every target elaborates
    end generate GEN_ROCE_TIEOFF;
 
    ------------------------
