@@ -21,7 +21,6 @@ use surf.AxiStreamPkg.all;
 use surf.AxiLitePkg.all;
 use surf.EthMacPkg.all;
 use surf.RssiPkg.all;
-use surf.RoCEv2Pkg.all;
 
 library work;
 use work.CorePkg.all;
@@ -64,15 +63,9 @@ entity Rudp is
       sAxilReadSlave    : out   AxiLiteReadSlaveType;
       sAxilWriteMaster  : in    AxiLiteWriteMasterType;
       sAxilWriteSlave   : out   AxiLiteWriteSlaveType;
-      -- RoCE engine Interface
-      workReqMaster     : in    RoceWorkReqMasterType     := ROCE_WORK_REQ_MASTER_INIT_C;
-      workReqSlave      : out   RoceWorkReqSlaveType;
-      workCompMaster    : out   RoceWorkCompMasterType;
-      workCompSlave     : in    RoceWorkCompSlaveType     := ROCE_WORK_COMP_SLAVE_INIT_C;
-      dmaReadRespMaster : in    RoceDmaReadRespMasterType := ROCE_DMA_READ_RESP_MASTER_INIT_C;
-      dmaReadRespSlave  : out   RoceDmaReadRespSlaveType;
-      dmaReadReqMaster  : out   RoceDmaReadReqMasterType;
-      dmaReadReqSlave   : in    RoceDmaReadReqSlaveType   := ROCE_DMA_READ_REQ_SLAVE_INIT_C;
+      -- RDMA AXI-Stream Interface (slave; feeds the RoCEv2AxiStreamRdma wrapper)
+      rdmaMaster        : in    AxiStreamMasterType := AXI_STREAM_MASTER_INIT_C;
+      rdmaSlave         : out   AxiStreamSlaveType;
       -- SFP ETH Ports
       ethClkP           : in    sl;
       ethClkN           : in    sl;
@@ -576,36 +569,36 @@ begin
    -- RoCEv2 Engine
    ---------------------------------------------------------------
    GEN_ROCE_ENGINE : if ROCEV2_EN_G generate
-      U_RoceEngineWrapper : entity surf.RoCEv2Engine
+      U_RoceEngineWrapper : entity surf.RoCEv2AxiStreamRdma
          generic map (
-            TPD_G             => TPD_G,
-            EXT_ROCE_CONFIG_G => false,
-            DCQCN_EN_G        => DCQCN_EN_G,
-            AXIL_BASE_ADDR_G  => XBAR_CONFIG_C(ROCE_INDEX_C).baseAddr)
+            TPD_G            => TPD_G,
+            DCQCN_EN_G       => DCQCN_EN_G,
+            GEN_SYNC_FIFO_G  => true,  -- D-03: single shared clock (sAxisClk = roceClk = ethClk)
+            AXIS_CONFIG_G    => RDMA_AXIS_CONFIG_C,
+            AXIL_BASE_ADDR_G => XBAR_CONFIG_C(ROCE_INDEX_C).baseAddr)
          port map (
-            clk               => ethClk,
-            rst               => ethRst,
-            -- Work Requests and Comps
-            workReqMaster     => workReqMaster,
-            workReqSlave      => workReqSlave,
-            workCompMaster    => workCompMaster,
-            workCompSlave     => workCompSlave,
-            -- Interface to UDP Engine
-            obUdpMaster       => obClientMasters(UDP_CLT_ROCE_IDX_C),
-            obUdpSlave        => obClientSlaves(UDP_CLT_ROCE_IDX_C),
-            ibUdpMaster       => ibClientMasters(UDP_CLT_ROCE_IDX_C),
-            ibUdpSlave        => ibClientSlaves(UDP_CLT_ROCE_IDX_C),
+            roceClk         => ethClk,
+            roceRst         => ethRst,
+            -- Inbound PRBS payload (single clock domain: sAxisClk = roceClk = ethClk)
+            sAxisClk        => ethClk,
+            sAxisRst        => ethRst,
+            sAxisMaster     => rdmaMaster,
+            sAxisSlave      => rdmaSlave,
+            -- Interface to UDP Engine (port 4791)
+            obUdpMaster     => obClientMasters(UDP_CLT_ROCE_IDX_C),
+            obUdpSlave      => obClientSlaves(UDP_CLT_ROCE_IDX_C),
+            ibUdpMaster     => ibClientMasters(UDP_CLT_ROCE_IDX_C),
+            ibUdpSlave      => ibClientSlaves(UDP_CLT_ROCE_IDX_C),
             -- Axi-Lite interface
-            axilReadMaster    => axilReadMasters(ROCE_INDEX_C),
-            axilReadSlave     => axilReadSlaves(ROCE_INDEX_C),
-            axilWriteMaster   => axilWriteMasters(ROCE_INDEX_C),
-            axilWriteSlave    => axilWriteSlaves(ROCE_INDEX_C),
-            -- DMA Interface
-            dmaReadRespMaster => dmaReadRespMaster,
-            dmaReadRespSlave  => dmaReadRespSlave,
-            dmaReadReqMaster  => dmaReadReqMaster,
-            dmaReadReqSlave   => dmaReadReqSlave);
+            axilReadMaster  => axilReadMasters(ROCE_INDEX_C),
+            axilReadSlave   => axilReadSlaves(ROCE_INDEX_C),
+            axilWriteMaster => axilWriteMasters(ROCE_INDEX_C),
+            axilWriteSlave  => axilWriteSlaves(ROCE_INDEX_C));
    end generate GEN_ROCE_ENGINE;
+
+   GEN_ROCE_TIEOFF : if (not ROCEV2_EN_G) generate
+      rdmaSlave <= AXI_STREAM_SLAVE_FORCE_C;  -- D-04: force slave ready so every target elaborates
+   end generate GEN_ROCE_TIEOFF;
 
    ------------------------
    -- AXI Stream Monitoring
