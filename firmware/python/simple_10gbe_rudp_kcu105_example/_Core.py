@@ -63,6 +63,7 @@ class Core(pr.Device):
                 self.add(roce.RoCEv2Engine(
                     offset  = 0x0015_0000,
                     dcqcn   = dcqcn,
+                    rdma    = True,
                     expand  = False,
                     enabled = not sim,
                 ))
