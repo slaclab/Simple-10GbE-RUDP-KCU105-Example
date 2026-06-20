@@ -39,7 +39,7 @@ entity App is
       ibRudpSlave       : in  AxiStreamSlaveType;
       obRudpMaster      : in  AxiStreamMasterType;
       obRudpSlave       : out AxiStreamSlaveType;
-      -- RDMA AXI-Stream Interface (App = master, Rudp = slave)
+      -- RDMA AXI-Stream Interface
       rdmaMaster        : out AxiStreamMasterType;
       rdmaSlave         : in  AxiStreamSlaveType := AXI_STREAM_SLAVE_FORCE_C;
       -- AXI-Lite Interface
