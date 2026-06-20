@@ -22,7 +22,6 @@ use surf.AxiLitePkg.all;
 use surf.RssiPkg.all;
 use surf.I2cPkg.all;
 use surf.I2cMuxPkg.all;
-use surf.RoCEv2Pkg.all;
 
 library work;
 use work.CorePkg.all;
@@ -54,15 +53,9 @@ entity Core is
       axilReadSlave     : in    AxiLiteReadSlaveType;
       axilWriteMaster   : out   AxiLiteWriteMasterType;
       axilWriteSlave    : in    AxiLiteWriteSlaveType;
-      -- RoCE engine Interface
-      workReqMaster     : in    RoceWorkReqMasterType     := ROCE_WORK_REQ_MASTER_INIT_C;
-      workReqSlave      : out   RoceWorkReqSlaveType;
-      workCompMaster    : out   RoceWorkCompMasterType;
-      workCompSlave     : in    RoceWorkCompSlaveType     := ROCE_WORK_COMP_SLAVE_INIT_C;
-      dmaReadRespMaster : in    RoceDmaReadRespMasterType := ROCE_DMA_READ_RESP_MASTER_INIT_C;
-      dmaReadRespSlave  : out   RoceDmaReadRespSlaveType;
-      dmaReadReqMaster  : out   RoceDmaReadReqMasterType;
-      dmaReadReqSlave   : in    RoceDmaReadReqSlaveType   := ROCE_DMA_READ_REQ_SLAVE_INIT_C;
+      -- RDMA AXI-Stream Interface (from App master, to Rudp slave)
+      rdmaMaster        : in    AxiStreamMasterType := AXI_STREAM_MASTER_INIT_C;
+      rdmaSlave         : out   AxiStreamSlaveType;
       -- I2C Ports
       sfpTxDisL         : out   sl;
       i2cRstL           : out   sl;
@@ -240,15 +233,9 @@ begin
             sAxilReadSlave    => axilReadSlaves(ETH_INDEX_C),
             sAxilWriteMaster  => axilWriteMasters(ETH_INDEX_C),
             sAxilWriteSlave   => axilWriteSlaves(ETH_INDEX_C),
-            -- RoCE engine Interface
-            workReqMaster     => workReqMaster,
-            workReqSlave      => workReqSlave,
-            workCompMaster    => workCompMaster,
-            workCompSlave     => workCompSlave,
-            dmaReadRespMaster => dmaReadRespMaster,
-            dmaReadRespSlave  => dmaReadRespSlave,
-            dmaReadReqMaster  => dmaReadReqMaster,
-            dmaReadReqSlave   => dmaReadReqSlave,
+            -- RDMA AXI-Stream Interface
+            rdmaMaster        => rdmaMaster,
+            rdmaSlave         => rdmaSlave,
             -- SFP ETH Ports
             ethClkP           => ethClkP,
             ethClkN           => ethClkN,
