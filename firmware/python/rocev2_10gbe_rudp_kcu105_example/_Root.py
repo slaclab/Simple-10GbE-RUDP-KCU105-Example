@@ -109,43 +109,56 @@ class Root(pr.Root):
         # Bring-up hand-off (D-03/D-04): super().start() has already brought up the
         # RUDP/SRP transport and run the server's host-side _start(), so the metadata
         # bus is reachable. Run the host↔FPGA hand-off, forwarding the single
-        # transportCfg into BOTH the engine and the server so they cannot drift.
-        # A failure here propagates and pyrogue unwinds into stop() (D-05).
+        # transportCfg into BOTH the engine and the server so they stay in sync.
+        #
+        # D-05: a failure mid-hand-off must NOT leak the started transport/poll
+        # threads or a partially-established FPGA QP. pr.Root.__enter__ calls
+        # start() directly, and Python only invokes __exit__/stop() if __enter__
+        # RETURNS — so an exception here would otherwise skip teardown entirely.
+        # Wrap the hand-off and unwind through stop() ourselves before re-raising.
+        # teardownConnection() is a safe no-op when no FPGA QP is live, so this is
+        # correct whether the failure was early (no QP yet) or late (QP up).
         cfg = self._transportCfg
-        params = self.rdmaRx.getHostParams()
-        fpga = self.Core.RoCEv2Engine.setupConnection(
-            **params._asdict(),
-            pmtu        = cfg.pmtu,
-            minRnrTimer = cfg.minRnrTimer,
-            rnrRetry    = cfg.rnrRetry,
-            retryCount  = cfg.retryCount,
-        )
-        self.rdmaRx.completeConnection(
-            fpga.fpgaQpn,
-            fpgaLkey    = fpga.lkey,
-            pmtu        = cfg.pmtu,
-            minRnrTimer = cfg.minRnrTimer,
-            rnrRetry    = cfg.rnrRetry,
-            retryCount  = cfg.retryCount,
-        )
+        try:
+            params = self.rdmaRx.getHostParams()
+            fpga = self.Core.RoCEv2Engine.setupConnection(
+                **params._asdict(),
+                pmtu        = cfg.pmtu,
+                minRnrTimer = cfg.minRnrTimer,
+                rnrRetry    = cfg.rnrRetry,
+                retryCount  = cfg.retryCount,
+            )
+            self.rdmaRx.completeConnection(
+                fpga.fpgaQpn,
+                fpgaLkey    = fpga.lkey,
+                pmtu        = cfg.pmtu,
+                minRnrTimer = cfg.minRnrTimer,
+                rnrRetry    = cfg.rnrRetry,
+                retryCount  = cfg.retryCount,
+            )
 
-        # Point the FW UDP engine at the host NIC (RoCEv2 UDP port 4791).
-        hostIp = self.rdmaRx.HostIp.get()
-        self.Core.UdpEngine.ClientRemotePort[0].set(4791)
-        self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
-        self.rdmaRx.printConnInfo()
+            # Point the FW UDP engine at the host NIC (RoCEv2 UDP port 4791).
+            hostIp = self.rdmaRx.HostIp.get()
+            self.Core.UdpEngine.ClientRemotePort[0].set(4791)
+            self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
+            self.rdmaRx.printConnInfo()
+        except Exception:
+            self.stop()
+            raise
 
     def stop(self) -> None:
         """Tear down the FPGA QP before transport is stopped (D-08)."""
         # Disarm the RDMA-engine dispatcher first, else the FPGA floods a destroyed QP.
         # This is the engine-level gate (not the application stream), so it is disarmed
-        # regardless of streaming state to protect clean teardown.
+        # regardless of streaming state to protect clean teardown. Tear down the FPGA QP
+        # while the RUDP transport is still up so the metadata bus works (safe no-op when
+        # no connection was established). Both are guarded so a missing Core.RoCEv2Engine
+        # node (or any teardown error) never aborts stop() before super().stop() runs —
+        # leaving the transport/poll threads running would be worse than a failed teardown.
         try:
             self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
+            self.Core.RoCEv2Engine.teardownConnection()
         except AttributeError:
             pass
-        # Tear down the FPGA QP before super().stop() — needs the RUDP transport still
-        # up so the metadata bus works. Safe no-op when no connection was established.
-        self.Core.RoCEv2Engine.teardownConnection()
         super().stop()
