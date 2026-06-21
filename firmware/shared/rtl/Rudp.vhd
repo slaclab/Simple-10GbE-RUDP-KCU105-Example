@@ -578,9 +578,7 @@ begin
          port map (
             roceClk         => ethClk,
             roceRst         => ethRst,
-            -- Inbound PRBS payload (single clock domain: sAxisClk = roceClk = ethClk)
-            sAxisClk        => ethClk,
-            sAxisRst        => ethRst,
+            -- Inbound PRBS payload
             sAxisMaster     => rdmaMaster,
             sAxisSlave      => rdmaSlave,
             -- Interface to UDP Engine (port 4791)

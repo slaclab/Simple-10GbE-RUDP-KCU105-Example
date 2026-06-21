@@ -29,16 +29,16 @@ import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
 class Root(pr.Root):
     def __init__(self,
-            rocev2Cfg,            # RoCEv2ServerCfg (required): host-NIC config (D-11)
+            rocev2Cfg,            # RoCEv2ServerCfg (required): host-NIC config
             ip          = '192.168.2.10',  # FPGA IP address (RUDP transport)
             zmqSrvPort  = 9099,   # Set to zero if dynamic (instead of static)
             useDcqcn    = True,   # Enable DCQCN congestion control in the Core
-            transportCfg = None,  # RoCEv2TransportCfg: transport/QP-tuning knobs (D-12)
+            transportCfg = None,  # RoCEv2TransportCfg: transport/QP-tuning knobs
             **kwargs):
         super().__init__(timeout=5.0, **kwargs)
 
         # Single transport/QP-tuning cfg forwarded into BOTH engine.setupConnection()
-        # and server.completeConnection() so the FPGA and host sides cannot drift (D-02/D-12).
+        # and server.completeConnection() so the FPGA and host sides cannot drift.
         self._transportCfg = transportCfg if transportCfg is not None else pr.protocols.RoCEv2TransportCfg()
 
         #################################################################
@@ -106,12 +106,12 @@ class Root(pr.Root):
     def start(self, **kwargs):
         super().start(**kwargs)
 
-        # Bring-up hand-off (D-03/D-04): super().start() has already brought up the
+        # Bring-up hand-off: super().start() has already brought up the
         # RUDP/SRP transport and run the server's host-side _start(), so the metadata
         # bus is reachable. Run the host↔FPGA hand-off, forwarding the single
         # transportCfg into BOTH the engine and the server so they stay in sync.
         #
-        # D-05: a failure mid-hand-off must NOT leak the started transport/poll
+        # A failure mid-hand-off must NOT leak the started transport/poll
         # threads or a partially-established FPGA QP. pr.Root.__enter__ calls
         # start() directly, and Python only invokes __exit__/stop() if __enter__
         # RETURNS — so an exception here would otherwise skip teardown entirely.
@@ -147,7 +147,7 @@ class Root(pr.Root):
             raise
 
     def stop(self) -> None:
-        """Tear down the FPGA QP before transport is stopped (D-08)."""
+        """Tear down the FPGA QP before transport is stopped."""
         # Disarm the RDMA-engine dispatcher first, else the FPGA floods a destroyed QP.
         # This is the engine-level gate (not the application stream), so it is disarmed
         # regardless of streaming state to protect clean teardown. Tear down the FPGA QP
