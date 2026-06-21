@@ -23,10 +23,9 @@ import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
 if __name__ == "__main__":
 
-    # Best-effort graceful teardown on SIGTERM (e.g. terminal/window-manager close):
-    # convert it to KeyboardInterrupt so the `with Root(...)` block unwinds into
-    # Root.stop(), which disarms the FPGA. SIGINT/exceptions already unwind; the
-    # FW auto-reset + clean-slate-on-start are the ultimate backstop for SIGKILL.
+    # Convert SIGTERM (terminal/WM close) to KeyboardInterrupt so the
+    # `with Root(...)` block unwinds into Root.stop() and tears down the FPGA QP.
+    # SIGINT/exceptions already unwind; SIGKILL relies on the FW auto-reset backstop.
     import signal as _signal
 
     def _sigterm(_signum, _frame):
@@ -198,21 +197,16 @@ if __name__ == "__main__":
         zmqSrvPort   = args.zmqSrvPort,
     ) as root:
 
-        # Root.start() ran the host<->FPGA bring-up hand-off; completeConnection()
-        # raises on failure (pyrogue then unwinds into Root.stop()), so the RoCEv2
-        # engine is connected-but-idle by the time we reach here. Arming the source
-        # (DispatchEnable/TxEn) is this script's job, done below.
+        # Root.start() already ran the host<->FPGA bring-up; the RoCEv2 engine is
+        # connected-but-idle here. Arming the source (DispatchEnable/TxEn) is below.
         rx = root.rdmaRx
 
-        # ----------------------------------------------------------------
-        # Retrieve MR parameters from the RoCEv2Server local variables
-        # ----------------------------------------------------------------
+        # MR parameters from the RoCEv2Server local variables. Per-frame length =
+        # host maxPayload (full PMTU = FW MaxSize cap); this is the STARTING
+        # SsiPrbsTx.PacketLength, changeable LIVE in the GUI up to the FW cap.
         rx_queue_depth = rx.RxQueueDepth.get()
         max_payload    = rx.MaxPayload.get()
         mr_len         = rx_queue_depth * max_payload
-        # Per-frame length = host maxPayload (full PMTU = FW MaxSize cap). Sets the
-        # STARTING SsiPrbsTx.PacketLength; the FW frames each SEND from the inbound
-        # tLast, so it may be changed LIVE in the GUI up to the FW per-SEND cap.
         Len            = max_payload
         remQpn         = rx.HostQpn.get()
         locKey         = rx.FpgaLkey.get()
@@ -220,13 +214,11 @@ if __name__ == "__main__":
         prbs = root.App.SsiPrbsTx
         dma  = root.Core.RoCEv2Engine.Rdma
 
-        # PRBS data word size in bytes, read from the FW (SsiPrbsTx.WordSize =
-        # PRBS_SEED_SIZE_G in bits). PacketLength is counted in these words, so the
-        # host tracks the FW config instead of hard-coding the width.
+        # PRBS word size in bytes (SsiPrbsTx.WordSize = PRBS_SEED_SIZE_G bits), read
+        # from the FW so the host tracks its config. PacketLength counts whole words,
+        # so the per-frame length must be a multiple of it.
         word_bytes = prbs.WordSize.get() // 8
 
-        # Validate the per-frame length against the FW's PRBS word size
-        # (PacketLength is counted in whole words).
         if Len % word_bytes != 0:
             print(
                 f"ERROR: maxPayload={Len} is not a multiple of the {word_bytes}-byte PRBS "
@@ -235,11 +227,10 @@ if __name__ == "__main__":
             )
             sys.exit(1)
 
-        # The host recv-WR buffer (maxPayload = full PMTU) must hold the LARGEST SEND the
-        # FW can dispatch, so that ANY live SsiPrbsTx.PacketLength up to the FW cap is
-        # received without a Local Length Error (recv buffer overflow -> receiver NAK ->
-        # UnsuccessCounter). The FW per-SEND cap is the hardware constant 0x04 MaxSize
-        # (RO = MAX_BEATS_C*32 = one PMTU). SEND lands in the next consumed recv-WR.
+        # The host recv-WR buffer (maxPayload = full PMTU) must hold the LARGEST SEND
+        # the FW can dispatch, else a too-large SEND overflows it (Local Length Error
+        # -> receiver NAK -> UnsuccessCounter). FW per-SEND cap = the RO MaxSize
+        # register (MAX_BEATS_C*32 = one PMTU).
         fw_max_send = dma.MaxSize.get()
         if max_payload < fw_max_send:
             print(
@@ -259,12 +250,9 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
         # Configure the PRBS source + DMA dispatch registers
         # ----------------------------------------------------------------
-        # PacketLength is in PRBS words: (Len // word_bytes) - 1. This may be changed
-        # LIVE in the GUI: the FW frames each SEND from the inbound tLast (no Len
-        # register) and handles a partial final 32-byte beat, so the RDMA path tracks
-        # ANY dynamic PacketLength up to the FW cap (MaxSize = one PMTU) without a
-        # restart and with no 32-byte-multiple requirement. The host recv buffer is the
-        # full PMTU, so every such frame is received.
+        # PacketLength in PRBS words: (Len // word_bytes) - 1. Changeable LIVE in the
+        # GUI — the FW frames each SEND from the inbound tLast (no Len register) and
+        # handles a partial final beat, so any value up to the FW cap is received.
         prbs.PacketLength.set(Len // word_bytes - 1)
 
         # PRBS packet rate. TrigDly=0 free-runs at full line rate; a positive
@@ -289,19 +277,15 @@ if __name__ == "__main__":
         root.CountReset()          # zeroes host PrbsRx rxErrors/rxCount/rxBytes
 
         # ----------------------------------------------------------------
-        # Event-driven continuous run.
+        # Event-driven continuous run. DispatchEnable arms the FW dispatcher; TxEn
+        # free-runs the PRBS source (AXI_EN_G='1' => host owns the trigger). With both
+        # set the FW issues one RDMA SEND per complete buffered PRBS packet — no
+        # per-frame poke.
         #
-        # DispatchEnable arms the FW dispatcher; TxEn free-runs the PRBS source
-        # (AXI_EN_G='1' means the host owns the trigger, so without TxEn the FIFO
-        # stays empty and nothing dispatches). With both set the FW issues one RDMA
-        # SEND per complete buffered PRBS packet continuously — no per-frame poke.
-        #
-        # Flow control is entirely native FW<->NIC: there is NO software credit feed
-        # in the real-time path. RDMA-SEND is two-sided, so when the host recv queue
-        # drains the NIC RNR-NAKs the FPGA; the blue-rdma SQ stalls and retries
-        # (rnr_retry=7 infinite, min_rnr_timer=--minRnrTimer) and backpressures the
-        # dispatcher, which fills the repack FIFO and throttles the PRBS source. The
-        # host thread's only job is to post/consume recv-WRs at its own pace.
+        # Flow control is entirely native FW<->NIC (no software credit feed): a full
+        # host recv queue RNR-NAKs the FPGA; the blue-rdma SQ stalls/retries
+        # (rnr_retry=7, min_rnr_timer=--minRnrTimer), backpressuring the dispatcher ->
+        # repack FIFO -> PRBS source. The host only posts/consumes recv-WRs at its pace.
         # ----------------------------------------------------------------
         print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame, "
               f"native RNR flow control, minRnrTimer={args.minRnrTimer})...")
@@ -346,18 +330,15 @@ if __name__ == "__main__":
         # Development PyDM GUI
         ######################
         if (args.guiType == 'PyDM'):
-            # Re-arm the stream so the operator sees rxCount climbing live in the
-            # GUI. Toggle App.SsiPrbsTx.TxEn (or Core.RoCEv2Engine.Rdma.DispatchEnable)
-            # to start/stop continuous reception. Flow control stays native FW<->NIC
-            # (RNR) — there is no credit feeder to restart.
+            # Re-arm the stream so the operator sees rxCount climbing live; toggle
+            # TxEn / DispatchEnable in the GUI to start/stop. Flow control stays
+            # native FW<->NIC (RNR) — no credit feeder to restart.
             dma.ResetCounters()        # zero FW SuccessCounter/UnsuccessCounter
             root.CountReset()          # zero host rxErrors/rxCount/rxBytes
             dma.DispatchEnable.set(True)
             prbs.TxEn.set(True)
-            # Zero the counters again right before the GUI opens so the operator starts
-            # from a clean slate (the re-arm above streamed frames during setup).
-            # root.CountReset() cascades to the FW counters too (the Core.RoCEv2Engine.Rdma
-            # driver overrides countReset() -> ResetCounters).
+            # Re-zero right before the GUI opens (the re-arm above streamed frames
+            # during setup). root.CountReset() cascades to the FW counters too.
             root.CountReset()
             pyrogue.pydm.runPyDM(
                 serverList = root.zmqServer.address,

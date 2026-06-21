@@ -137,7 +137,11 @@ class Root(pr.Root):
                 retryCount  = cfg.retryCount,
             )
 
-            # Point the FW UDP engine at the host NIC (RoCEv2 UDP port 4791).
+            # Point the FW UDP engine at the host NIC. Ordering is free: the QP
+            # hand-off above runs over the SRP register bus (port 8192), not this
+            # RoCEv2 UDP client (port 4791), and the 4791 datapath only carries
+            # traffic once DispatchEnable is armed (later, by the test/GUI) — so
+            # this can sit before or after the hand-off with no functional effect.
             hostIp = self.rdmaRx.HostIp.get()
             self.Core.UdpEngine.ClientRemotePort[0].set(4791)
             self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
@@ -148,13 +152,14 @@ class Root(pr.Root):
 
     def stop(self) -> None:
         """Tear down the FPGA QP before transport is stopped."""
-        # Disarm the RDMA-engine dispatcher first, else the FPGA floods a destroyed QP.
-        # This is the engine-level gate (not the application stream), so it is disarmed
-        # regardless of streaming state to protect clean teardown. Tear down the FPGA QP
-        # while the RUDP transport is still up so the metadata bus works (safe no-op when
-        # no connection was established). Both are guarded so a missing Core.RoCEv2Engine
-        # node (or any teardown error) never aborts stop() before super().stop() runs —
-        # leaving the transport/poll threads running would be worse than a failed teardown.
+        # The teardown MUST run here, before super().stop(): pr.Root.stop() ->
+        # Device._stop() recurses through child devices in ADD order, and the RUDP
+        # transport (self.rudp[0]) was added before Core, so it is torn down first.
+        # A RoCEv2Engine._stop() hook would therefore fire AFTER the metadata bus is
+        # already dead (register timeout) — verified on hardware. So disarm the
+        # dispatcher and tear down the QP explicitly while the transport is still up.
+        # Guarded so a missing Core.RoCEv2Engine node (or any teardown error) never
+        # aborts stop() before super().stop() runs.
         try:
             self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
