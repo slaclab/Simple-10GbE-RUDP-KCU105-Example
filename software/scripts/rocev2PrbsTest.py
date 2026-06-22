@@ -245,8 +245,9 @@ if __name__ == "__main__":
         remQpn         = rx.HostQpn.get()
         locKey         = rx.FpgaLkey.get()
 
-        prbs = root.App.SsiPrbsTx
-        dma  = root.Core.RoCEv2Engine.Rdma
+        prbs  = root.App.SsiPrbsTx
+        dma   = root.Core.RoCEv2Engine.Rdma
+        dcqcn = root.Core.RoCEv2Engine.Dcqcn   # FW telemetry: Rc/Rt/CnpCounter (RO, pollInterval=1)
 
         # PRBS word size in bytes (SsiPrbsTx.WordSize = PRBS_SEED_SIZE_G bits), read
         # from the FW so the host tracks its config. PacketLength counts whole words,
@@ -324,18 +325,59 @@ if __name__ == "__main__":
         print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame, "
               f"native RNR flow control, minRnrTimer={minRnrTimer}, "
               f"p2p={args.p2p})...")
+
+        # Line-rate recipe (D-05): when free-running the PRBS source (--trigRate <= 0,
+        # the same condition that set TrigDly=0 above), blind the host payload validator.
+        # The Python PrbsRx consumer saturates ~25-30 kHz and CANNOT keep up at line rate,
+        # so per-frame checking would report spurious errors. Throughput is gated on the FW
+        # MonBandwidth telemetry (D-03), NOT rxErrors, in line-rate runs. checkPayload is a
+        # live rogue RW LocalVariable, so this propagates to the C++ engine at runtime — no
+        # _Root.py change. Throttled runs (--trigRate > 0) keep the _Root.py default (True)
+        # so the existing per-frame-integrity run is unchanged.
+        if args.trigRate <= 0:
+            print("NOTICE: line-rate run — disabling host PrbsRx.checkPayload "
+                  "(rxErrors NOT gated; FW MonBandwidth is the throughput gate).",
+                  file=sys.stderr)
+            root.PrbsRx.checkPayload.set(False)
+
         dma.DispatchEnable.set(True)
         prbs.TxEn.set(True)
 
         # ----------------------------------------------------------------
         # Poll rxCount to the target — the receiver fills continuously
         # ----------------------------------------------------------------
+        # FW-telemetry trajectory sampler (D-01/D-02): snapshot (t_rel, Rc, Rt, CnpCounter,
+        # MonBandwidth) at a coarse ~0.5 s cadence into `traj` so the baseline run captures
+        # the Rc LINE/2->Rmin collapse trajectory (the time-evolution HW-01 describes), not
+        # just an endpoint. Gated by a monotonic `nextSample` deadline so the 0.05 s rxCount
+        # poll cadence and the timeout/break semantics below are unchanged. All reads are
+        # polled-cache .get() (pollInterval=1) — no forced AXI transactions. rxCount stays a
+        # liveness loop condition only (D-03).
+        SAMPLE_PERIOD = 0.5
+        traj      = []
+        loopStart = time.monotonic()
+
+        def _sample():
+            traj.append((
+                time.monotonic() - loopStart,   # t_rel (s)
+                dcqcn.Rc.get(),                  # Rc  (Byte/s)
+                dcqcn.Rt.get(),                  # Rt  (Byte/s)
+                dcqcn.CnpCounter.get(),          # CnpCounter (count)
+                dma.MonBandwidth.get(),          # MonBandwidth (Gb/s)
+            ))
+
+        _sample()                               # seed: >=1 sample even on an instant timeout
+        nextSample = loopStart + SAMPLE_PERIOD
+
         deadline = time.monotonic() + args.timeout
         while root.PrbsRx.rxCount.get() < args.target:
             if time.monotonic() > deadline:
                 print(f"WARNING: timed out after {args.timeout}s waiting for "
                       f"rxCount >= {args.target}", file=sys.stderr)
                 break                       # fall through to the assert; do NOT raise
+            if time.monotonic() >= nextSample:
+                _sample()
+                nextSample += SAMPLE_PERIOD
             time.sleep(0.05)                # poll interval, NOT a completion sleep
 
         # ----------------------------------------------------------------
