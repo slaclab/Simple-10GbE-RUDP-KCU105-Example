@@ -150,6 +150,36 @@ class Root(pr.Root):
             self.stop()
             raise
 
+    def setP2pMode(self, enable):
+        """Point-to-point bring-up toggle (SW-03 / D-08).
+
+        Couples the two halves of the P2P fix:
+
+        1. Toggles the LIVE AXI-Lite register Core.RoCEv2Engine.Dcqcn.DcqcnBypass
+           — this is a live FPGA register, so the DCQCN bypass takes effect
+           immediately. Guarded so a missing engine node (ip='sim'/'emu' or
+           ROCEV2 disabled) degrades gracefully instead of aborting.
+        2. Records the intended RNR backoff code for the NEXT bring-up by writing
+           into self._transportCfg.minRnrTimer — the field start() forwards into
+           setupConnection()/completeConnection(). RNR is host-NIC QP state fixed
+           at QP setup, so this does NOT live-reconfigure the QP; the minimal
+           backoff (code 1) only re-applies on the next reconnect/restart.
+        """
+        try:
+            self.Core.RoCEv2Engine.Dcqcn.DcqcnBypass.set(enable)
+        except AttributeError:
+            pass
+
+        if enable:
+            # Record minimal RNR backoff (code 1) for the next bring-up; start()
+            # reads self._transportCfg.minRnrTimer into setupConnection()/
+            # completeConnection(). No live QP reconfig here (D-08).
+            self._transportCfg.minRnrTimer = 1
+            print(
+                "setP2pMode: DcqcnBypass toggled LIVE; minRnrTimer=1 recorded — "
+                "RNR backoff takes effect on the NEXT reconnect/restart.",
+            )
+
     def stop(self) -> None:
         """Tear down the FPGA QP before transport is stopped."""
         # The teardown MUST run here, before super().stop(): pr.Root.stop() ->
