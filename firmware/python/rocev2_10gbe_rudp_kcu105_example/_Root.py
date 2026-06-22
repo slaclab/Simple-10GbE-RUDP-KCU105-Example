@@ -151,7 +151,7 @@ class Root(pr.Root):
             raise
 
     def setP2pMode(self, enable):
-        """Point-to-point bring-up toggle (SW-03 / D-08).
+        """Point-to-point bring-up toggle.
 
         Couples the two halves of the P2P fix:
 
@@ -173,7 +173,7 @@ class Root(pr.Root):
         if enable:
             # Record minimal RNR backoff (code 1) for the next bring-up; start()
             # reads self._transportCfg.minRnrTimer into setupConnection()/
-            # completeConnection(). No live QP reconfig here (D-08).
+            # completeConnection(). No live QP reconfig here.
             self._transportCfg.minRnrTimer = 1
             print(
                 "setP2pMode: DcqcnBypass toggled LIVE; minRnrTimer=1 recorded — "
