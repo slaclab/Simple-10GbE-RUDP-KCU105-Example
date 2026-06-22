@@ -419,31 +419,55 @@ if __name__ == "__main__":
 
         bps2gbps = lambda b: b * 8.0 / 1.0e9    # same conversion MonBandwidth uses
 
-        # Liveness precondition on BOTH branches: frames must have flowed. Do NOT
-        # gate on rxErrors — payload checking is off at line rate (gating it would
-        # false-fail, D-03/D-05).
+        # ----------------------------------------------------------------
+        # Verdict — selected by run type (throttled vs line-rate):
+        #
+        #  * Throttled / default run (--trigRate > 0, checkPayload=True): the proven
+        #    per-frame-integrity acceptance test (D-03). Verdict is the ORIGINAL gate:
+        #    zero PRBS errors AND target frames received. The FW-telemetry block below
+        #    still prints (informational), but rxErrors is the source of truth here.
+        #
+        #  * Line-rate run (--trigRate <= 0, checkPayload off): host PrbsRx is blinded
+        #    (D-05), so the verdict is gated on FW egress MonBandwidth (D-03/D-06), with
+        #    rxCount>=target retained as a liveness precondition. --p2p additionally
+        #    requires Rc pinned at LINE_RATE.
+        #
+        # NOTE: an earlier revision applied a "baseline FAIL-as-expected" inversion that
+        # treated a reproduced collapse as PASS. Hardware (Phase 4) showed the DCQCN
+        # collapse cannot be stimulated on the switchless P2P bench (no congested switch
+        # -> no ECN CE marking -> CnpCounter=0), so a healthy baseline holds line rate.
+        # The inversion is dropped: the baseline line-rate run PASSES when it sustains
+        # near-line-rate FW egress, like any other run. Rc/CnpCounter are reported, not
+        # gated, on the baseline branch.
+        # ----------------------------------------------------------------
         live = (rxCount >= args.target)
 
-        if args.p2p:
-            # --p2p PASS (HW-02): DCQCN bypassed -> Rc pinned at LINE_RATE, FW egress
-            # near line rate (margin under 9.7 for RoCEv2/UDP/IP/ETH overhead).
+        if args.trigRate > 0:
+            # Throttled / default: original per-frame-integrity verdict (D-03).
+            gate_band = "throttled per-frame integrity: rxErrors==0 AND rxCount>=target"
+            passed = (errs == 0) and live
+        elif args.p2p:
+            # Line-rate --p2p PASS (HW-02): DCQCN bypassed -> Rc pinned at LINE_RATE, FW
+            # egress near line rate (margin under 9.7 for RoCEv2/UDP/IP/ETH overhead).
             # D-07: this PASS demonstrates order-independence as a consequence — once
             # DCQCN cannot throttle (Rc=LINE_RATE), the collapse no longer depends on
             # CNP/arm timing, so no separate bring-up-order run is needed.
-            gate_band = "p2p PASS: MonBandwidth>9.0 Gb/s AND Rc==LINE_RATE"
+            gate_band = "line-rate p2p PASS: MonBandwidth>9.0 Gb/s AND Rc==LINE_RATE"
             passed = live and (mon_steady > 9.0) and (rc_last == LINE_RATE_BPS)
         else:
-            # Baseline FAIL-as-expected (HW-01): the baseline run's JOB is to REPRODUCE
-            # the collapse. INVERSION: a confirmed collapse is the EXPECTED outcome, so
-            # passed=True means "collapse reproduced as required by HW-01". If the FW
-            # unexpectedly held line rate at baseline (collapse NOT reproduced), the run
-            # FAILED its purpose -> passed=False. Read the exit code with this in mind.
-            gate_band = ("baseline collapse reproduced (FAIL-as-expected): "
-                         "MonBandwidth<2.0 Gb/s AND Rc fell AND CnpCounter>0")
-            collapse_reproduced = (mon_steady < 2.0) and (rc_min < rc_start) and (cnp_peak > 0)
-            passed = live and collapse_reproduced
+            # Line-rate baseline measurement: PASS = sustained near-line-rate FW egress.
+            # Rc/CnpCounter are reported in the FW-telemetry block for the collapse
+            # analysis but are NOT gated (the collapse stimulus is bench-topology
+            # dependent; see 04-HW-RESULTS.md).
+            gate_band = "line-rate baseline: MonBandwidth>9.0 Gb/s (FW egress)"
+            passed = live and (mon_steady > 9.0)
 
-        run_mode = "--p2p" if args.p2p else "baseline"
+        if args.trigRate > 0:
+            run_mode = "throttled"
+        elif args.p2p:
+            run_mode = "--p2p (line-rate)"
+        else:
+            run_mode = "baseline (line-rate)"
 
         print(
             f"--- PRBS result ---\n"
