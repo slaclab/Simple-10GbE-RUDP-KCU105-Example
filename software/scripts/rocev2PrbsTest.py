@@ -195,7 +195,7 @@ if __name__ == "__main__":
     # (FW<->NIC flow control); the remaining knobs (pmtu/rnrRetry/retryCount)
     # keep their proven acceptance-gate defaults.
     #
-    # --p2p (D-07) forces minimal RNR backoff (code 1), unconditionally
+    # --p2p forces minimal RNR backoff (code 1), unconditionally
     # overriding any --minRnrTimer value. Notify the operator if --minRnrTimer
     # was also passed with a non-default value so the override leaves an audit
     # line (the DcqcnBypass=True half is applied live below via setP2pMode).
@@ -227,8 +227,8 @@ if __name__ == "__main__":
         # connected-but-idle here. Arming the source (DispatchEnable/TxEn) is below.
         rx = root.rdmaRx
 
-        # --p2p: enable the FW DCQCN bypass LIVE through the SW-03 helper so both
-        # halves of the P2P fix live in one place. setP2pMode also records the
+        # --p2p: enable the FW DCQCN bypass LIVE through the setP2pMode helper so
+        # both halves of the P2P fix live in one place. setP2pMode also records the
         # minimal RNR code for the next bring-up; the RNR=1 minimization for THIS
         # run was already applied via transportCfg above (forwarded into the QP
         # hand-off during start()).
@@ -326,11 +326,11 @@ if __name__ == "__main__":
               f"native RNR flow control, minRnrTimer={minRnrTimer}, "
               f"p2p={args.p2p})...")
 
-        # Line-rate recipe (D-05): when free-running the PRBS source (--trigRate <= 0,
+        # Line-rate recipe: when free-running the PRBS source (--trigRate <= 0,
         # the same condition that set TrigDly=0 above), blind the host payload validator.
         # The Python PrbsRx consumer saturates ~25-30 kHz and CANNOT keep up at line rate,
         # so per-frame checking would report spurious errors. Throughput is gated on the FW
-        # MonBandwidth telemetry (D-03), NOT rxErrors, in line-rate runs. checkPayload is a
+        # MonBandwidth telemetry, NOT rxErrors, in line-rate runs. checkPayload is a
         # live rogue RW LocalVariable, so this propagates to the C++ engine at runtime — no
         # _Root.py change. Throttled runs (--trigRate > 0) keep the _Root.py default (True)
         # so the existing per-frame-integrity run is unchanged.
@@ -346,13 +346,13 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
         # Poll rxCount to the target — the receiver fills continuously
         # ----------------------------------------------------------------
-        # FW-telemetry trajectory sampler (D-01/D-02): snapshot (t_rel, Rc, Rt, CnpCounter,
-        # MonBandwidth) at a coarse ~0.5 s cadence into `traj` so the baseline run captures
-        # the Rc LINE/2->Rmin collapse trajectory (the time-evolution HW-01 describes), not
-        # just an endpoint. Gated by a monotonic `nextSample` deadline so the 0.05 s rxCount
-        # poll cadence and the timeout/break semantics below are unchanged. All reads are
-        # polled-cache .get() (pollInterval=1) — no forced AXI transactions. rxCount stays a
-        # liveness loop condition only (D-03).
+        # FW-telemetry trajectory sampler: snapshot (t_rel, Rc, Rt, CnpCounter,
+        # MonBandwidth) at a coarse ~0.5 s cadence into `traj` so a line-rate run captures
+        # the Rc collapse trajectory over time (e.g. Rc LINE/2->Rmin under DCQCN throttle),
+        # not just an endpoint. Gated by a monotonic `nextSample` deadline so the 0.05 s
+        # rxCount poll cadence and the timeout/break semantics below are unchanged. Reads
+        # are .get() against the pollInterval=1 register cache. rxCount stays a liveness
+        # loop condition only.
         SAMPLE_PERIOD = 0.5
         traj      = []
         loopStart = time.monotonic()
@@ -387,17 +387,18 @@ if __name__ == "__main__":
         prbs.TxEn.set(False)
 
         # ----------------------------------------------------------------
-        # Liveness record (PRBS host counters) — NOT the throughput gate.
-        # rxErrors is host-stack noise at line rate (checkPayload off, D-03/D-05);
-        # rxCount stays a liveness precondition (frames must have flowed).
+        # Liveness record (PRBS host counters). For the throttled run rxErrors is
+        # the integrity gate; for line-rate runs checkPayload is off so rxErrors is
+        # host-stack noise and rxCount stays a liveness precondition (frames flowed).
         # ----------------------------------------------------------------
         errs    = root.PrbsRx.rxErrors.get()
         rxCount = root.PrbsRx.rxCount.get()
         success = dma.SuccessCounter.get()
 
         # ----------------------------------------------------------------
-        # FW-telemetry verdict (D-06): MonBandwidth (FW egress) is the throughput
-        # source of truth, NOT rxErrors. Numeric bands in Byte/s (Rc) and Gb/s (Mon).
+        # FW-telemetry verdict: for line-rate runs MonBandwidth (FW egress) is the
+        # throughput source of truth, NOT rxErrors. Numeric bands in Byte/s (Rc) and
+        # Gb/s (Mon).
         # ----------------------------------------------------------------
         LINE_RATE_BPS = 1250000000      # 10 Gb/s in Byte/s — Rc pinned here under bypass
 
@@ -422,43 +423,39 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
         # Verdict — selected by run type (throttled vs line-rate):
         #
-        #  * Throttled / default run (--trigRate > 0, checkPayload=True): the proven
-        #    per-frame-integrity acceptance test (D-03). Verdict is the ORIGINAL gate:
-        #    zero PRBS errors AND target frames received. The FW-telemetry block below
-        #    still prints (informational), but rxErrors is the source of truth here.
+        #  * Throttled / default run (--trigRate > 0, checkPayload=True): the
+        #    per-frame-integrity acceptance test. Verdict is zero PRBS errors AND
+        #    target frames received. The FW-telemetry block below still prints
+        #    (informational), but rxErrors is the source of truth here.
         #
-        #  * Line-rate run (--trigRate <= 0, checkPayload off): host PrbsRx is blinded
-        #    (D-05), so the verdict is gated on FW egress MonBandwidth (D-03/D-06), with
-        #    rxCount>=target retained as a liveness precondition. --p2p additionally
-        #    requires Rc pinned at LINE_RATE.
+        #  * Line-rate run (--trigRate <= 0, checkPayload off): host PrbsRx is blinded,
+        #    so the verdict is gated on FW egress MonBandwidth, with rxCount>=target
+        #    retained as a liveness precondition. --p2p additionally requires Rc pinned
+        #    at LINE_RATE.
         #
-        # NOTE: an earlier revision applied a "baseline FAIL-as-expected" inversion that
-        # treated a reproduced collapse as PASS. Hardware (Phase 4) showed the DCQCN
-        # collapse cannot be stimulated on the switchless P2P bench (no congested switch
-        # -> no ECN CE marking -> CnpCounter=0), so a healthy baseline holds line rate.
-        # The inversion is dropped: the baseline line-rate run PASSES when it sustains
-        # near-line-rate FW egress, like any other run. Rc/CnpCounter are reported, not
-        # gated, on the baseline branch.
+        # The baseline line-rate run PASSES when it sustains near-line-rate FW egress,
+        # like any other run; Rc/CnpCounter are reported (for collapse analysis), not
+        # gated, on the baseline branch. (On a switchless point-to-point bench there is
+        # no congested switch to ECN CE-mark traffic, so DCQCN sees no CNPs and does not
+        # throttle — baseline holds line rate.)
         # ----------------------------------------------------------------
         live = (rxCount >= args.target)
 
         if args.trigRate > 0:
-            # Throttled / default: original per-frame-integrity verdict (D-03).
+            # Throttled / default: per-frame-integrity verdict.
             gate_band = "throttled per-frame integrity: rxErrors==0 AND rxCount>=target"
             passed = (errs == 0) and live
         elif args.p2p:
-            # Line-rate --p2p PASS (HW-02): DCQCN bypassed -> Rc pinned at LINE_RATE, FW
-            # egress near line rate (margin under 9.7 for RoCEv2/UDP/IP/ETH overhead).
-            # D-07: this PASS demonstrates order-independence as a consequence — once
-            # DCQCN cannot throttle (Rc=LINE_RATE), the collapse no longer depends on
-            # CNP/arm timing, so no separate bring-up-order run is needed.
+            # Line-rate --p2p PASS: DCQCN bypassed -> Rc pinned at LINE_RATE, FW egress
+            # near line rate (margin under 9.7 for RoCEv2/UDP/IP/ETH overhead). This PASS
+            # demonstrates order-independence as a consequence — once DCQCN cannot
+            # throttle (Rc=LINE_RATE), throughput no longer depends on CNP/arm timing.
             gate_band = "line-rate p2p PASS: MonBandwidth>9.0 Gb/s AND Rc==LINE_RATE"
             passed = live and (mon_steady > 9.0) and (rc_last == LINE_RATE_BPS)
         else:
             # Line-rate baseline measurement: PASS = sustained near-line-rate FW egress.
-            # Rc/CnpCounter are reported in the FW-telemetry block for the collapse
-            # analysis but are NOT gated (the collapse stimulus is bench-topology
-            # dependent; see 04-HW-RESULTS.md).
+            # Rc/CnpCounter are reported in the FW-telemetry block for collapse analysis
+            # but are NOT gated (the collapse stimulus is bench-topology dependent).
             gate_band = "line-rate baseline: MonBandwidth>9.0 Gb/s (FW egress)"
             passed = live and (mon_steady > 9.0)
 
