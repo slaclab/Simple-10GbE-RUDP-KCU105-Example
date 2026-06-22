@@ -27,9 +27,10 @@ use work.CorePkg.all;
 
 entity App is
    generic (
-      TPD_G        : time    := 1 ns;
-      ROCEV2_EN_G  : boolean := false;
-      SIMULATION_G : boolean := false);
+      TPD_G           : time    := 1 ns;
+      AXIS_CLK_FREQ_G : real    := 156.25E+6;
+      ROCEV2_EN_G     : boolean := false;
+      SIMULATION_G    : boolean := false);
    port (
       -- Clock and Reset
       axilClk           : in  sl;
@@ -54,8 +55,9 @@ architecture mapping of App is
    constant TX_INDEX_C       : natural := 0;
    constant MEM_INDEX_C      : natural := 1;
    constant PRBS_INDEX_C     : natural := 2;
+   constant RDMA_MON_INDEX_C : natural := 3;
 
-   constant NUM_AXIL_MASTERS_C : positive := 3;
+   constant NUM_AXIL_MASTERS_C : positive := 4;
 
    constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
 
@@ -167,6 +169,30 @@ begin
       --------------------------------
       rdmaMaster    <= prbsAxisMaster;
       prbsAxisSlave <= rdmaSlave;
+
+      --------------------------------
+      -- AXI-Stream Monitor on the RDMA stream
+      --------------------------------
+      U_RdmaAxisMon : entity surf.AxiStreamMonAxiL
+         generic map (
+            TPD_G            => TPD_G,
+            COMMON_CLK_G     => true,
+            AXIS_CLK_FREQ_G  => AXIS_CLK_FREQ_G,
+            AXIS_NUM_SLOTS_G => 1,
+            AXIS_CONFIG_G    => RDMA_AXIS_CONFIG_C)
+         port map (
+            -- AXIS Stream Interface
+            axisClk          => axilClk,
+            axisRst          => axilRst,
+            axisMasters(0)   => prbsAxisMaster,
+            axisSlaves(0)    => prbsAxisSlave,
+            -- AXI lite slave port for register access
+            axilClk          => axilClk,
+            axilRst          => axilRst,
+            sAxilWriteMaster => axilWriteMasters(RDMA_MON_INDEX_C),
+            sAxilWriteSlave  => axilWriteSlaves(RDMA_MON_INDEX_C),
+            sAxilReadMaster  => axilReadMasters(RDMA_MON_INDEX_C),
+            sAxilReadSlave   => axilReadSlaves(RDMA_MON_INDEX_C));
 
    end generate GEN_ROCEV2_APP_LOGIC;
 

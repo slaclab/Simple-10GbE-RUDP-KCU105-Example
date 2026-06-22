@@ -9,6 +9,7 @@
 #-----------------------------------------------------------------------------
 
 import surf.protocols.ssi as ssi
+import surf.axi           as axi
 
 import pyrogue  as pr
 import simple_10gbe_rudp_kcu105_example as baseBoard
@@ -22,4 +23,11 @@ class App(pr.Device):
             offset     = 0x0002_0000,
             clock_freq = 156.25e6,
             expand     = True,
+        ))
+
+        self.add(axi.AxiStreamMonAxiL(
+            name        = 'RdmaAxisMon',
+            offset      = 0x0003_0000,
+            numberLanes = 1,
+            expand      = True,
         ))

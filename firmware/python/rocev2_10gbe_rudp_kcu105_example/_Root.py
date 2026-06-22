@@ -94,7 +94,7 @@ class Root(pr.Root):
         # Host-side PRBS data-integrity check on the RDMA receive stream.
         self.prbsRx = pr.utilities.prbs.PrbsRx(
             name         = 'PrbsRx',
-            width        = 128,
+            width        = 64,
             checkPayload = True,
             expand       = True,
         )

@@ -186,9 +186,10 @@ begin
    ------------------------------
    U_App : entity work.App
       generic map (
-         TPD_G        => TPD_G,
-         ROCEV2_EN_G  => ROCEV2_EN_G,
-         SIMULATION_G => SIMULATION_G)
+         TPD_G           => TPD_G,
+         AXIS_CLK_FREQ_G => 156.25E+6,
+         ROCEV2_EN_G     => ROCEV2_EN_G,
+         SIMULATION_G    => SIMULATION_G)
       port map (
          -- Clock and Reset
          axilClk           => axilClk,

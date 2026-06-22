@@ -24,7 +24,7 @@ package CorePkg is
 
    type BuildEthType is (SFP_10G_C, SFP_1G_C, RJ45_1G_C);
 
-   -- 128-bit RDMA payload AXI-Stream config (moved from App.vhd)
-   constant RDMA_AXIS_CONFIG_C : AxiStreamConfigType := ssiAxiStreamConfig(dataBytes => (128/8));
+   -- 64-bit RDMA payload AXI-Stream config (moved from App.vhd)
+   constant RDMA_AXIS_CONFIG_C : AxiStreamConfigType := ssiAxiStreamConfig(dataBytes => (64/8));
 
 end package CorePkg;
