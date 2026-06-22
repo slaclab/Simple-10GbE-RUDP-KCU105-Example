@@ -387,12 +387,63 @@ if __name__ == "__main__":
         prbs.TxEn.set(False)
 
         # ----------------------------------------------------------------
-        # Assert — cannot false-green on zero frames
+        # Liveness record (PRBS host counters) — NOT the throughput gate.
+        # rxErrors is host-stack noise at line rate (checkPayload off, D-03/D-05);
+        # rxCount stays a liveness precondition (frames must have flowed).
         # ----------------------------------------------------------------
         errs    = root.PrbsRx.rxErrors.get()
         rxCount = root.PrbsRx.rxCount.get()
         success = dma.SuccessCounter.get()
-        passed  = (errs == 0) and (rxCount >= args.target)
+
+        # ----------------------------------------------------------------
+        # FW-telemetry verdict (D-06): MonBandwidth (FW egress) is the throughput
+        # source of truth, NOT rxErrors. Numeric bands in Byte/s (Rc) and Gb/s (Mon).
+        # ----------------------------------------------------------------
+        LINE_RATE_BPS = 1250000000      # 10 Gb/s in Byte/s — Rc pinned here under bypass
+
+        # If the run timed out instantly the loop body never sampled past the seed;
+        # `traj` always holds >=1 entry (seeded at loop entry), but guard anyway by
+        # taking one live snapshot so the summary never indexes an empty list.
+        if not traj:
+            _sample()
+
+        rc_traj   = [s[1] for s in traj]
+        cnp_traj  = [s[3] for s in traj]
+        mon_traj  = [s[4] for s in traj]
+        rc_start  = rc_traj[0]
+        rc_min    = min(rc_traj)
+        rc_max    = max(rc_traj)
+        rc_last   = rc_traj[-1]
+        cnp_peak  = max(cnp_traj)
+        mon_steady = mon_traj[-1]       # last MonBandwidth Gb/s sample (steady state)
+
+        bps2gbps = lambda b: b * 8.0 / 1.0e9    # same conversion MonBandwidth uses
+
+        # Liveness precondition on BOTH branches: frames must have flowed. Do NOT
+        # gate on rxErrors — payload checking is off at line rate (gating it would
+        # false-fail, D-03/D-05).
+        live = (rxCount >= args.target)
+
+        if args.p2p:
+            # --p2p PASS (HW-02): DCQCN bypassed -> Rc pinned at LINE_RATE, FW egress
+            # near line rate (margin under 9.7 for RoCEv2/UDP/IP/ETH overhead).
+            # D-07: this PASS demonstrates order-independence as a consequence — once
+            # DCQCN cannot throttle (Rc=LINE_RATE), the collapse no longer depends on
+            # CNP/arm timing, so no separate bring-up-order run is needed.
+            gate_band = "p2p PASS: MonBandwidth>9.0 Gb/s AND Rc==LINE_RATE"
+            passed = live and (mon_steady > 9.0) and (rc_last == LINE_RATE_BPS)
+        else:
+            # Baseline FAIL-as-expected (HW-01): the baseline run's JOB is to REPRODUCE
+            # the collapse. INVERSION: a confirmed collapse is the EXPECTED outcome, so
+            # passed=True means "collapse reproduced as required by HW-01". If the FW
+            # unexpectedly held line rate at baseline (collapse NOT reproduced), the run
+            # FAILED its purpose -> passed=False. Read the exit code with this in mind.
+            gate_band = ("baseline collapse reproduced (FAIL-as-expected): "
+                         "MonBandwidth<2.0 Gb/s AND Rc fell AND CnpCounter>0")
+            collapse_reproduced = (mon_steady < 2.0) and (rc_min < rc_start) and (cnp_peak > 0)
+            passed = live and collapse_reproduced
+
+        run_mode = "--p2p" if args.p2p else "baseline"
 
         print(
             f"--- PRBS result ---\n"
@@ -400,6 +451,21 @@ if __name__ == "__main__":
             f"  PrbsRx.rxCount         : {rxCount} (target {args.target})\n"
             f"  Dma.SuccessCounter     : {success}\n"
             f"  RESULT                 : {'PASS' if passed else 'FAIL'}\n"
+            f"-------------------"
+        )
+
+        print(
+            f"--- FW telemetry ---\n"
+            f"  run mode               : {run_mode}\n"
+            f"  trajectory samples     : {len(traj)} (cadence {SAMPLE_PERIOD}s)\n"
+            f"  Dcqcn.Rc start         : {rc_start} B/s ({bps2gbps(rc_start):0.3f} Gb/s)\n"
+            f"  Dcqcn.Rc min           : {rc_min} B/s ({bps2gbps(rc_min):0.3f} Gb/s)\n"
+            f"  Dcqcn.Rc max           : {rc_max} B/s ({bps2gbps(rc_max):0.3f} Gb/s)\n"
+            f"  Dcqcn.Rc last          : {rc_last} B/s ({bps2gbps(rc_last):0.3f} Gb/s)\n"
+            f"  Dcqcn.CnpCounter peak  : {cnp_peak}\n"
+            f"  Rdma.MonBandwidth      : {mon_steady:0.3f} Gb/s (FW egress, steady)\n"
+            f"  gate band              : {gate_band}\n"
+            f"  VERDICT                : {'PASS' if passed else 'FAIL'}\n"
             f"-------------------"
         )
 
