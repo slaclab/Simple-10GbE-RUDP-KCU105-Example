@@ -120,6 +120,17 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "--p2p",
+        type     = argBool,
+        required = False,
+        default  = False,
+        help     = "Point-to-point bring-up switch: bypasses FW DCQCN "
+                   "(DcqcnBypass=True) and forces minimal RNR backoff "
+                   "(minRnrTimer=1), overriding any explicit --minRnrTimer. "
+                   "Couples both halves of the P2P fix into one flag.",
+    )
+
+    parser.add_argument(
         "--roceGidIndex",
         type     = int,
         required = False,
@@ -183,8 +194,23 @@ if __name__ == "__main__":
     # FPGA and host sides cannot drift. --minRnrTimer is the native RNR backoff
     # (FW<->NIC flow control); the remaining knobs (pmtu/rnrRetry/retryCount)
     # keep their proven acceptance-gate defaults.
+    #
+    # --p2p (D-07) forces minimal RNR backoff (code 1), unconditionally
+    # overriding any --minRnrTimer value. Notify the operator if --minRnrTimer
+    # was also passed with a non-default value so the override leaves an audit
+    # line (the DcqcnBypass=True half is applied live below via setP2pMode).
+    minRnrTimer = args.minRnrTimer
+    if args.p2p:
+        if args.minRnrTimer != 12:
+            print(
+                f"NOTICE: --p2p overrode --minRnrTimer={args.minRnrTimer} to 1 "
+                f"(minimal RNR backoff for point-to-point).",
+                file=sys.stderr,
+            )
+        minRnrTimer = 1
+
     transportCfg = pyrogue.protocols.RoCEv2TransportCfg(
-        minRnrTimer = args.minRnrTimer,
+        minRnrTimer = minRnrTimer,
     )
 
     #################################################################
@@ -200,6 +226,14 @@ if __name__ == "__main__":
         # Root.start() already ran the host<->FPGA bring-up; the RoCEv2 engine is
         # connected-but-idle here. Arming the source (DispatchEnable/TxEn) is below.
         rx = root.rdmaRx
+
+        # --p2p: enable the FW DCQCN bypass LIVE through the SW-03 helper so both
+        # halves of the P2P fix live in one place. setP2pMode also records the
+        # minimal RNR code for the next bring-up; the RNR=1 minimization for THIS
+        # run was already applied via transportCfg above (forwarded into the QP
+        # hand-off during start()).
+        if args.p2p:
+            root.setP2pMode(True)
 
         # MR parameters from the RoCEv2Server local variables. Per-frame length =
         # host maxPayload (full PMTU = FW MaxSize cap); this is the STARTING
@@ -288,7 +322,8 @@ if __name__ == "__main__":
         # repack FIFO -> PRBS source. The host only posts/consumes recv-WRs at its pace.
         # ----------------------------------------------------------------
         print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame, "
-              f"native RNR flow control, minRnrTimer={args.minRnrTimer})...")
+              f"native RNR flow control, minRnrTimer={minRnrTimer}, "
+              f"p2p={args.p2p})...")
         dma.DispatchEnable.set(True)
         prbs.TxEn.set(True)
 
