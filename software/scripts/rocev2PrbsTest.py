@@ -246,8 +246,8 @@ if __name__ == "__main__":
         locKey         = rx.FpgaLkey.get()
 
         prbs  = root.App.SsiPrbsTx
-        dma   = root.Core.RoCEv2Engine.Rdma
-        dcqcn = root.Core.RoCEv2Engine.Dcqcn   # FW telemetry: Rc/Rt/CnpCounter (RO, pollInterval=1)
+        dma   = root.Core.RoCEv2AxiStreamRdma.Core
+        dcqcn = root.Core.RoCEv2AxiStreamRdma.Dcqcn   # FW telemetry: Rc/Rt/CnpCounter (RO, pollInterval=1)
 
         # PRBS word size in bytes (SsiPrbsTx.WordSize = PRBS_SEED_SIZE_G bits), read
         # from the FW so the host tracks its config. PacketLength counts whole words,

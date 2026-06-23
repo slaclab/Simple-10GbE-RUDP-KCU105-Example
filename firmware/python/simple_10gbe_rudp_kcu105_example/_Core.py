@@ -60,10 +60,9 @@ class Core(pr.Device):
             ))
 
             if rocev2:
-                self.add(roce.RoCEv2Engine(
+                self.add(roce.RoCEv2AxiStreamRdma(
                     offset  = 0x0015_0000,
                     dcqcn   = dcqcn,
-                    rdma    = True,
                     expand  = False,
                     enabled = not sim,
                 ))

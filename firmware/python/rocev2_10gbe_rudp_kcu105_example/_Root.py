@@ -121,7 +121,7 @@ class Root(pr.Root):
         cfg = self._transportCfg
         try:
             params = self.rdmaRx.getHostParams()
-            fpga = self.Core.RoCEv2Engine.setupConnection(
+            fpga = self.Core.RoCEv2AxiStreamRdma.Engine.setupConnection(
                 **params._asdict(),
                 pmtu        = cfg.pmtu,
                 minRnrTimer = cfg.minRnrTimer,
@@ -155,7 +155,7 @@ class Root(pr.Root):
 
         Couples the two halves of the P2P fix:
 
-        1. Toggles the LIVE AXI-Lite register Core.RoCEv2Engine.Dcqcn.DcqcnBypass
+        1. Toggles the LIVE AXI-Lite register Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass
            — this is a live FPGA register, so the DCQCN bypass takes effect
            immediately. Guarded so a missing engine node (ip='sim'/'emu' or
            ROCEV2 disabled) degrades gracefully instead of aborting.
@@ -166,7 +166,7 @@ class Root(pr.Root):
            backoff (code 1) only re-applies on the next reconnect/restart.
         """
         try:
-            self.Core.RoCEv2Engine.Dcqcn.DcqcnBypass.set(enable)
+            self.Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass.set(enable)
         except AttributeError:
             pass
 
@@ -185,15 +185,15 @@ class Root(pr.Root):
         # The teardown MUST run here, before super().stop(): pr.Root.stop() ->
         # Device._stop() recurses through child devices in ADD order, and the RUDP
         # transport (self.rudp[0]) was added before Core, so it is torn down first.
-        # A RoCEv2Engine._stop() hook would therefore fire AFTER the metadata bus is
+        # A RoCEv2AxiStreamRdma.Engine._stop() hook would therefore fire AFTER the metadata bus is
         # already dead (register timeout) — verified on hardware. So disarm the
         # dispatcher and tear down the QP explicitly while the transport is still up.
         # Guarded so a missing Core.RoCEv2Engine node (or any teardown error) never
         # aborts stop() before super().stop() runs.
         try:
-            self.Core.RoCEv2Engine.Rdma.DispatchEnable.set(False)
+            self.Core.RoCEv2AxiStreamRdma.Core.DispatchEnable.set(False)
             time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
-            self.Core.RoCEv2Engine.teardownConnection()
+            self.Core.RoCEv2AxiStreamRdma.Engine.teardownConnection()
         except AttributeError:
             pass
         super().stop()
