@@ -145,6 +145,21 @@ class Root(pr.Root):
             hostIp = self.rdmaRx.HostIp.get()
             self.Core.UdpEngine.ClientRemotePort[0].set(4791)
             self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
+
+            # Mark egress Not-ECT on this switchless point-to-point link. The FW
+            # default is ECT(0) (ECN_G="10"), which opts the flow into the host
+            # NIC's hardware DCQCN: under throttle-induced microbursts the NIC
+            # CE-marks + returns CNPs, the FW DCQCN throttles, and the loop is
+            # self-sustaining (CNPs reset the rate-increase timer faster than it
+            # can fire) — so throughput collapses and only recovers on a source
+            # drain. There is no ECN-marking fabric here, so Not-ECT removes the
+            # spurious trigger entirely. Set EcnFlag back to ECT(0) (2) at runtime
+            # if this design is ever deployed behind a real ECN/DCQCN fabric.
+            try:
+                self.Core.UdpEngine.EcnFlag.set(0)  # 0 = Not-ECT
+            except AttributeError:
+                pass
+
             self.rdmaRx.printConnInfo()
         except Exception:
             self.stop()
