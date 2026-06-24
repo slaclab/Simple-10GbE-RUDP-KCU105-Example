@@ -123,11 +123,41 @@ if __name__ == "__main__":
         "--p2p",
         type     = argBool,
         required = False,
-        default  = False,
-        help     = "Point-to-point bring-up switch: bypasses FW DCQCN "
-                   "(DcqcnBypass=True) and forces minimal RNR backoff "
-                   "(minRnrTimer=1), overriding any explicit --minRnrTimer. "
-                   "Couples both halves of the P2P fix into one flag.",
+        default  = True,
+        help     = "Point-to-point bring-up switch (DEFAULT True for the switchless "
+                   "bench): forces Not-ECT egress + no DSCP marking, bypasses FW DCQCN "
+                   "(DcqcnBypass=True), and forces minimal RNR backoff (minRnrTimer=1), "
+                   "overriding any explicit --minRnrTimer. Pass --p2p false for a managed "
+                   "ECN fabric, then tune --dscp/--ecn/--enableDcqcn.",
+    )
+
+    parser.add_argument(
+        "--dscp",
+        type     = int,
+        required = False,
+        default  = 26,
+        help     = "Managed-fabric only (ignored when --p2p true): IP-header DSCP for "
+                   "TX packets (0-63). Default 26 = AF31; set to match the switch "
+                   "lossless/ECN traffic class.",
+    )
+
+    parser.add_argument(
+        "--ecn",
+        type     = int,
+        required = False,
+        default  = 2,
+        help     = "Managed-fabric only (ignored when --p2p true): IP-header ECN field "
+                   "(0=Not-ECT, 1=ECT(1), 2=ECT(0)/b\"10\", 3=CE). Default 2 = ECT(0) "
+                   "opts the flow into the fabric's ECN/DCQCN congestion control.",
+    )
+
+    parser.add_argument(
+        "--enableDcqcn",
+        type     = argBool,
+        required = False,
+        default  = True,
+        help     = "Managed-fabric only (ignored when --p2p true): run FW DCQCN "
+                   "congestion control (False bypasses it via DcqcnBypass).",
     )
 
     parser.add_argument(
@@ -198,7 +228,8 @@ if __name__ == "__main__":
     # --p2p forces minimal RNR backoff (code 1), unconditionally
     # overriding any --minRnrTimer value. Notify the operator if --minRnrTimer
     # was also passed with a non-default value so the override leaves an audit
-    # line (the DcqcnBypass=True half is applied live below via setP2pMode).
+    # line (the Not-ECT + DcqcnBypass halves are applied inside Root.start()
+    # from the p2p/dscp/ecn/enableDcqcn args forwarded below).
     minRnrTimer = args.minRnrTimer
     if args.p2p:
         if args.minRnrTimer != 12:
@@ -218,22 +249,20 @@ if __name__ == "__main__":
     with roceBoard.Root(
         rocev2Cfg    = rocev2Cfg,
         transportCfg = transportCfg,
+        p2p          = args.p2p,
+        dscp         = args.dscp,
+        ecn          = args.ecn,
+        enableDcqcn  = args.enableDcqcn,
         pollEn       = args.pollEn,
         initRead     = args.initRead,
         zmqSrvPort   = args.zmqSrvPort,
     ) as root:
 
         # Root.start() already ran the host<->FPGA bring-up; the RoCEv2 engine is
-        # connected-but-idle here. Arming the source (DispatchEnable/TxEn) is below.
+        # connected-but-idle here, and the egress ECN/DSCP + DCQCN-bypass posture
+        # (p2p vs managed fabric) was applied inside start() from the args above.
+        # Arming the source (DispatchEnable/TxEn) is below.
         rx = root.rdmaRx
-
-        # --p2p: enable the FW DCQCN bypass LIVE through the setP2pMode helper so
-        # both halves of the P2P fix live in one place. setP2pMode also records the
-        # minimal RNR code for the next bring-up; the RNR=1 minimization for THIS
-        # run was already applied via transportCfg above (forwarded into the QP
-        # hand-off during start()).
-        if args.p2p:
-            root.setP2pMode(True)
 
         # MR parameters from the RoCEv2Server local variables. Per-frame length =
         # host maxPayload (full PMTU = FW MaxSize cap); this is the STARTING

@@ -435,8 +435,8 @@ begin
          -- General IPv4/ARP/DHCP Generics
          DHCP_G              => DHCP_G,
          CLK_FREQ_G          => CLK_FREQUENCY_C,
-         DSCP_G              => 26,
-         ECN_G               => "10",
+         DSCP_G              => 0,            -- p2p default: no DSCP marking (set Core.UdpEngine.Dscp=26/AF31 at runtime for a managed fabric)
+         ECN_G               => "00",         -- p2p default: Not-ECT, keeps host NIC DCQCN disengaged (set EcnFlag=ECT(0) at runtime for a managed fabric)
          COMM_TIMEOUT_G      => 10)           -- Timeout used for ARP and DHCP
       port map (
          -- Local Configurations

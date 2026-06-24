@@ -34,8 +34,19 @@ class Root(pr.Root):
             zmqSrvPort  = 9099,   # Set to zero if dynamic (instead of static)
             useDcqcn    = True,   # Enable DCQCN congestion control in the Core
             transportCfg = None,  # RoCEv2TransportCfg: transport/QP-tuning knobs
+            p2p         = True,   # Default to switchless point-to-point bring-up (Not-ECT, DCQCN bypassed)
+            dscp        = 26,     # Managed-fabric only (p2p=False): IP-header DSCP (26 = AF31)
+            ecn         = 2,      # Managed-fabric only (p2p=False): IP-header ECN (2 = ECT(0) = b"10")
+            enableDcqcn = True,   # Managed-fabric only (p2p=False): run FW DCQCN (False bypasses it)
             **kwargs):
         super().__init__(timeout=5.0, **kwargs)
+
+        # Bring-up posture: p2p drives the egress ECN/DSCP and DCQCN-bypass setup
+        # in start(). The dscp/ecn/enableDcqcn knobs only apply when p2p is False.
+        self._p2p         = p2p
+        self._dscp        = dscp
+        self._ecn         = ecn
+        self._enableDcqcn = enableDcqcn
 
         # Single transport/QP-tuning cfg forwarded into BOTH engine.setupConnection()
         # and server.completeConnection() so the FPGA and host sides cannot drift.
@@ -146,19 +157,34 @@ class Root(pr.Root):
             self.Core.UdpEngine.ClientRemotePort[0].set(4791)
             self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
 
-            # Mark egress Not-ECT on this switchless point-to-point link. The FW
-            # default is ECT(0) (ECN_G="10"), which opts the flow into the host
-            # NIC's hardware DCQCN: under throttle-induced microbursts the NIC
-            # CE-marks + returns CNPs, the FW DCQCN throttles, and the loop is
-            # self-sustaining (CNPs reset the rate-increase timer faster than it
-            # can fire) — so throughput collapses and only recovers on a source
-            # drain. There is no ECN-marking fabric here, so Not-ECT removes the
-            # spurious trigger entirely. Set EcnFlag back to ECT(0) (2) at runtime
-            # if this design is ever deployed behind a real ECN/DCQCN fabric.
+            # Configure egress ECN/DSCP and DCQCN posture for the deployment.
+            #
+            # p2p (default): switchless point-to-point link. Force Not-ECT and
+            # no DSCP marking, and bypass DCQCN. The FW reset default is already
+            # Not-ECT/DSCP=0 (Rudp.vhd U_UDP), but set it explicitly so the
+            # posture holds regardless of prior runtime state. Rationale: ECT(0)
+            # opts the flow into the host NIC's hardware DCQCN; under
+            # throttle-induced microbursts the NIC CE-marks + returns CNPs, the
+            # FW DCQCN throttles, and the loop is self-sustaining (CNPs reset the
+            # rate-increase timer faster than it can fire) — throughput collapses
+            # and only recovers on a source drain. No ECN-marking fabric exists
+            # here, so Not-ECT removes the spurious trigger entirely.
+            #
+            # Managed fabric (p2p=False): apply the configured DSCP/ECN so the
+            # flow joins the switch lossless/ECN traffic class, and leave DCQCN
+            # active (bypass off) unless enableDcqcn was cleared.
             try:
-                self.Core.UdpEngine.EcnFlag.set(0)  # 0 = Not-ECT
+                if self._p2p:
+                    self.Core.UdpEngine.EcnFlag.set(0)  # 0 = Not-ECT
+                    self.Core.UdpEngine.Dscp.set(0)
+                else:
+                    self.Core.UdpEngine.EcnFlag.set(self._ecn)
+                    self.Core.UdpEngine.Dscp.set(self._dscp)
             except AttributeError:
                 pass
+            # DcqcnBypass + RNR backoff: bypass for p2p, or for an explicit
+            # enableDcqcn=False on a fabric. setP2pMode() guards its own writes.
+            self.setP2pMode(self._p2p or not self._enableDcqcn)
 
             self.rdmaRx.printConnInfo()
         except Exception:
