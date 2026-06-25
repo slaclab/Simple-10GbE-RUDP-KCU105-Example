@@ -219,17 +219,14 @@ if __name__ == "__main__":
         gidIndex    = gidIndex,
     )
 
-    # Transport / QP-tuning config. The single instance is forwarded by the Root
-    # into BOTH engine.setupConnection() and server.completeConnection() so the
-    # FPGA and host sides cannot drift. --minRnrTimer is the native RNR backoff
-    # (FW<->NIC flow control); the remaining knobs (pmtu/rnrRetry/retryCount)
-    # keep their proven acceptance-gate defaults.
+    # Transport / QP-tuning config. The Root forwards the single instance into BOTH
+    # engine.setupConnection() and server.completeConnection() so the FPGA and host
+    # cannot drift. --minRnrTimer is the native RNR backoff (FW<->NIC flow control);
+    # pmtu/rnrRetry/retryCount keep their proven acceptance-gate defaults.
     #
-    # --p2p forces minimal RNR backoff (code 1), unconditionally
-    # overriding any --minRnrTimer value. Notify the operator if --minRnrTimer
-    # was also passed with a non-default value so the override leaves an audit
-    # line (the Not-ECT + DcqcnBypass halves are applied inside Root.start()
-    # from the p2p/dscp/ecn/enableDcqcn args forwarded below).
+    # --p2p forces minimal RNR backoff (code 1), overriding any --minRnrTimer; log an
+    # audit line if a non-default --minRnrTimer was also passed. (The Not-ECT +
+    # DcqcnBypass halves are applied in Root.start() from the args forwarded below.)
     minRnrTimer = args.minRnrTimer
     if args.p2p:
         if args.minRnrTimer != 12:
@@ -266,8 +263,8 @@ if __name__ == "__main__":
 
         # MR parameters from the RoCEv2Server local variables. The on-wire RDMA SEND =
         # one full PMTU (= host maxPayload = FW MaxSize cap). The FW AxiStreamPacketizer2
-        # wraps each raw PRBS frame with a 16B hdr+tail (no CRC), so the raw PRBS payload
-        # is one PMTU MINUS that overhead; raw + overhead = the PMTU-sized SEND.
+        # adds a 16B hdr+tail per frame, so the raw PRBS payload is one PMTU minus that
+        # overhead and raw + overhead = the PMTU-sized SEND.
         PKTZR_OVERHEAD = 16  # AxiStreamPacketizer2 header word + tail word (CRC_MODE_G="NONE")
         rx_queue_depth = rx.RxQueueDepth.get()
         max_payload    = rx.MaxPayload.get()
@@ -318,10 +315,9 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
         # Configure the PRBS source + DMA dispatch registers
         # ----------------------------------------------------------------
-        # PacketLength in PRBS words: (raw_payload // word_bytes) - 1, where raw_payload
-        # is the PMTU minus the 16B packetizer overhead so the packetized SEND lands at
-        # exactly one PMTU. Changeable LIVE in the GUI — the FW frames each SEND from the
-        # inbound tLast (no Len register) and handles a partial final beat.
+        # PacketLength in PRBS words: (raw_payload // word_bytes) - 1, sized so the
+        # packetized SEND lands at exactly one PMTU. Changeable LIVE in the GUI — the FW
+        # frames each SEND from the inbound tLast (no Len register), partial beats OK.
         prbs.PacketLength.set(raw_payload // word_bytes - 1)
 
         # PRBS packet rate. TrigDly=0 free-runs at full line rate; a positive
@@ -360,14 +356,12 @@ if __name__ == "__main__":
               f"per frame, native RNR flow control, minRnrTimer={minRnrTimer}, "
               f"p2p={args.p2p})...")
 
-        # Line-rate recipe: when free-running the PRBS source (--trigRate <= 0,
-        # the same condition that set TrigDly=0 above), blind the host payload validator.
-        # The Python PrbsRx consumer saturates ~25-30 kHz and CANNOT keep up at line rate,
-        # so per-frame checking would report spurious errors. Throughput is gated on the FW
-        # MonBandwidth telemetry, NOT rxErrors, in line-rate runs. checkPayload is a
-        # live rogue RW LocalVariable, so this propagates to the C++ engine at runtime — no
-        # _Root.py change. Throttled runs (--trigRate > 0) keep the _Root.py default (True)
-        # so the existing per-frame-integrity run is unchanged.
+        # Line-rate run (--trigRate <= 0, same condition that set TrigDly=0): blind the
+        # host payload validator. The Python PrbsRx consumer saturates ~25-30 kHz and
+        # cannot keep up at line rate, so per-frame checking would report spurious
+        # errors; throughput is gated on FW MonBandwidth instead of rxErrors. checkPayload
+        # is a live rogue RW LocalVariable, so this propagates to the C++ engine at
+        # runtime. Throttled runs (--trigRate > 0) keep the default (True), unchanged.
         if args.trigRate <= 0:
             print("NOTICE: line-rate run — disabling host PrbsRx.checkPayload "
                   "(rxErrors NOT gated; FW MonBandwidth is the throughput gate).",
@@ -381,12 +375,11 @@ if __name__ == "__main__":
         # Poll rxCount to the target — the receiver fills continuously
         # ----------------------------------------------------------------
         # FW-telemetry trajectory sampler: snapshot (t_rel, Rc, Rt, CnpCounter,
-        # MonBandwidth) at a coarse ~0.5 s cadence into `traj` so a line-rate run captures
-        # the Rc collapse trajectory over time (e.g. Rc LINE/2->Rmin under DCQCN throttle),
-        # not just an endpoint. Gated by a monotonic `nextSample` deadline so the 0.05 s
-        # rxCount poll cadence and the timeout/break semantics below are unchanged. Reads
-        # are .get() against the pollInterval=1 register cache. rxCount stays a liveness
-        # loop condition only.
+        # MonBandwidth) into `traj` at a ~0.5 s cadence so a line-rate run captures the
+        # Rc collapse trajectory (e.g. Rc LINE/2->Rmin under DCQCN throttle), not just an
+        # endpoint. A monotonic `nextSample` deadline keeps the 0.05 s rxCount poll
+        # cadence and timeout/break semantics below unchanged. Reads hit the
+        # pollInterval=1 register cache; rxCount stays a liveness loop condition only.
         SAMPLE_PERIOD = 0.5
         traj      = []
         loopStart = time.monotonic()
@@ -455,23 +448,18 @@ if __name__ == "__main__":
         bps2gbps = lambda b: b * 8.0 / 1.0e9    # same conversion MonBandwidth uses
 
         # ----------------------------------------------------------------
-        # Verdict — selected by run type (throttled vs line-rate):
+        # Verdict — selected by run type:
         #
-        #  * Throttled / default run (--trigRate > 0, checkPayload=True): the
-        #    per-frame-integrity acceptance test. Verdict is zero PRBS errors AND
-        #    target frames received. The FW-telemetry block below still prints
-        #    (informational), but rxErrors is the source of truth here.
+        #  * Throttled / default (--trigRate > 0, checkPayload=True): per-frame
+        #    integrity test — PASS = zero PRBS errors AND target frames received.
+        #    rxErrors is the source of truth; the FW-telemetry block is informational.
         #
-        #  * Line-rate run (--trigRate <= 0, checkPayload off): host PrbsRx is blinded,
-        #    so the verdict is gated on FW egress MonBandwidth, with rxCount>=target
-        #    retained as a liveness precondition. --p2p additionally requires Rc pinned
-        #    at LINE_RATE.
-        #
-        # The baseline line-rate run PASSES when it sustains near-line-rate FW egress,
-        # like any other run; Rc/CnpCounter are reported (for collapse analysis), not
-        # gated, on the baseline branch. (On a switchless point-to-point bench there is
-        # no congested switch to ECN CE-mark traffic, so DCQCN sees no CNPs and does not
-        # throttle — baseline holds line rate.)
+        #  * Line-rate (--trigRate <= 0, checkPayload off): PrbsRx is blinded, so the
+        #    verdict gates on FW egress MonBandwidth with rxCount>=target as a liveness
+        #    precondition. --p2p additionally requires Rc pinned at LINE_RATE; the
+        #    baseline branch reports Rc/CnpCounter for collapse analysis but does not
+        #    gate on them (no switch to CE-mark traffic on a switchless bench, so DCQCN
+        #    sees no CNPs and baseline holds line rate).
         # ----------------------------------------------------------------
         live = (rxCount >= args.target)
 
