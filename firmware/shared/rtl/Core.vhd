@@ -31,66 +31,71 @@ use unisim.vcomponents.all;
 
 entity Core is
    generic (
-      TPD_G        : time := 1 ns;
+      TPD_G        : time    := 1 ns;
       BUILD_INFO_G : BuildInfoType;
+      ROCEV2_EN_G  : boolean := false;
+      DCQCN_EN_G   : boolean := false;
       SIMULATION_G : boolean;
       ETH_BUILD_G  : BuildEthType;
       IP_ADDR_G    : slv(31 downto 0);
       DHCP_G       : boolean);
    port (
       -- Clock and Reset
-      axilClk         : out   sl;
-      axilRst         : out   sl;
+      axilClk           : out   sl;
+      axilRst           : out   sl;
       -- AXI-Stream Interface
-      ibRudpMaster    : in    AxiStreamMasterType;
-      ibRudpSlave     : out   AxiStreamSlaveType;
-      obRudpMaster    : out   AxiStreamMasterType;
-      obRudpSlave     : in    AxiStreamSlaveType;
+      ibRudpMaster      : in    AxiStreamMasterType;
+      ibRudpSlave       : out   AxiStreamSlaveType;
+      obRudpMaster      : out   AxiStreamMasterType;
+      obRudpSlave       : in    AxiStreamSlaveType;
       -- AXI-Lite Interface
-      axilReadMaster  : out   AxiLiteReadMasterType;
-      axilReadSlave   : in    AxiLiteReadSlaveType;
-      axilWriteMaster : out   AxiLiteWriteMasterType;
-      axilWriteSlave  : in    AxiLiteWriteSlaveType;
+      axilReadMaster    : out   AxiLiteReadMasterType;
+      axilReadSlave     : in    AxiLiteReadSlaveType;
+      axilWriteMaster   : out   AxiLiteWriteMasterType;
+      axilWriteSlave    : in    AxiLiteWriteSlaveType;
+      -- RDMA AXI-Stream Interface (from App master, to Rudp slave)
+      rdmaMaster        : in    AxiStreamMasterType := AXI_STREAM_MASTER_INIT_C;
+      rdmaSlave         : out   AxiStreamSlaveType;
       -- I2C Ports
-      sfpTxDisL       : out   sl;
-      i2cRstL         : out   sl;
-      i2cScl          : inout sl;
-      i2cSda          : inout sl;
+      sfpTxDisL         : out   sl;
+      i2cRstL           : out   sl;
+      i2cScl            : inout sl;
+      i2cSda            : inout sl;
       -- SYSMON Ports
-      vPIn            : in    sl;
-      vNIn            : in    sl;
+      vPIn              : in    sl;
+      vNIn              : in    sl;
       -- System Ports
-      extRst          : in    sl;
-      sysClk300P      : in    sl;
-      sysClk300N      : in    sl;
-      emcClk          : in    sl;
-      heartbeat       : out   sl;
-      phyReady        : out   sl;
-      rssiLinkUp      : out   slv(1 downto 0);
+      extRst            : in    sl;
+      sysClk300P        : in    sl;
+      sysClk300N        : in    sl;
+      emcClk            : in    sl;
+      heartbeat         : out   sl;
+      phyReady          : out   sl;
+      rssiLinkUp        : out   slv(1 downto 0);
       -- Boot Memory Ports
-      flashCsL        : out   sl;
-      flashMosi       : out   sl;
-      flashMiso       : in    sl;
-      flashHoldL      : out   sl;
-      flashWp         : out   sl;
+      flashCsL          : out   sl;
+      flashMosi         : out   sl;
+      flashMiso         : in    sl;
+      flashHoldL        : out   sl;
+      flashWp           : out   sl;
       -- SFP ETH Ports
-      ethClkP         : in    sl;
-      ethClkN         : in    sl;
-      ethRxP          : in    sl;
-      ethRxN          : in    sl;
-      ethTxP          : out   sl;
-      ethTxN          : out   sl;
+      ethClkP           : in    sl;
+      ethClkN           : in    sl;
+      ethRxP            : in    sl;
+      ethRxN            : in    sl;
+      ethTxP            : out   sl;
+      ethTxN            : out   sl;
       -- RJ45 ETH Ports
-      phyClkP         : in    sl;
-      phyClkN         : in    sl;
-      phyRxP          : in    sl;
-      phyRxN          : in    sl;
-      phyTxP          : out   sl;
-      phyTxN          : out   sl;
-      phyMdc          : out   sl;
-      phyMdio         : inout sl;
-      phyRstN         : out   sl;
-      phyIrqN         : in    sl);
+      phyClkP           : in    sl;
+      phyClkN           : in    sl;
+      phyRxP            : in    sl;
+      phyRxN            : in    sl;
+      phyTxP            : out   sl;
+      phyTxN            : out   sl;
+      phyMdc            : out   sl;
+      phyMdio           : inout sl;
+      phyRstN           : out   sl;
+      phyIrqN           : in    sl);
 end Core;
 
 architecture mapping of Core is
@@ -199,51 +204,56 @@ begin
             ETH_BUILD_G      => ETH_BUILD_G,
             IP_ADDR_G        => IP_ADDR_G,
             DHCP_G           => DHCP_G,
+            ROCEV2_EN_G      => ROCEV2_EN_G,
+            DCQCN_EN_G       => DCQCN_EN_G,
             AXIL_BASE_ADDR_G => XBAR_CONFIG_C(ETH_INDEX_C).baseAddr)
          port map (
             -- System Ports
-            extRst           => extRst,
-            sysClk300P       => sysClk300P,
-            sysClk300N       => sysClk300N,
+            extRst            => extRst,
+            sysClk300P        => sysClk300P,
+            sysClk300N        => sysClk300N,
             -- Ethernet Status
-            phyReady         => phyReady,
-            rssiLinkUp       => rssiLinkUp,
+            phyReady          => phyReady,
+            rssiLinkUp        => rssiLinkUp,
             -- Clock and Reset
-            axilClk          => clk,
-            axilRst          => rst,
+            axilClk           => clk,
+            axilRst           => rst,
             -- AXI-Stream Interface
-            ibRudpMaster     => ibRudpMaster,
-            ibRudpSlave      => ibRudpSlave,
-            obRudpMaster     => obRudpMaster,
-            obRudpSlave      => obRudpSlave,
+            ibRudpMaster      => ibRudpMaster,
+            ibRudpSlave       => ibRudpSlave,
+            obRudpMaster      => obRudpMaster,
+            obRudpSlave       => obRudpSlave,
             -- Master AXI-Lite Interface
-            mAxilReadMaster  => mAxilReadMaster,
-            mAxilReadSlave   => mAxilReadSlave,
-            mAxilWriteMaster => mAxilWriteMaster,
-            mAxilWriteSlave  => mAxilWriteSlave,
+            mAxilReadMaster   => mAxilReadMaster,
+            mAxilReadSlave    => mAxilReadSlave,
+            mAxilWriteMaster  => mAxilWriteMaster,
+            mAxilWriteSlave   => mAxilWriteSlave,
             -- Slave AXI-Lite Interfaces
-            sAxilReadMaster  => axilReadMasters(ETH_INDEX_C),
-            sAxilReadSlave   => axilReadSlaves(ETH_INDEX_C),
-            sAxilWriteMaster => axilWriteMasters(ETH_INDEX_C),
-            sAxilWriteSlave  => axilWriteSlaves(ETH_INDEX_C),
+            sAxilReadMaster   => axilReadMasters(ETH_INDEX_C),
+            sAxilReadSlave    => axilReadSlaves(ETH_INDEX_C),
+            sAxilWriteMaster  => axilWriteMasters(ETH_INDEX_C),
+            sAxilWriteSlave   => axilWriteSlaves(ETH_INDEX_C),
+            -- RDMA AXI-Stream Interface
+            rdmaMaster        => rdmaMaster,
+            rdmaSlave         => rdmaSlave,
             -- SFP ETH Ports
-            ethClkP          => ethClkP,
-            ethClkN          => ethClkN,
-            ethRxP           => ethRxP,
-            ethRxN           => ethRxN,
-            ethTxP           => ethTxP,
-            ethTxN           => ethTxN,
+            ethClkP           => ethClkP,
+            ethClkN           => ethClkN,
+            ethRxP            => ethRxP,
+            ethRxN            => ethRxN,
+            ethTxP            => ethTxP,
+            ethTxN            => ethTxN,
             -- RJ45 ETH Ports
-            phyClkP          => phyClkP,
-            phyClkN          => phyClkN,
-            phyRxP           => phyRxP,
-            phyRxN           => phyRxN,
-            phyTxP           => phyTxP,
-            phyTxN           => phyTxN,
-            phyMdc           => phyMdc,
-            phyMdio          => phyMdio,
-            phyRstN          => phyRstN,
-            phyIrqN          => phyIrqN);
+            phyClkP           => phyClkP,
+            phyClkN           => phyClkN,
+            phyRxP            => phyRxP,
+            phyRxN            => phyRxN,
+            phyTxP            => phyTxP,
+            phyTxN            => phyTxN,
+            phyMdc            => phyMdc,
+            phyMdio           => phyMdio,
+            phyRstN           => phyRstN,
+            phyIrqN           => phyIrqN);
 
    end generate;
 

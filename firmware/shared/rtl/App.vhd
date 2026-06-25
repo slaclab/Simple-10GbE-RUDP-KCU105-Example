@@ -18,12 +18,19 @@ use ieee.std_logic_1164.all;
 library surf;
 use surf.StdRtlPkg.all;
 use surf.AxiStreamPkg.all;
+use surf.SsiPkg.all;
 use surf.AxiLitePkg.all;
+use surf.RssiPkg.all;
+
+library work;
+use work.CorePkg.all;
 
 entity App is
    generic (
-      TPD_G        : time    := 1 ns;
-      SIMULATION_G : boolean := false);
+      TPD_G           : time    := 1 ns;
+      AXIS_CLK_FREQ_G : real    := 156.25E+6;
+      ROCEV2_EN_G     : boolean := false;
+      SIMULATION_G    : boolean := false);
    port (
       -- Clock and Reset
       axilClk         : in  sl;
@@ -33,6 +40,9 @@ entity App is
       ibRudpSlave     : in  AxiStreamSlaveType;
       obRudpMaster    : in  AxiStreamMasterType;
       obRudpSlave     : out AxiStreamSlaveType;
+      -- RDMA AXI-Stream Interface
+      rdmaMaster      : out AxiStreamMasterType;
+      rdmaSlave       : in  AxiStreamSlaveType := AXI_STREAM_SLAVE_FORCE_C;
       -- AXI-Lite Interface
       axilReadMaster  : in  AxiLiteReadMasterType;
       axilReadSlave   : out AxiLiteReadSlaveType;
@@ -42,10 +52,12 @@ end App;
 
 architecture mapping of App is
 
-   constant TX_INDEX_C  : natural := 0;
-   constant MEM_INDEX_C : natural := 1;
+   constant TX_INDEX_C       : natural := 0;
+   constant MEM_INDEX_C      : natural := 1;
+   constant PRBS_INDEX_C     : natural := 2;
+   constant RDMA_MON_INDEX_C : natural := 3;
 
-   constant NUM_AXIL_MASTERS_C : positive := 2;
+   constant NUM_AXIL_MASTERS_C : positive := 4;
 
    constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
 
@@ -53,6 +65,9 @@ architecture mapping of App is
    signal axilWriteSlaves  : AxiLiteWriteSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0) := (others => AXI_LITE_WRITE_SLAVE_EMPTY_SLVERR_C);
    signal axilReadMasters  : AxiLiteReadMasterArray(NUM_AXIL_MASTERS_C-1 downto 0);
    signal axilReadSlaves   : AxiLiteReadSlaveArray(NUM_AXIL_MASTERS_C-1 downto 0)  := (others => AXI_LITE_READ_SLAVE_EMPTY_SLVERR_C);
+
+   signal prbsAxisMaster : AxiStreamMasterType;
+   signal prbsAxisSlave  : AxiStreamSlaveType;
 
 begin
 
@@ -120,5 +135,82 @@ begin
          axiReadSlave   => axilReadSlaves(MEM_INDEX_C),
          axiWriteMaster => axilWriteMasters(MEM_INDEX_C),
          axiWriteSlave  => axilWriteSlaves(MEM_INDEX_C));
+
+   GEN_ROCEV2_APP_LOGIC : if ROCEV2_EN_G generate
+
+      --------------------------------
+      -- PRBS payload source (host/AXI-Lite-controlled)
+      --------------------------------
+      U_SsiPrbsTx : entity surf.SsiPrbsTx
+         generic map (
+            TPD_G                      => TPD_G,
+            AXI_EN_G                   => '1',
+            AXI_DEFAULT_PKT_LEN_G      => toSlv(509, 32),  -- 510 words x 8B = 4080B raw; +16B packetizer = 4096B SEND
+            GEN_SYNC_FIFO_G            => true,
+            PRBS_SEED_SIZE_G           => 8*RDMA_AXIS_CONFIG_C.TDATA_BYTES_C,
+            PRBS_INCREMENT_G           => false,
+            MASTER_AXI_STREAM_CONFIG_G => RDMA_AXIS_CONFIG_C)
+         port map (
+            -- Master Port (mAxisClk domain)
+            mAxisClk        => axilClk,
+            mAxisRst        => axilRst,
+            mAxisMaster     => prbsAxisMaster,
+            mAxisSlave      => prbsAxisSlave,
+            -- Trigger Signal (locClk domain); AXI_EN_G='1' -> host owns trig/length
+            locClk          => axilClk,
+            locRst          => axilRst,
+            -- AXI-Lite Interface
+            axilReadMaster  => axilReadMasters(PRBS_INDEX_C),
+            axilReadSlave   => axilReadSlaves(PRBS_INDEX_C),
+            axilWriteMaster => axilWriteMasters(PRBS_INDEX_C),
+            axilWriteSlave  => axilWriteSlaves(PRBS_INDEX_C));
+
+
+      --------------------------------
+      -- AXI-Stream Monitor on the RDMA stream
+      --------------------------------
+      U_RdmaAxisMon : entity surf.AxiStreamMonAxiL
+         generic map (
+            TPD_G            => TPD_G,
+            COMMON_CLK_G     => true,
+            AXIS_CLK_FREQ_G  => AXIS_CLK_FREQ_G,
+            AXIS_NUM_SLOTS_G => 1,
+            AXIS_CONFIG_G    => RDMA_AXIS_CONFIG_C)
+         port map (
+            -- AXIS Stream Interface
+            axisClk          => axilClk,
+            axisRst          => axilRst,
+            axisMasters(0)   => prbsAxisMaster,
+            axisSlaves(0)    => prbsAxisSlave,
+            -- AXI lite slave port for register access
+            axilClk          => axilClk,
+            axilRst          => axilRst,
+            sAxilWriteMaster => axilWriteMasters(RDMA_MON_INDEX_C),
+            sAxilWriteSlave  => axilWriteSlaves(RDMA_MON_INDEX_C),
+            sAxilReadMaster  => axilReadMasters(RDMA_MON_INDEX_C),
+            sAxilReadSlave   => axilReadSlaves(RDMA_MON_INDEX_C));
+
+      U_Packetizer : entity surf.AxiStreamPacketizer2
+         generic map (
+            TPD_G                => TPD_G,
+            MEMORY_TYPE_G        => "block",
+            REG_EN_G             => true,
+            CRC_MODE_G           => "NONE",  -- NONE because RoCEv2 always has a CRC
+            MAX_PACKET_BYTES_G   => 4096,    -- PMTU=4096
+            INPUT_PIPE_STAGES_G  => 1,
+            OUTPUT_PIPE_STAGES_G => 1)
+         port map (
+            axisClk     => axilClk,
+            axisRst     => axilRst,
+            sAxisMaster => prbsAxisMaster,
+            sAxisSlave  => prbsAxisSlave,
+            mAxisMaster => rdmaMaster,
+            mAxisSlave  => rdmaSlave);
+
+   end generate GEN_ROCEV2_APP_LOGIC;
+
+   GEN_ROCEV2_TIEOFF : if (not ROCEV2_EN_G) generate
+      rdmaMaster <= AXI_STREAM_MASTER_INIT_C;
+   end generate GEN_ROCEV2_TIEOFF;
 
 end mapping;
