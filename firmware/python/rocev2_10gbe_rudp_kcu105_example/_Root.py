@@ -135,62 +135,58 @@ class Root(pr.Root):
         # transport/poll threads or a half-established QP. Unwind through stop()
         # before re-raising; teardownConnection() is a no-op when no QP is live.
         cfg = self._transportCfg
-        try:
-            params = self.rdmaRx.getHostParams()
-            fpga = self.Core.RoCEv2AxiStreamRdma.Engine.setupConnection(
-                **params._asdict(),
-                pmtu        = cfg.pmtu,
-                minRnrTimer = cfg.minRnrTimer,
-                rnrRetry    = cfg.rnrRetry,
-                retryCount  = cfg.retryCount,
-            )
-            self.rdmaRx.completeConnection(
-                fpga.fpgaQpn,
-                fpgaLkey    = fpga.lkey,
-                pmtu        = cfg.pmtu,
-                minRnrTimer = cfg.minRnrTimer,
-                rnrRetry    = cfg.rnrRetry,
-                retryCount  = cfg.retryCount,
-            )
 
-            # Point the FW UDP engine at the host NIC. Ordering vs the hand-off above
-            # is free: that runs over the SRP register bus (port 8192), while the 4791
-            # RoCEv2 datapath only carries traffic once DispatchEnable is armed later.
-            hostIp = self.rdmaRx.HostIp.get()
-            self.Core.UdpEngine.ClientRemotePort[0].set(4791)
-            self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
+        params = self.rdmaRx.getHostParams()
+        fpga = self.Core.RoCEv2AxiStreamRdma.Engine.setupConnection(
+            **params._asdict(),
+            pmtu        = cfg.pmtu,
+            minRnrTimer = cfg.minRnrTimer,
+            rnrRetry    = cfg.rnrRetry,
+            retryCount  = cfg.retryCount,
+        )
+        self.rdmaRx.completeConnection(
+            fpga.fpgaQpn,
+            fpgaLkey    = fpga.lkey,
+            pmtu        = cfg.pmtu,
+            minRnrTimer = cfg.minRnrTimer,
+            rnrRetry    = cfg.rnrRetry,
+            retryCount  = cfg.retryCount,
+        )
 
-            # Configure egress ECN/DSCP and DCQCN posture for the deployment.
-            #
-            # p2p (default): switchless link. Force Not-ECT, no DSCP marking, and
-            # bypass DCQCN. The FW reset default is already Not-ECT/DSCP=0 (Rudp.vhd
-            # U_UDP); set it explicitly so the posture holds regardless of prior
-            # runtime state. ECT(0) would opt the flow into the host NIC's hardware
-            # DCQCN: with no ECN-marking fabric here, throttle-induced microbursts get
-            # CE-marked, the NIC returns CNPs, and the FW throttle self-sustains (CNPs
-            # reset the rate-increase timer faster than it fires) — throughput
-            # collapses until a source drain. Not-ECT removes that spurious trigger.
-            #
-            # Managed fabric (p2p=False): apply the configured DSCP/ECN to join the
-            # switch lossless/ECN traffic class, leaving DCQCN active unless
-            # enableDcqcn was cleared.
-            try:
-                if self._p2p:
-                    self.Core.UdpEngine.EcnFlag.set(0)  # 0 = Not-ECT
-                    self.Core.UdpEngine.Dscp.set(0)
-                else:
-                    self.Core.UdpEngine.EcnFlag.set(self._ecn)
-                    self.Core.UdpEngine.Dscp.set(self._dscp)
-            except AttributeError:
-                pass
-            # DcqcnBypass + RNR backoff: bypass for p2p, or for an explicit
-            # enableDcqcn=False on a fabric. setP2pMode() guards its own writes.
-            self.setP2pMode(self._p2p or not self._enableDcqcn)
+        # Point the FW UDP engine at the host NIC. Ordering vs the hand-off above
+        # is free: that runs over the SRP register bus (port 8192), while the 4791
+        # RoCEv2 datapath only carries traffic once DispatchEnable is armed later.
+        hostIp = self.rdmaRx.HostIp.get()
+        self.Core.UdpEngine.ClientRemotePort[0].set(4791)
+        self.Core.UdpEngine.ClientRemoteIp[0].set(hostIp)
 
-            self.rdmaRx.printConnInfo()
-        except Exception:
-            self.stop()
-            raise
+        # Configure egress ECN/DSCP and DCQCN posture for the deployment.
+        #
+        # p2p (default): switchless link. Force Not-ECT, no DSCP marking, and
+        # bypass DCQCN. The FW reset default is already Not-ECT/DSCP=0 (Rudp.vhd
+        # U_UDP); set it explicitly so the posture holds regardless of prior
+        # runtime state. ECT(0) would opt the flow into the host NIC's hardware
+        # DCQCN: with no ECN-marking fabric here, throttle-induced microbursts get
+        # CE-marked, the NIC returns CNPs, and the FW throttle self-sustains (CNPs
+        # reset the rate-increase timer faster than it fires) — throughput
+        # collapses until a source drain. Not-ECT removes that spurious trigger.
+        #
+        # Managed fabric (p2p=False): apply the configured DSCP/ECN to join the
+        # switch lossless/ECN traffic class, leaving DCQCN active unless
+        # enableDcqcn was cleared.
+        if self._p2p:
+            self.Core.UdpEngine.EcnFlag.set(0)  # 0 = Not-ECT
+            self.Core.UdpEngine.Dscp.set(0)
+        else:
+            self.Core.UdpEngine.EcnFlag.set(self._ecn)
+            self.Core.UdpEngine.Dscp.set(self._dscp)
+
+        # DcqcnBypass + RNR backoff: bypass for p2p, or for an explicit
+        # enableDcqcn=False on a fabric. setP2pMode() guards its own writes.
+        self.setP2pMode(self._p2p or not self._enableDcqcn)
+
+        self.rdmaRx.printConnInfo()
+
 
     def setP2pMode(self, enable):
         """Point-to-point bring-up toggle. Couples the two halves of the P2P fix:
@@ -205,10 +201,7 @@ class Root(pr.Root):
            QP setup, so the minimal backoff (code 1) only applies on the next
            reconnect/restart — no live QP reconfig.
         """
-        try:
-            self.Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass.set(enable)
-        except AttributeError:
-            pass
+        self.Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass.set(enable)
 
         if enable:
             # Record minimal RNR backoff (code 1) for the next bring-up; start()
@@ -228,10 +221,7 @@ class Root(pr.Root):
         # already dead (register timeout — verified on hardware). So disarm the
         # dispatcher and tear down the QP here, while the transport is still up.
         # Guarded so a missing node (or any teardown error) never aborts stop().
-        try:
-            self.Core.RoCEv2AxiStreamRdma.Core.DispatchEnable.set(False)
-            time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
-            self.Core.RoCEv2AxiStreamRdma.Engine.teardownConnection()
-        except AttributeError:
-            pass
+        self.Core.RoCEv2AxiStreamRdma.Core.DispatchEnable.set(False)
+        time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
+        self.Core.RoCEv2AxiStreamRdma.Engine.teardownConnection()
         super().stop()
