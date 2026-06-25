@@ -145,6 +145,7 @@ begin
          generic map (
             TPD_G                      => TPD_G,
             AXI_EN_G                   => '1',
+            AXI_DEFAULT_PKT_LEN_G      => toSlv(509, 32),  -- 510 words x 8B = 4080B raw; +16B packetizer = 4096B SEND
             GEN_SYNC_FIFO_G            => true,
             PRBS_SEED_SIZE_G           => 8*RDMA_AXIS_CONFIG_C.TDATA_BYTES_C,
             PRBS_INCREMENT_G           => false,
@@ -164,11 +165,6 @@ begin
             axilWriteMaster => axilWriteMasters(PRBS_INDEX_C),
             axilWriteSlave  => axilWriteSlaves(PRBS_INDEX_C));
 
-      --------------------------------
-      -- Export the PRBS payload over the RDMA AXI-Stream pair
-      --------------------------------
-      rdmaMaster    <= prbsAxisMaster;
-      prbsAxisSlave <= rdmaSlave;
 
       --------------------------------
       -- AXI-Stream Monitor on the RDMA stream
@@ -193,6 +189,23 @@ begin
             sAxilWriteSlave  => axilWriteSlaves(RDMA_MON_INDEX_C),
             sAxilReadMaster  => axilReadMasters(RDMA_MON_INDEX_C),
             sAxilReadSlave   => axilReadSlaves(RDMA_MON_INDEX_C));
+
+      U_Packetizer : entity surf.AxiStreamPacketizer2
+         generic map (
+            TPD_G                => TPD_G,
+            MEMORY_TYPE_G        => "block",
+            REG_EN_G             => true,
+            CRC_MODE_G           => "NONE",  -- NONE because RoCEv2 always has a CRC
+            MAX_PACKET_BYTES_G   => 4104,    -- 513 words -> one 4096B packet (510 payload + hdr + tail); caps SEND at FW MaxSize/PMTU
+            INPUT_PIPE_STAGES_G  => 1,
+            OUTPUT_PIPE_STAGES_G => 1)
+         port map (
+            axisClk     => axilClk,
+            axisRst     => axilRst,
+            sAxisMaster => prbsAxisMaster,
+            sAxisSlave  => prbsAxisSlave,
+            mAxisMaster => rdmaMaster,
+            mAxisSlave  => rdmaSlave);
 
    end generate GEN_ROCEV2_APP_LOGIC;
 

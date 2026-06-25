@@ -264,13 +264,16 @@ if __name__ == "__main__":
         # Arming the source (DispatchEnable/TxEn) is below.
         rx = root.rdmaRx
 
-        # MR parameters from the RoCEv2Server local variables. Per-frame length =
-        # host maxPayload (full PMTU = FW MaxSize cap); this is the STARTING
-        # SsiPrbsTx.PacketLength, changeable LIVE in the GUI up to the FW cap.
+        # MR parameters from the RoCEv2Server local variables. The on-wire RDMA SEND =
+        # one full PMTU (= host maxPayload = FW MaxSize cap). The FW AxiStreamPacketizer2
+        # wraps each raw PRBS frame with a 16B hdr+tail (no CRC), so the raw PRBS payload
+        # is one PMTU MINUS that overhead; raw + overhead = the PMTU-sized SEND.
+        PKTZR_OVERHEAD = 16  # AxiStreamPacketizer2 header word + tail word (CRC_MODE_G="NONE")
         rx_queue_depth = rx.RxQueueDepth.get()
         max_payload    = rx.MaxPayload.get()
         mr_len         = rx_queue_depth * max_payload
-        Len            = max_payload
+        Len            = max_payload                  # on-wire SEND size (packetized frame)
+        raw_payload    = max_payload - PKTZR_OVERHEAD  # raw PRBS payload seen by PrbsRx after depacketize
         remQpn         = rx.HostQpn.get()
         locKey         = rx.FpgaLkey.get()
 
@@ -280,13 +283,14 @@ if __name__ == "__main__":
 
         # PRBS word size in bytes (SsiPrbsTx.WordSize = PRBS_SEED_SIZE_G bits), read
         # from the FW so the host tracks its config. PacketLength counts whole words,
-        # so the per-frame length must be a multiple of it.
+        # so the raw PRBS payload (PMTU minus packetizer overhead) must be a multiple of it.
         word_bytes = prbs.WordSize.get() // 8
 
-        if Len % word_bytes != 0:
+        if raw_payload % word_bytes != 0:
             print(
-                f"ERROR: maxPayload={Len} is not a multiple of the {word_bytes}-byte PRBS "
-                f"word — incompatible FW PRBS_SEED_SIZE_G.",
+                f"ERROR: raw payload={raw_payload} (maxPayload {max_payload} - {PKTZR_OVERHEAD}B "
+                f"packetizer overhead) is not a multiple of the {word_bytes}-byte PRBS word "
+                f"— incompatible FW PRBS_SEED_SIZE_G.",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -314,10 +318,11 @@ if __name__ == "__main__":
         # ----------------------------------------------------------------
         # Configure the PRBS source + DMA dispatch registers
         # ----------------------------------------------------------------
-        # PacketLength in PRBS words: (Len // word_bytes) - 1. Changeable LIVE in the
-        # GUI — the FW frames each SEND from the inbound tLast (no Len register) and
-        # handles a partial final beat, so any value up to the FW cap is received.
-        prbs.PacketLength.set(Len // word_bytes - 1)
+        # PacketLength in PRBS words: (raw_payload // word_bytes) - 1, where raw_payload
+        # is the PMTU minus the 16B packetizer overhead so the packetized SEND lands at
+        # exactly one PMTU. Changeable LIVE in the GUI — the FW frames each SEND from the
+        # inbound tLast (no Len register) and handles a partial final beat.
+        prbs.PacketLength.set(raw_payload // word_bytes - 1)
 
         # PRBS packet rate. TrigDly=0 free-runs at full line rate; a positive
         # --trigRate throttles the source so the host receive path keeps up
@@ -351,8 +356,8 @@ if __name__ == "__main__":
         # (rnr_retry=7, min_rnr_timer=--minRnrTimer), backpressuring the dispatcher ->
         # repack FIFO -> PRBS source. The host only posts/consumes recv-WRs at its pace.
         # ----------------------------------------------------------------
-        print(f"Streaming until rxCount >= {args.target} ({Len} bytes/frame, "
-              f"native RNR flow control, minRnrTimer={minRnrTimer}, "
+        print(f"Streaming until rxCount >= {args.target} ({raw_payload}B raw / {Len}B on-wire "
+              f"per frame, native RNR flow control, minRnrTimer={minRnrTimer}, "
               f"p2p={args.p2p})...")
 
         # Line-rate recipe: when free-running the PRBS source (--trigRate <= 0,

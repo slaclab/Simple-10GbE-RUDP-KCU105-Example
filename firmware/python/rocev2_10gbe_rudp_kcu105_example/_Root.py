@@ -19,6 +19,7 @@ import pyrogue.interfaces.simulation
 import rogue
 import rogue.hardware.axi
 import rogue.interfaces.stream
+import rogue.protocols.packetizer
 import rogue.utilities.fileio
 
 import simple_10gbe_rudp_kcu105_example as baseBoard
@@ -110,7 +111,14 @@ class Root(pr.Root):
             expand       = True,
         )
         self.add(self.prbsRx)
-        self.rdmaRx.stream >> self.prbsRx
+
+        # Strip the FW AxiStreamPacketizer2 framing (hdr/tail, no CRC) before the PRBS
+        # check. CoreV2(ibCRC=False, obCRC=False, enSsi=True): inbound has no packetizer
+        # CRC (FW CRC_MODE_G="NONE"), SSI SOF/EOF framing enabled. FW emits OUTPUT_TDEST_G=0,
+        # so the depacketized payload exits on application(0).
+        self._depack = rogue.protocols.packetizer.CoreV2(False, False, True)
+        self.rdmaRx.stream          >> self._depack.transport()
+        self._depack.application(0) >> self.prbsRx
 
         #################################################################
 
