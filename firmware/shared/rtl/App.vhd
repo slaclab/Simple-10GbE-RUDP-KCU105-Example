@@ -33,21 +33,21 @@ entity App is
       SIMULATION_G    : boolean := false);
    port (
       -- Clock and Reset
-      axilClk           : in  sl;
-      axilRst           : in  sl;
+      axilClk         : in  sl;
+      axilRst         : in  sl;
       -- AXI-Stream Interface
-      ibRudpMaster      : out AxiStreamMasterType;
-      ibRudpSlave       : in  AxiStreamSlaveType;
-      obRudpMaster      : in  AxiStreamMasterType;
-      obRudpSlave       : out AxiStreamSlaveType;
+      ibRudpMaster    : out AxiStreamMasterType;
+      ibRudpSlave     : in  AxiStreamSlaveType;
+      obRudpMaster    : in  AxiStreamMasterType;
+      obRudpSlave     : out AxiStreamSlaveType;
       -- RDMA AXI-Stream Interface
-      rdmaMaster        : out AxiStreamMasterType;
-      rdmaSlave         : in  AxiStreamSlaveType := AXI_STREAM_SLAVE_FORCE_C;
+      rdmaMaster      : out AxiStreamMasterType;
+      rdmaSlave       : in  AxiStreamSlaveType := AXI_STREAM_SLAVE_FORCE_C;
       -- AXI-Lite Interface
-      axilReadMaster    : in  AxiLiteReadMasterType;
-      axilReadSlave     : out AxiLiteReadSlaveType;
-      axilWriteMaster   : in  AxiLiteWriteMasterType;
-      axilWriteSlave    : out AxiLiteWriteSlaveType);
+      axilReadMaster  : in  AxiLiteReadMasterType;
+      axilReadSlave   : out AxiLiteReadSlaveType;
+      axilWriteMaster : in  AxiLiteWriteMasterType;
+      axilWriteSlave  : out AxiLiteWriteSlaveType);
 end App;
 
 architecture mapping of App is
@@ -196,7 +196,7 @@ begin
             MEMORY_TYPE_G        => "block",
             REG_EN_G             => true,
             CRC_MODE_G           => "NONE",  -- NONE because RoCEv2 always has a CRC
-            MAX_PACKET_BYTES_G   => 4104,    -- 513 words -> one 4096B packet (510 payload + hdr + tail); caps SEND at FW MaxSize/PMTU
+            MAX_PACKET_BYTES_G   => 4096,    -- PMTU=4096
             INPUT_PIPE_STAGES_G  => 1,
             OUTPUT_PIPE_STAGES_G => 1)
          port map (
