@@ -25,8 +25,7 @@ import rogue.utilities.fileio
 import simple_10gbe_rudp_kcu105_example as baseBoard
 import rocev2_10gbe_rudp_kcu105_example as roceBoard
 
-# Currently using rogue@rocev2-soft-reset-on-reconnect branch
-#rogue.Version.minVersion('6.15.0')
+rogue.Version.minVersion('6.15.0')
 
 class Root(pr.Root):
     def __init__(self,
