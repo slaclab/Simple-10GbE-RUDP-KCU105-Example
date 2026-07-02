@@ -124,15 +124,22 @@ class Root(pr.Root):
     def start(self, **kwargs):
         super().start(**kwargs)
 
+        # pr.Root.__enter__ calls start() directly and __exit__/stop() only runs if
+        # __enter__ returns, so an exception in the hand-off would skip teardown and
+        # leak the transport/poll threads or a half-established QP. Unwind through
+        # stop() before re-raising; teardownConnection() is best-effort with no live
+        # QP, and stop() SoftResets the engine to clear any partial QP/PSN state.
+        try:
+            self._handoff()
+        except Exception:
+            self.stop()
+            raise
+
+    def _handoff(self):
         # Host<->FPGA hand-off. super().start() already brought up the RUDP/SRP
         # transport and the server's host-side _start(), so the metadata bus is
         # reachable. Forward the single transportCfg into BOTH the engine and the
         # server so the two sides stay in sync.
-        #
-        # pr.Root.__enter__ calls start() directly and __exit__/stop() only runs if
-        # __enter__ returns, so an exception here would skip teardown and leak the
-        # transport/poll threads or a half-established QP. Unwind through stop()
-        # before re-raising; teardownConnection() is a no-op when no QP is live.
         cfg = self._transportCfg
 
         params = self.rdmaRx.getHostParams()
@@ -180,37 +187,28 @@ class Root(pr.Root):
             self.Core.UdpEngine.EcnFlag.set(self._ecn)
             self.Core.UdpEngine.Dscp.set(self._dscp)
 
-        # DcqcnBypass + RNR backoff: bypass for p2p, or for an explicit
-        # enableDcqcn=False on a fabric. setP2pMode() guards its own writes.
+        # DcqcnBypass: bypass FW DCQCN for p2p, or for an explicit enableDcqcn=False on a
+        # fabric. RNR backoff is independent — set via transportCfg at setupConnection above.
         self.setP2pMode(self._p2p or not self._enableDcqcn)
 
         self.rdmaRx.printConnInfo()
 
 
     def setP2pMode(self, enable):
-        """Point-to-point bring-up toggle. Couples the two halves of the P2P fix:
+        """Point-to-point bring-up toggle for FW DCQCN.
 
-        1. DcqcnBypass: toggles the live AXI-Lite register
-           Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass, so the bypass takes effect
-           immediately. Guarded so a missing engine node (ip='sim'/'emu' or ROCEV2
-           disabled) degrades gracefully.
-        2. RNR backoff: records the code for the NEXT bring-up in
-           self._transportCfg.minRnrTimer (which start() forwards into
-           setupConnection()/completeConnection()). RNR is host-NIC QP state fixed at
-           QP setup, so the minimal backoff (code 1) only applies on the next
-           reconnect/restart — no live QP reconfig.
+        Toggles the live AXI-Lite register Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass
+        so the bypass takes effect immediately (True = gate CNP + clamp Rc/Rt to line
+        rate).
+
+        RNR backoff is deliberately NOT set here: min_rnr_timer is host-NIC QP state
+        fixed at QP setup and is owned solely by self._transportCfg.minRnrTimer, which
+        start() forwards into setupConnection()/completeConnection(). Decoupling the RNR
+        timer from the DCQCN-bypass toggle lets a slow (softRoCE) responder keep a larger
+        backoff while still bypassing DCQCN on a switchless link — forcing the minimal
+        0.01ms backoff here storms RNR-NAKs on a software responder.
         """
         self.Core.RoCEv2AxiStreamRdma.Dcqcn.DcqcnBypass.set(enable)
-
-        if enable:
-            # Record minimal RNR backoff (code 1) for the next bring-up; start()
-            # reads self._transportCfg.minRnrTimer into setupConnection()/
-            # completeConnection(). No live QP reconfig here.
-            self._transportCfg.minRnrTimer = 1
-            print(
-                "setP2pMode: DcqcnBypass toggled LIVE; minRnrTimer=1 recorded — "
-                "RNR backoff takes effect on the NEXT reconnect/restart.",
-            )
 
     def stop(self) -> None:
         """Tear down the FPGA QP before transport is stopped."""
@@ -219,8 +217,19 @@ class Root(pr.Root):
         # down first. An Engine._stop() hook would then fire after the metadata bus is
         # already dead (register timeout — verified on hardware). So disarm the
         # dispatcher and tear down the QP here, while the transport is still up.
-        # Guarded so a missing node (or any teardown error) never aborts stop().
-        self.Core.RoCEv2AxiStreamRdma.Core.DispatchEnable.set(False)
-        time.sleep(0.1)  # let the in-flight WRITE drain before QP teardown
-        self.Core.RoCEv2AxiStreamRdma.Engine.teardownConnection()
-        super().stop()
+        # Guarded so a missing node (or any teardown error) never aborts stop() —
+        # super().stop() must always run to release the transport/poll threads.
+        try:
+            self.Core.RoCEv2AxiStreamRdma.Core.DispatchEnable.set(False)
+            time.sleep(0.1)  # let the in-flight SEND drain before QP teardown
+            self.Core.RoCEv2AxiStreamRdma.Engine.teardownConnection()
+            # Force the FW RoceConfigurator back to IDLE. It has no response timeout, so
+            # an out-of-order / unexpected-state DESTROY can wedge it in GET_RESPONSE_S
+            # (the multi-second "DESTROY QP/MR/PD timeout"); a SoftReset pulse clears that
+            # and any stale QP/PSN state so the next bring-up starts clean.
+            self.Core.RoCEv2AxiStreamRdma.Engine.SoftReset()
+        except Exception as e:
+            print(f"Root.stop: RoCEv2 teardown skipped/failed ({e}); "
+                  f"proceeding to transport stop.")
+        finally:
+            super().stop()

@@ -93,17 +93,18 @@ if __name__ == "__main__":
     parser.add_argument(
         "--trigRate",
         required = False,
-        default  = 2.5e4,
+        default  = None,
         type     = float,
-        help     = "PRBS packet rate in Hz (SsiPrbsTx.TrigRate). Default 2.5e4 is the "
-                   "measured clean-validation ceiling on this host: the Python PrbsRx "
-                   "consumer (and the rogue zero-copy recv-slot re-post) saturates near "
-                   "25-30 kHz (~100 MB/s), well below 10GbE line rate, so above it PRBS "
-                   "errors appear -- host-stack limited, NOT a FW issue (the FW reports "
-                   "successful completions far beyond this rate). Set 0 to free-run the "
-                   "FW at full line rate; the link streams at line rate but the PrbsRx "
-                   "validator cannot keep up and will report errors. Full-rate per-frame "
-                   "validation needs a faster (non-Python) host consumer.",
+        help     = "PRBS packet rate in Hz (SsiPrbsTx.TrigRate). Default (unset) "
+                   "auto-selects 2.5e4 for an mlx5 HW NIC and 5e3 for softRoCE (rxe0): "
+                   "the Python PrbsRx consumer (and the rogue zero-copy recv-slot "
+                   "re-post) saturates near 25-30 kHz (~100 MB/s) on an mlx5 NIC and far "
+                   "lower on a kernel software responder, well below 10GbE line rate, so "
+                   "above it PRBS errors appear -- host-stack limited, NOT a FW issue (the "
+                   "FW reports successful completions far beyond this rate). Set 0 to "
+                   "free-run the FW at full line rate; the link streams at line rate but "
+                   "the PrbsRx validator cannot keep up and will report errors. Full-rate "
+                   "per-frame validation needs a faster (non-Python) host consumer.",
     )
 
     parser.add_argument(
@@ -125,10 +126,12 @@ if __name__ == "__main__":
         required = False,
         default  = True,
         help     = "Point-to-point bring-up switch (DEFAULT True for the switchless "
-                   "bench): forces Not-ECT egress + no DSCP marking, bypasses FW DCQCN "
-                   "(DcqcnBypass=True), and forces minimal RNR backoff (minRnrTimer=1), "
-                   "overriding any explicit --minRnrTimer. Pass --p2p false for a managed "
-                   "ECN fabric, then tune --dscp/--ecn/--enableDcqcn.",
+                   "bench): forces Not-ECT egress + no DSCP marking and bypasses FW DCQCN "
+                   "(DcqcnBypass=True). On an mlx5 HW NIC it also forces minimal RNR "
+                   "backoff (minRnrTimer=1), overriding any explicit --minRnrTimer; on "
+                   "softRoCE the RNR backoff is left at --minRnrTimer (minimal backoff "
+                   "storms a software responder). Pass --p2p false for a managed ECN "
+                   "fabric, then tune --dscp/--ecn/--enableDcqcn.",
     )
 
     parser.add_argument(
@@ -193,10 +196,23 @@ if __name__ == "__main__":
     #################################################################
 
     # softRoCE escape hatch — warn loudly but proceed
-    if not args.roceDevice.startswith('mlx5'):
+    isSoftRoce = not args.roceDevice.startswith('mlx5')
+    if isSoftRoce:
         print(
             f"WARNING: --roceDevice='{args.roceDevice}' is not an mlx5_* HW NIC; "
             f"proceeding anyway (softRoCE / bench escape hatch).",
+            file=sys.stderr,
+        )
+
+    # --trigRate default is device-dependent: an mlx5 HW NIC sustains ~2.5e4 Hz of clean
+    # per-frame validation, but a kernel software responder (rxe0) is far slower. Pick a
+    # safe starting rate when the user did not pass --trigRate (tune to the knee with a
+    # sweep). An explicit value — including 0 = free-run line rate — is always honored.
+    if args.trigRate is None:
+        args.trigRate = 2.5e4 if not isSoftRoce else 5.0e3
+        print(
+            f"NOTICE: --trigRate unset; defaulting to {args.trigRate:g} Hz for "
+            f"{'mlx5 HW NIC' if not isSoftRoce else 'softRoCE (tune to the knee)'}.",
             file=sys.stderr,
         )
 
@@ -224,11 +240,17 @@ if __name__ == "__main__":
     # cannot drift. --minRnrTimer is the native RNR backoff (FW<->NIC flow control);
     # pmtu/rnrRetry/retryCount keep their proven acceptance-gate defaults.
     #
-    # --p2p forces minimal RNR backoff (code 1), overriding any --minRnrTimer; log an
-    # audit line if a non-default --minRnrTimer was also passed. (The Not-ECT +
-    # DcqcnBypass halves are applied in Root.start() from the args forwarded below.)
+    # --p2p forces minimal RNR backoff (code 1) on an mlx5 HW NIC, overriding any
+    # --minRnrTimer; log an audit line if a non-default --minRnrTimer was also passed.
+    # (The Not-ECT + DcqcnBypass halves are applied in Root.start() from the args
+    # forwarded below, independent of the RNR timer.)
+    #
+    # softRoCE is the exception: keep the (larger) --minRnrTimer even under --p2p. A
+    # kernel software responder cannot keep its recv queue armed, and a 0.01ms backoff
+    # turns RNR-NAKs into a CPU-saturating retry storm that collapses throughput and
+    # stalls completions. The p2p egress posture still applies; only the RNR timer differs.
     minRnrTimer = args.minRnrTimer
-    if args.p2p:
+    if args.p2p and not isSoftRoce:
         if args.minRnrTimer != 12:
             print(
                 f"NOTICE: --p2p overrode --minRnrTimer={args.minRnrTimer} to 1 "
@@ -236,6 +258,12 @@ if __name__ == "__main__":
                 file=sys.stderr,
             )
         minRnrTimer = 1
+    elif args.p2p and isSoftRoce:
+        print(
+            f"NOTICE: softRoCE ({args.roceDevice}) — keeping minRnrTimer="
+            f"{minRnrTimer} (NOT forcing code 1); p2p egress posture still applies.",
+            file=sys.stderr,
+        )
 
     transportCfg = pyrogue.protocols.RoCEv2TransportCfg(
         minRnrTimer = minRnrTimer,
@@ -418,9 +446,21 @@ if __name__ == "__main__":
         # the integrity gate; for line-rate runs checkPayload is off so rxErrors is
         # host-stack noise and rxCount stays a liveness precondition (frames flowed).
         # ----------------------------------------------------------------
-        errs    = root.PrbsRx.rxErrors.get()
-        rxCount = root.PrbsRx.rxCount.get()
-        success = dma.SuccessCounter.get()
+        errs      = root.PrbsRx.rxErrors.get()
+        rxCount   = root.PrbsRx.rxCount.get()
+        success   = dma.SuccessCounter.get()
+        # FW diagnostic counters — read once so a single run classifies a failure:
+        #   * success==0 with rxCount>0  -> host received frames but FW saw no ACK/CQE
+        #     completions (ACK/return path stalled, e.g. a wedged/overrun softRoCE QP).
+        #   * dmaReads >> success        -> SENDs being retransmitted (RNR-stall: the
+        #     responder cannot keep its recv queue armed; ~2x is the retransmit tell).
+        #   * unsuccess>0                -> completions with non-zero WC status
+        #     (timeout-retry exhaustion -> QP error; needs SoftReset/reconnect).
+        #   * oversize>0                 -> a SEND exceeded the FW per-SEND cap and was
+        #     dropped (framing / PMTU mismatch), never a flow-control issue.
+        unsuccess = dma.UnsuccessCounter.get()
+        dmaReads  = dma.DmaReadCount.get()
+        oversize  = dma.OversizeCount.get()
 
         # ----------------------------------------------------------------
         # FW-telemetry verdict: for line-rate runs MonBandwidth (FW egress) is the
@@ -493,6 +533,9 @@ if __name__ == "__main__":
             f"  PrbsRx.rxErrors        : {errs}\n"
             f"  PrbsRx.rxCount         : {rxCount} (target {args.target})\n"
             f"  Dma.SuccessCounter     : {success}\n"
+            f"  Dma.UnsuccessCounter   : {unsuccess}\n"
+            f"  Dma.DmaReadCount       : {dmaReads}\n"
+            f"  Dma.OversizeCount      : {oversize}\n"
             f"  RESULT                 : {'PASS' if passed else 'FAIL'}\n"
             f"-------------------"
         )
