@@ -14,4 +14,6 @@ loadConstraints -dir "$::DIR_PATH/hdl"
 
 # Load local SIM source Code
 loadSource -sim_only -dir  "$::DIR_PATH/tb"
+# Select which xsim demo TB is elaborated as sim_1's top -- switch manually per demo run
 set_property top {RogueTcpStreamXsimDemoTb} [get_filesets sim_1]
+# set_property top {RogueTcpMemoryXsimDemoTb} [get_filesets sim_1]
