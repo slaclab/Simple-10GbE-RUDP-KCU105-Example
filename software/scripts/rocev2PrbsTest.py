@@ -185,7 +185,10 @@ if __name__ == "__main__":
         type     = float,
         required = False,
         default  = 10.0,
-        help     = "Seconds to poll for completion before declaring FAIL",
+        help     = "Seconds to poll for completion before declaring FAIL. The run also "
+                   "streams for a ~2s minimum dwell after hitting --target so the FW "
+                   "AxiStreamMon (1Hz refresh) reports a real MonBandwidth; set this "
+                   "above that dwell or the run always reports a timeout",
     )
 
     # Get the arguments
@@ -409,6 +412,17 @@ if __name__ == "__main__":
         # cadence and timeout/break semantics below unchanged. Reads hit the
         # pollInterval=1 register cache; rxCount stays a liveness loop condition only.
         SAMPLE_PERIOD = 0.5
+
+        # Minimum streaming dwell before the run may stop. AxiStreamMon latches
+        # bandwidth/frameRate once per second (its accumulator is copied out only at the
+        # 1 s window boundary), so MonBandwidth is meaningless until at least one window
+        # has closed over live traffic. At the default 25 kHz the 1000-frame target is hit
+        # in ~40 ms, which would leave MonBandwidth reading the value ResetCounters just
+        # cleared -- and the line-rate MonBandwidth>9.0 gate below permanently unreachable.
+        # Two windows guarantee the last latched sample covers a full window of steady
+        # traffic rather than the partial one straddling the arm.
+        MIN_DWELL = 2.0
+
         traj      = []
         loopStart = time.monotonic()
 
@@ -425,29 +439,29 @@ if __name__ == "__main__":
         nextSample = loopStart + SAMPLE_PERIOD
 
         deadline = time.monotonic() + args.timeout
-        while root.PrbsRx.rxCount.get() < args.target:
-            if time.monotonic() > deadline:
-                print(f"WARNING: timed out after {args.timeout}s waiting for "
-                      f"rxCount >= {args.target}", file=sys.stderr)
+        while True:
+            now   = time.monotonic()
+            rxNow = root.PrbsRx.rxCount.get()
+            if rxNow >= args.target and (now - loopStart) >= MIN_DWELL:
+                break
+            if now > deadline:
+                print(f"WARNING: timed out after {args.timeout}s (rxCount={rxNow}, target "
+                      f"{args.target}; dwell {now - loopStart:0.2f}/{MIN_DWELL}s)",
+                      file=sys.stderr)
                 break                       # fall through to the assert; do NOT raise
-            if time.monotonic() >= nextSample:
+            if now >= nextSample:
                 _sample()
                 nextSample += SAMPLE_PERIOD
             time.sleep(0.05)                # poll interval, NOT a completion sleep
 
         # ----------------------------------------------------------------
-        # Stop the stream (disarm dispatch first, then quiesce the PRBS source)
+        # Final FW reads — these MUST happen while the stream is still armed. The RTL
+        # holds every FW counter at zero for as long as dispatchEnable='0'
+        # (successCounter/unsuccessCounter in the completion FSM, oversizeCount via
+        # FILL_INIT_C, dmaReadCnt via SERVE_INIT_C), so reading them after the disarm
+        # below always returns 0 regardless of what the run actually did.
         # ----------------------------------------------------------------
-        dma.DispatchEnable.set(False)
-        prbs.TxEn.set(False)
-
-        # ----------------------------------------------------------------
-        # Liveness record (PRBS host counters). For the throttled run rxErrors is
-        # the integrity gate; for line-rate runs checkPayload is off so rxErrors is
-        # host-stack noise and rxCount stays a liveness precondition (frames flowed).
-        # ----------------------------------------------------------------
-        errs      = root.PrbsRx.rxErrors.get()
-        rxCount   = root.PrbsRx.rxCount.get()
+        _sample()                   # last trajectory point, taken under live traffic
         success   = dma.SuccessCounter.get()
         # FW diagnostic counters — read once so a single run classifies a failure:
         #   * success==0 with rxCount>0  -> host received frames but FW saw no ACK/CQE
@@ -461,6 +475,21 @@ if __name__ == "__main__":
         unsuccess = dma.UnsuccessCounter.get()
         dmaReads  = dma.DmaReadCount.get()
         oversize  = dma.OversizeCount.get()
+
+        # ----------------------------------------------------------------
+        # Stop the stream (disarm dispatch first, then quiesce the PRBS source)
+        # ----------------------------------------------------------------
+        dma.DispatchEnable.set(False)
+        prbs.TxEn.set(False)
+
+        # ----------------------------------------------------------------
+        # Liveness record (PRBS host counters — unaffected by the disarm above). For the
+        # throttled run rxErrors is the integrity gate; for line-rate runs checkPayload is
+        # off so rxErrors is host-stack noise and rxCount stays a liveness precondition
+        # (frames flowed).
+        # ----------------------------------------------------------------
+        errs    = root.PrbsRx.rxErrors.get()
+        rxCount = root.PrbsRx.rxCount.get()
 
         # ----------------------------------------------------------------
         # FW-telemetry verdict: for line-rate runs MonBandwidth (FW egress) is the
