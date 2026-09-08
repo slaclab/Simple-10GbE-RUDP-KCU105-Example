@@ -6,14 +6,14 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>How to run the Software in Interactive Mode &mdash; Simple-10GbE-RUDP-KCU105-Example v2.18.0-16-g35bcec2 documentation</title>
+  <title>How to run the Software in Interactive Mode &mdash; Simple-10GbE-RUDP-KCU105-Example v3.0.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=03e43079" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../_static/documentation_options.js?v=64d745ae"></script>
+      <script src="../_static/documentation_options.js?v=5773a0da"></script>
       <script src="../_static/doctools.js?v=fd6eb6e6"></script>
       <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
@@ -95,8 +95,8 @@
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>Simple-10GbE-RUDP-KCU105-Example/software
 $<span class="w"> </span>ipython<span class="w"> </span>-i<span class="w"> </span>--<span class="w"> </span>scripts/interactive.py
 Python<span class="w"> </span><span class="m">3</span>.7.10<span class="w"> </span><span class="p">|</span><span class="w"> </span>packaged<span class="w"> </span>by<span class="w"> </span>conda-forge<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="o">(</span>default,<span class="w"> </span>Feb<span class="w"> </span><span class="m">19</span><span class="w"> </span><span class="m">2021</span>,<span class="w"> </span><span class="m">16</span>:07:37<span class="o">)</span>
-Type<span class="w"> </span><span class="s1">&#39;copyright&#39;</span>,<span class="w"> </span><span class="s1">&#39;credits&#39;</span><span class="w"> </span>or<span class="w"> </span><span class="s1">&#39;license&#39;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span>more<span class="w"> </span>information
-IPython<span class="w"> </span><span class="m">7</span>.23.1<span class="w"> </span>--<span class="w"> </span>An<span class="w"> </span>enhanced<span class="w"> </span>Interactive<span class="w"> </span>Python.<span class="w"> </span>Type<span class="w"> </span><span class="s1">&#39;?&#39;</span><span class="w"> </span><span class="k">for</span><span class="w"> </span>help.
+Type<span class="w"> </span><span class="s1">'copyright'</span>,<span class="w"> </span><span class="s1">'credits'</span><span class="w"> </span>or<span class="w"> </span><span class="s1">'license'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span>more<span class="w"> </span>information
+IPython<span class="w"> </span><span class="m">7</span>.23.1<span class="w"> </span>--<span class="w"> </span>An<span class="w"> </span>enhanced<span class="w"> </span>Interactive<span class="w"> </span>Python.<span class="w"> </span>Type<span class="w"> </span><span class="s1">'?'</span><span class="w"> </span><span class="k">for</span><span class="w"> </span>help.
 Rogue/pyrogue<span class="w"> </span>version<span class="w"> </span>v5.8.0.<span class="w"> </span>https://github.com/slaclab/rogue
 Start:<span class="w"> </span>Started<span class="w"> </span>zmqServer<span class="w"> </span>on<span class="w"> </span>ports<span class="w"> </span><span class="m">9099</span>-9101
 Root.Core.AxiVersion<span class="w"> </span>count<span class="w"> </span>reset<span class="w"> </span>called
@@ -124,12 +124,12 @@ In<span class="w"> </span><span class="o">[</span><span class="m">1</span><span 
 <li><p>You now have an interactive command terminal to the rogue software.</p></li>
 <li><p>As an example, let’s change the ScratchPad from 0xdeadbeef to 0x12345678</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>In<span class="w"> </span><span class="o">[</span><span class="m">1</span><span class="o">]</span>:<span class="w"> </span>root.Core.AxiVersion.ScratchPad.getDisp<span class="o">()</span>
-Out<span class="o">[</span><span class="m">1</span><span class="o">]</span>:<span class="w"> </span><span class="s1">&#39;0xdeadbeef&#39;</span>
+Out<span class="o">[</span><span class="m">1</span><span class="o">]</span>:<span class="w"> </span><span class="s1">'0xdeadbeef'</span>
 
 In<span class="w"> </span><span class="o">[</span><span class="m">2</span><span class="o">]</span>:<span class="w"> </span>root.Core.AxiVersion.ScratchPad.setDisp<span class="o">(</span>0x12345678<span class="o">)</span>
 
 In<span class="w"> </span><span class="o">[</span><span class="m">3</span><span class="o">]</span>:<span class="w"> </span>root.Core.AxiVersion.ScratchPad.getDisp<span class="o">()</span>
-Out<span class="o">[</span><span class="m">3</span><span class="o">]</span>:<span class="w"> </span><span class="s1">&#39;0x12345678&#39;</span>
+Out<span class="o">[</span><span class="m">3</span><span class="o">]</span>:<span class="w"> </span><span class="s1">'0x12345678'</span>
 </pre></div>
 </div>
 </li>
@@ -147,7 +147,7 @@ Out<span class="o">[</span><span class="m">3</span><span class="o">]</span>:<spa
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2025, SLAC National Accelerator Laboratory.</p>
+    <p>&#169; Copyright 2026, SLAC National Accelerator Laboratory.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
