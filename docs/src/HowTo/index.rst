@@ -16,7 +16,8 @@ This section describes "HowTos"
    software_gui
    interactive_mode
    zmq_multi_client
-   simulation
+   vcs_simulation
+   xsim_simulation
    hardware_debug
    remote_debug
    fileio

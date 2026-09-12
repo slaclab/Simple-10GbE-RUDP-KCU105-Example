@@ -1,4 +1,4 @@
-.. _how_to_simulation:
+.. _how_to_vcs_simulation:
 
 ===================================================================
 How to run the Software Development GUI with VCS firmware simulator
@@ -63,6 +63,6 @@ In the Second terminal
       $ python scripts/devGui.py --ip sim
 
 
-   .. image:: ../../images/cosimGui.png
+   .. image:: ../../images/vcsCosimGui.png
      :width: 800
      :alt: Alternative text
