@@ -4,9 +4,9 @@
 How to run multiple GUI clients on the same KCU105 server
 =========================================================
 
-The SURF's RUDP connection only support 1 "physical" client/server connection.  If you need more than 1 software client to access the hardware server, then you can use ZeroMQ for multiple “virtual” connections to the hardware.
+SURF's RUDP connection only supports 1 "physical" client/server connection.  If you need more than 1 software client to access the hardware server, then you can use ZeroMQ for multiple “virtual” connections to the hardware.
 This means that you can run multiple ``devGui.py`` scripts
-at the same time (refer to :ref:`how_to_software_gui`) because the PyDM GUI does NOT access the hardware directly, but uses a ZeroMQ to manage asynchronous I/O from
+at the same time (refer to :ref:`how_to_software_gui`) because the PyDM GUI does NOT access the hardware directly, but uses ZeroMQ to manage asynchronous I/O from
 multiple clients and manage the hardware access.
 
 How to start the ZMQ server then launch two different ZMQ clients
@@ -16,7 +16,7 @@ How to start the ZMQ server then launch two different ZMQ clients
 
 #. Setup rogue software (refer to :ref:`setup_rogue_setup`)
 
-#. Start the ZMQ server (basically devGui script but with ``--guiType None`` argument)
+#. Start the ZMQ server (basically the devGui script but with the ``--guiType None`` argument)
 
    .. code-block:: bash
 
@@ -43,12 +43,12 @@ How to start the ZMQ server then launch two different ZMQ clients
      :width: 800
      :alt: Alternative text
 
-How to get access with another client if ZMQ server is already running
-===================================================================
+How to get access with another client if the ZMQ server is already running
+==========================================================================
 
 #. Setup rogue software (refer to :ref:`setup_rogue_setup`)
 
-#. Run the ZmqClientGui python script to get access to the devGui's script ZMQ server
+#. Run the ZmqClientGui python script to get access to the devGui script's ZMQ server
 
    .. code-block:: bash
 

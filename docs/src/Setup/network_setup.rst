@@ -4,8 +4,8 @@
 Network Setup
 =============
 
-The default configuration for the firmware is no DHCP for IP address
-assignment and static IP address of 192.168.2.10.  You will need
+The default firmware configuration does not use DHCP for IP address
+assignment and uses a static IP address of 192.168.2.10.  You will need
 to configure your network interface to be on the 192.168.2.XXX subnet:
 
 .. code-block:: bash
@@ -19,7 +19,7 @@ to configure your network interface to be on the 192.168.2.XXX subnet:
 The RUDP streaming interface uses **JUMBO** Ethernet frames.
 You will need to make sure that you configure your network interface
 to enable jumbo frame support.  If your RUDP Ethernet traffic goes through
-any Ethernet switches or routers, you will need to enable jubmo frame
+any Ethernet switches or routers, you will need to enable jumbo frame
 support for those devices as well.
 
 .. code-block:: bash

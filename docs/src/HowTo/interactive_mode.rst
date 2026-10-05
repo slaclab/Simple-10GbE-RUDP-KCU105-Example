@@ -1,10 +1,10 @@
-.. _how_to_run_interactive_mode
+.. _how_to_run_interactive_mode:
 
 =========================================================
 How to run the Software in Interactive Mode
 =========================================================
 
-#. Setup rogue software (refer to :ref:`setup_rogue_setup`)
+#. Set up rogue software (refer to :ref:`setup_rogue_setup`)
 
 #. Run the interactive python script with the **-i** argument
 

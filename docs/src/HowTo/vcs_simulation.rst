@@ -11,7 +11,7 @@ In the first terminal
 
 #. Follow the instructions `here <https://github.com/slaclab/tid-id-xilinx-dockers/blob/main/README.md>`_ to build and use the `vcs` docker container.
 
-#. Once in the container, setup Vivado and VCS (refer to :ref:`setup_vivado_setup`)
+#. Once in the container, set up Vivado and VCS (refer to :ref:`setup_vivado_setup`)
 
 #. Go to the target directory and execute the `vcs` build
 
@@ -50,12 +50,12 @@ In the first terminal
      :width: 800
      :alt: Alternative text
 
-In the Second terminal
+In the second terminal
 ======================
 
-#. Setup rogue software (refer to :ref:`setup_rogue_setup`)
+#. Set up rogue software (refer to :ref:`setup_rogue_setup`)
 
-#. run the Development GUI python script with **--ip sim** argument
+#. Run the Development GUI python script with **--ip sim** argument
 
    .. code-block:: bash
 

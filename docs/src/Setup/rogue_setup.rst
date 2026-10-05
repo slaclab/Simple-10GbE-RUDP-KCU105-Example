@@ -7,7 +7,7 @@ Rogue Software Setup
 If you are on the SLAC SDF network
 ==================================
 
-Here's how to setup the SLAC SDF conda build of rogue:
+Here's how to set up the SLAC SDF conda build of rogue:
 
 .. code-block:: bash
 
@@ -17,11 +17,11 @@ Here's how to setup the SLAC SDF conda build of rogue:
 If you are NOT on the SLAC SDF network
 ======================================
 
-Here is "How to install the Rogue With Miniforge":
+Here is "How to install Rogue with Miniforge":
 
    https://slaclab.github.io/rogue/installing/miniforge.html
 
-After doing the local Miniforge install, you will need to setup the conda enviroment
+After doing the local Miniforge install, you will need to set up the conda environment:
 
 .. code-block:: bash
 

@@ -7,18 +7,18 @@ Vivado and VCS Setup
 If you are on the SLAC SDF network
 ==================================
 
-Here's how to setup the Xilinx tools and licensing
+Here's how to set up the Xilinx tools and licensing:
 
 .. code-block:: bash
 
   $ source Simple-10GbE-RUDP-KCU105-Example/firmware/setup_env_slac.sh
 
-This **setup_env_slac.sh** also includes the setup for VCS as well
+This **setup_env_slac.sh** script also includes the setup for VCS.
 
 If you are NOT on the SLAC SDF network
 ======================================
 
-You will need to install Vivado and install the Xilinx Licensing
+You will need to install Vivado and set up Xilinx licensing:
 
    https://www.xilinx.com/support/download.html
 
