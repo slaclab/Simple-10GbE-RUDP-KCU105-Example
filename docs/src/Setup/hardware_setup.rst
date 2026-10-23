@@ -20,7 +20,7 @@ One Xilinx KCU105 development board is required:
    https://www.xilinx.com/products/boards-and-kits/kcu105.html
 
 10GbE SFP+ Transceiver
-~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 You will need a 10GbE SFP+ transceiver compatible with the KCU105 board.
 An example of a suitable transceiver is:
@@ -36,12 +36,12 @@ For example:
    https://www.fs.com/products/40180.html
 
 Host System 10GbE Network Interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A host machine equipped with a 10GbE network interface card (NIC) is required
 to communicate with the KCU105 over the SFP+ link.
 
-A low-cost and commonly available option is a Broadcom BCM57810S–based dual-port
+A low-cost and commonly available option is a Broadcom BCM57810S-based dual-port
 10GbE SFP+ PCIe NIC, for example:
 
    https://www.amazon.com/Ethernet-Broadcom-BCM57810S-Controller-Interface/dp/B06X9T683K

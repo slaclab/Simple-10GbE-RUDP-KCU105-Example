@@ -4,7 +4,7 @@
 HowTos
 ============
 
-This section describes "HowTos"
+This section describes "HowTos".
 
 .. toctree::
    :maxdepth: 1

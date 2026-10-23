@@ -9,7 +9,7 @@ How to run the Software Development GUI with XSIM firmware simulator
 In the first terminal
 =====================
 
-#. Setup Vivado (refer to :ref:`setup_vivado_setup`)
+#. Set up Vivado (refer to :ref:`setup_vivado_setup`)
 
 #. Go to the target directory and execute the `gui` build, which will launch the Vivado GUI
 
@@ -24,12 +24,12 @@ In the first terminal
      :width: 800
      :alt: Alternative text
 
-In the Second terminal
+In the second terminal
 ======================
 
-#. Setup rogue software (refer to :ref:`setup_rogue_setup`)
+#. Set up rogue software (refer to :ref:`setup_rogue_setup`)
 
-#. run the Development GUI python script with **--ip sim** argument
+#. Run the Development GUI python script with **--ip sim** argument
 
    .. code-block:: bash
 

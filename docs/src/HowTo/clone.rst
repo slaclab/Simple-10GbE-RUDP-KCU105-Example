@@ -1,10 +1,10 @@
 .. _how_to_git_clone:
 
 ===================================
-How to Clone the GIT repository
+How to Clone the Git Repository
 ===================================
 
-Install git large filesystems (git-lfs) in your .gitconfig (1-time step per unix environment)
+Install Git Large File Storage (git-lfs) in your .gitconfig (one-time step per Unix environment)
 
 .. code-block:: bash
 

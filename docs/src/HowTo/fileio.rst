@@ -1,14 +1,14 @@
 .. _how_to_use_fileio:
 
-==========================================
-How to the Rogue FileWriter and FileReader
-==========================================
+==============================================
+How to Use the Rogue FileWriter and FileReader
+==============================================
 
-Rogue includes a general purpose file write and file reader
-to quickly write data to disk and analysis offline.
+Rogue includes a general-purpose file writer and file reader
+to quickly write data to disk and analyze it offline.
 
 
-#. Start up the PyDM gui (refer to :ref:`how_to_software_gui`)
+#. Start up the PyDM GUI (refer to :ref:`how_to_software_gui`)
 
 #. Go to the ``System`` tab (A), click on ``Auto Name`` (B), then click on ``Open`` (C)
 
@@ -16,13 +16,13 @@ to quickly write data to disk and analysis offline.
      :width: 800
      :alt: Alternative text
 
-# Go to the ``Debug Tree`` tab and nagivate to ``Root.App.AppTx`` and execute 0x100 for ``SendFrame``
+#. Go to the ``Debug Tree`` tab, navigate to ``Root.App.AppTx`` and execute 0x100 for ``SendFrame``
 
    .. image:: ../../images/fileio_1.png
      :width: 800
      :alt: Alternative text
 
-#. Go to the ``System`` tab wait for the frame count to reach 256 (A), and click on ``Close`` (B)
+#. Go to the ``System`` tab, wait for the frame count to reach 256 (A), and click on ``Close`` (B)
 
    .. image:: ../../images/fileio_3.png
      :width: 800

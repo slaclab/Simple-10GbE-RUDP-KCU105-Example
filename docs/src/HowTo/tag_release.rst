@@ -1,15 +1,15 @@
 .. _how_to_tag_release:
 
-==================================
-How to ruckus's Tag Release Script
-==================================
+======================================
+How to Use ruckus's Tag Release Script
+======================================
 
-Ruckus provides a script to help users will tag releasing
+Ruckus provides a script to help users tag releases of
 firmware only or firmware/software combinations.  The firmware images
 can be attached to the tag release such that you do not have to
-commit the binary files into the git repository. This enables the
-users to be able to have the same git hash for the both the
-git tag and the firmware binary images.  For more information
+commit the binary files into the git repository. This enables
+users to have the same git hash for both the
+git tag and the firmware binary images.  For more information,
 please refer to the presentation below:
 
 https://docs.google.com/presentation/d/1D6rwhGMM1HEm3o1AO5YKfpZ1SmLPQVzcC5GOk5vnc84/edit?usp=sharing

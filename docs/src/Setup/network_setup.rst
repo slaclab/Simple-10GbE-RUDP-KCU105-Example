@@ -4,11 +4,18 @@
 Network Setup
 =============
 
-You will need to configure your 10G NIC card accordingly. Two things are
-needed:
+The default firmware configuration does not use DHCP for IP address
+assignment and uses a static IP address of 192.168.2.10.  You will need
+to configure your 10G NIC card accordingly. Two things are needed:
 
 1. Configure the card to operate on the 192.168.2.xxx subnet
 2. Configure the card to accept jumbo UDP frames
+
+The RUDP streaming interface uses **JUMBO** Ethernet frames.
+You will need to make sure that you configure your network interface
+to enable jumbo frame support.  If your RUDP Ethernet traffic goes through
+any Ethernet switches or routers, you will need to enable jumbo frame
+support for those devices as well.
 
 In order to do this, you need to:
 

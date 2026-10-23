@@ -4,7 +4,7 @@
 Setup
 =====
 
-This section describes hardware/firmware/software setup requirements and procedures
+This section describes hardware/firmware/software setup requirements and procedures.
 
 .. toctree::
    :maxdepth: 1

@@ -4,12 +4,12 @@
 How to implement ILA in Vivado with ruckus
 ==========================================
 
-* Add a "post_synthesis.tcl" to your target's vivado directory.  Here's an example
+* Add a "post_synthesis.tcl" to your target's vivado directory.  Here's an example:
 
    https://github.com/slaclab/Simple-10GbE-RUDP-KCU105-Example/blob/main/firmware/targets/Simple10GbeRudpKcu105Example/vivado/post_synthesis.tcl
 
 
-* Here the basic format of the TCL script
+* Here is the basic format of the TCL script:
 
    * Add the ruckus helper functions
 
@@ -74,7 +74,7 @@ How to implement ILA in Vivado with ruckus
       SetDebugCoreClk ${ilaName} {<clock_netname>}
 
 
-   * Define the probes' netname
+   * Define the probes' netnames
 
    .. code-block::
 

@@ -100,7 +100,7 @@ if __name__ == "__main__":
         for i,l in enumerate(imgLst.items()):
             print('{} : {}'.format(i,l[0]))
 
-        idx = int(input('Enter image to program into the PCIe card\'s PROM: '))
+        idx = int(input('Enter image to program into the KCU105\'s PROM: '))
 
         ent = list(imgLst.items())[idx]
         pri = ent[0] + '_primary.' + ent[1]
