@@ -20,15 +20,17 @@ The **AXI stream** bus is used to transfer ASYNC messages to/from the RUDP modul
 
 (refer to https://developer.arm.com/documentation/ihi0051/a/Introduction/About-the-AXI4-Stream-protocol)
 
-The application block includes an **AppTx** module.
-This module is an example of how to produce data on the **AXI stream** bus.
+The application block includes a **SsiPrbsTx** module and a **SsiPrbsRx** module (both from the SURF library).
+The **SsiPrbsTx** module is an example of how to produce data on the **AXI stream** bus (FW to SW direction).
+The **SsiPrbsRx** module is an example of how to consume data from the **AXI stream** bus (SW to FW direction),
+and it checks the received PRBS payload for errors.
 This **AXI stream** bus is connected to the **Core** and routed to the **RUDP** module.
 The **RUDP** module contains all the Ethernet layers (PHY/MAC/IPv4/UDP/ReliableLayer).
 For the Reliable Layer, we are using the Reliable SLAC Streaming Interface (RSSI)
 (refer to https://confluence.slac.stanford.edu/x/1IyfD).
 The UdpEngineWrapper module contains the IPv4 and UDP layers.
 The TenGigEth module contains the PHY and MAC layers.
-A block diagram of this stream path from the Application's **AppTx** module to the PHY layer is shown below:
+A block diagram of this stream path from the Application's **SsiPrbsTx** module to the PHY layer is shown below:
 
    .. image:: ../images/fileio_DataStreamFlow.png
      :width: 800

@@ -16,7 +16,7 @@ import rogue.utilities.fileio
 
 import argparse
 
-import simple_10gbe_rudp_kcu105_example as devBoard
+import pyrogue.utilities.prbs
 
 if __name__ == "__main__":
 
@@ -41,21 +41,28 @@ if __name__ == "__main__":
     # Create the File reader streaming interface
     dataReader = rogue.utilities.fileio.StreamReader()
 
-    # Create the Event reader streaming interface
+    # Create the software PRBS receiver to check the recorded frames
     root = pr.Root()
-    root.add(devBoard.SwRx())
+    root.add(pr.utilities.prbs.PrbsRx(
+        name         = 'SwPrbsRx',
+        width        = 64,
+        checkPayload = True,
+    ))
     root.start()
-    root.SwRx.DebugPrint.setDisp(True)
 
-
-    # Connect the file reader ---> root.SwRx
-    dataReader >> root.SwRx
+    # Connect the file reader ---> root.SwPrbsRx
+    dataReader >> root.SwPrbsRx
 
     # Open the file
     dataReader.open(args.dataFile)
 
     # Close file once everything processed
     dataReader.closeWait()
+
+    # Print the PRBS receiver results
+    print( f'rxCount  = {root.SwPrbsRx.rxCount.get()}' )
+    print( f'rxBytes  = {root.SwPrbsRx.rxBytes.get()}' )
+    print( f'rxErrors = {root.SwPrbsRx.rxErrors.get()}' )
     root.stop()
 
     #################################################################

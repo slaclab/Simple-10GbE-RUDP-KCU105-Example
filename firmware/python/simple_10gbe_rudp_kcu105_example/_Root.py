@@ -11,12 +11,15 @@
 import pyrogue  as pr
 import pyrogue.protocols
 import pyrogue.utilities.fileio
+import pyrogue.utilities.prbs
 import pyrogue.interfaces.simulation
 
 import rogue
 import rogue.hardware.axi
 import rogue.interfaces.stream
 import rogue.utilities.fileio
+
+import surf.protocols.ssi as ssi
 
 import simple_10gbe_rudp_kcu105_example as devBoard
 
@@ -26,7 +29,7 @@ class Root(pr.Root):
     def __init__(   self,
             ip       = '192.168.2.10',
             promProg = False, # Flag to disable all devices not related to PROM programming
-            enSwRx   = True,  # Flag to enable the software stream receiver
+            enSwPrbs = True,  # Flag to enable the software PRBS stream TX/RX endpoints
             xvcSrvEn = True,  # Flag to include the XVC server
             zmqSrvPort  = 9099, # Set to zero if dynamic (instead of static)
             **kwargs):
@@ -39,7 +42,7 @@ class Root(pr.Root):
 
         #################################################################
 
-        self.enSwRx = not promProg and enSwRx
+        self.enSwPrbs = not promProg and enSwPrbs
         self.promProg = promProg
         self.sim    = (ip == 'sim')
 
@@ -103,21 +106,38 @@ class Root(pr.Root):
         #################################################################
 
         # Check for streaming enabled
-        if self.enSwRx:
+        if self.enSwPrbs:
 
             # File writer
             self.dataWriter = pr.utilities.fileio.StreamWriter()
             self.add(self.dataWriter)
 
-            # Create application stream receiver
-            self.swRx = devBoard.SwRx(expand=True)
-            self.add(self.swRx)
+            # Software PRBS receiver (checks the FW SsiPrbsTx stream)
+            self.swPrbsRx = pr.utilities.prbs.PrbsRx(
+                name         = 'SwPrbsRx',
+                width        = 64,
+                checkPayload = True,
+                expand       = True,
+            )
+            self.add(self.swPrbsRx)
 
-            # Connect stream to swRx
-            self.stream >> self.swRx
+            # Connect stream to the software PRBS receiver
+            self.stream >> self.swPrbsRx
 
             # Also connect stream to data writer
             self.stream >> self.dataWriter.getChannel(0)
+
+            # Software PRBS transmitter (checked by the FW SsiPrbsRx)
+            self.swPrbsTx = pr.utilities.prbs.PrbsTx(
+                name   = 'SwPrbsTx',
+                width  = 64,
+                expand = True,
+            )
+            self.add(self.swPrbsTx)
+
+            # Connect the software PRBS transmitter to the stream (emu stream is TX only)
+            if (ip != 'emu'):
+                self.swPrbsTx >> self.stream
 
         #################################################################
 
@@ -144,8 +164,7 @@ class Root(pr.Root):
         super().start(**kwargs)
         # Check if not simulation
         if not self.sim:
-            appTx = self.find(typ=devBoard.AppTx)
-            # Turn off the Continuous Mode
-            for devPtr in appTx:
-                devPtr.ContinuousMode.set(False)
+            # Turn off the FW continuous PRBS transmission
+            for devPtr in self.find(typ=ssi.SsiPrbsTx):
+                devPtr.TxEn.set(False)
             self.CountReset()

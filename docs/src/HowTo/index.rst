@@ -21,4 +21,5 @@ This section describes "HowTos".
    hardware_debug
    remote_debug
    fileio
+   prbs_streaming
    tag_release
