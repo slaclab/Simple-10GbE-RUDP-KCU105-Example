@@ -54,10 +54,11 @@ architecture mapping of App is
 
    constant TX_INDEX_C       : natural := 0;
    constant MEM_INDEX_C      : natural := 1;
-   constant PRBS_INDEX_C     : natural := 2;
+   constant PRBS_TX_INDEX_C  : natural := 2;
    constant RDMA_MON_INDEX_C : natural := 3;
+   constant PRBS_RX_INDEX_C  : natural := 4;
 
-   constant NUM_AXIL_MASTERS_C : positive := 4;
+   constant NUM_AXIL_MASTERS_C : positive := 5;
 
    constant XBAR_CONFIG_C : AxiLiteCrossbarMasterConfigArray(NUM_AXIL_MASTERS_C-1 downto 0) := genAxiLiteConfig(NUM_AXIL_MASTERS_C, x"8000_0000", 20, 16);
 
@@ -70,11 +71,6 @@ architecture mapping of App is
    signal prbsAxisSlave  : AxiStreamSlaveType;
 
 begin
-
-   -------------------------------
-   -- Terminating unused RX stream
-   -------------------------------
-   obRudpSlave <= AXI_STREAM_SLAVE_FORCE_C;
 
    ---------------------------
    -- AXI-Lite Crossbar Module
@@ -97,25 +93,56 @@ begin
          axiClk              => axilClk,
          axiClkRst           => axilRst);
 
-   --------------------------------
-   -- Application TX Streaming Module
-   --------------------------------
-   U_AppTx : entity work.AppTx
+   ---------------------------------------------
+   -- PRBS Transmitter: FW -> SW on RUDP[1] stream
+   ---------------------------------------------
+   U_PrbsTx : entity surf.SsiPrbsTx
       generic map (
-         TPD_G        => TPD_G,
-         SIMULATION_G => SIMULATION_G)
+         TPD_G                      => TPD_G,
+         AXI_EN_G                   => '1',
+         GEN_SYNC_FIFO_G            => true,
+         PRBS_SEED_SIZE_G           => 8*RSSI_AXIS_CONFIG_C.TDATA_BYTES_C,
+         PRBS_INCREMENT_G           => false,
+         MASTER_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
       port map (
-         -- Clock and Reset
-         axilClk         => axilClk,
-         axilRst         => axilRst,
-         -- AXI-Stream Interface
-         txMaster        => ibRudpMaster,
-         txSlave         => ibRudpSlave,
+         -- Master Port (mAxisClk domain)
+         mAxisClk        => axilClk,
+         mAxisRst        => axilRst,
+         mAxisMaster     => ibRudpMaster,
+         mAxisSlave      => ibRudpSlave,
+         -- Trigger Signal (locClk domain); AXI_EN_G='1' -> host owns trig/length
+         locClk          => axilClk,
+         locRst          => axilRst,
          -- AXI-Lite Interface
          axilReadMaster  => axilReadMasters(TX_INDEX_C),
          axilReadSlave   => axilReadSlaves(TX_INDEX_C),
          axilWriteMaster => axilWriteMasters(TX_INDEX_C),
          axilWriteSlave  => axilWriteSlaves(TX_INDEX_C));
+
+   ------------------------------------------
+   -- PRBS Receiver: SW -> FW on RUDP[1] stream
+   ------------------------------------------
+   U_PrbsRx : entity surf.SsiPrbsRx
+      generic map (
+         TPD_G                     => TPD_G,
+         SLAVE_READY_EN_G          => true,
+         GEN_SYNC_FIFO_G           => true,
+         PRBS_SEED_SIZE_G          => 8*RSSI_AXIS_CONFIG_C.TDATA_BYTES_C,
+         SLAVE_AXI_STREAM_CONFIG_G => RSSI_AXIS_CONFIG_C)
+      port map (
+         -- Streaming RX Data Interface (sAxisClk domain)
+         sAxisClk       => axilClk,
+         sAxisRst       => axilRst,
+         sAxisMaster    => obRudpMaster,
+         sAxisSlave     => obRudpSlave,
+         sAxisCtrl      => open,
+         -- AXI-Lite Register Interface (axiClk domain)
+         axiClk         => axilClk,
+         axiRst         => axilRst,
+         axiReadMaster  => axilReadMasters(PRBS_RX_INDEX_C),
+         axiReadSlave   => axilReadSlaves(PRBS_RX_INDEX_C),
+         axiWriteMaster => axilWriteMasters(PRBS_RX_INDEX_C),
+         axiWriteSlave  => axilWriteSlaves(PRBS_RX_INDEX_C));
 
    --------------------------------
    -- AXI-Lite General Memory Module
@@ -160,10 +187,10 @@ begin
             locClk          => axilClk,
             locRst          => axilRst,
             -- AXI-Lite Interface
-            axilReadMaster  => axilReadMasters(PRBS_INDEX_C),
-            axilReadSlave   => axilReadSlaves(PRBS_INDEX_C),
-            axilWriteMaster => axilWriteMasters(PRBS_INDEX_C),
-            axilWriteSlave  => axilWriteSlaves(PRBS_INDEX_C));
+            axilReadMaster  => axilReadMasters(PRBS_TX_INDEX_C),
+            axilReadSlave   => axilReadSlaves(PRBS_TX_INDEX_C),
+            axilWriteMaster => axilWriteMasters(PRBS_TX_INDEX_C),
+            axilWriteSlave  => axilWriteSlaves(PRBS_TX_INDEX_C));
 
 
       --------------------------------
