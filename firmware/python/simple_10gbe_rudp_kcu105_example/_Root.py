@@ -168,3 +168,14 @@ class Root(pr.Root):
             for devPtr in self.find(typ=ssi.SsiPrbsTx):
                 devPtr.TxEn.set(False)
             self.CountReset()
+
+    def stop(self, **kwargs):
+        # Stop the PRBS streaming before the transport is torn down
+        if not self.sim:
+            # Turn off the FW continuous PRBS transmission
+            for devPtr in self.find(typ=ssi.SsiPrbsTx):
+                devPtr.TxEn.set(False)
+            # Turn off the SW continuous PRBS transmission
+            if self.enSwPrbs:
+                self.swPrbsTx.txEnable.set(False)
+        super().stop(**kwargs)
